@@ -4,229 +4,332 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0a0f1e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Concours Bonogo">
     <title>Concours Blanc Bonogo</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <style>
+:root {
+    --bg: #0a0f1e;
+    --card: #131b2e;
+    --border: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --red: #ef4444;
+    --orange: #f97316;
+    --yellow: #facc15;
+    --purple: #8b5cf6;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { font-family:'Poppins',sans-serif; background:var(--bg); color:var(--text); font-size:16px; line-height:1.6; min-height:100vh; padding-bottom:80px; }
+.container { max-width:600px; margin:0 auto; padding:15px; }
+
+/* SPLASH */
+#splash { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:9999; transition:opacity .5s ease; }
+#splash.hide { opacity:0; pointer-events:none; }
+.splash-logo { text-align:center; }
+.logo-circle { width:110px; height:110px; background:linear-gradient(135deg,var(--yellow),var(--orange)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:38px; font-weight:900; color:var(--bg); margin:0 auto 20px; box-shadow:0 0 50px rgba(250,204,21,.5); animation:pulse 1.5s ease-in-out infinite; }
+.splash-logo h1 { font-size:26px; color:var(--yellow); margin-bottom:5px; }
+.splash-logo h2 { font-size:17px; color:var(--muted); margin-bottom:30px; }
+
+/* CARTES */
+.card { background:var(--card); border:2px solid var(--border); border-radius:20px; padding:25px; margin-bottom:20px; box-shadow:0 8px 25px rgba(0,0,0,.4); }
+.card.center { text-align:center; }
+.logo { font-size:70px; text-align:center; margin-bottom:15px; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+h1 { font-size:30px; font-weight:800; color:var(--yellow); text-align:center; margin-bottom:10px; }
+h2 { font-size:22px; font-weight:700; margin-bottom:15px; }
+.sub { text-align:center; color:var(--muted); font-size:14px; margin-bottom:25px; font-weight:600; }
+
+/* INPUTS */
+input[type="text"],input[type="password"],input[type="email"],input[type="time"],select,textarea {
+    width:100%; padding:16px; margin:10px 0; background:var(--bg); border:2px solid var(--border);
+    border-radius:12px; color:var(--text); font-family:'Poppins',sans-serif; font-size:16px; font-weight:600;
+    transition:all .2s; min-height:54px;
+}
+input:focus,select:focus,textarea:focus { outline:none; border-color:var(--yellow); box-shadow:0 0 0 3px rgba(250,204,21,.2); }
+input::placeholder { color:var(--muted); }
+label { display:block; font-size:14px; font-weight:700; color:var(--muted); margin:15px 0 5px; }
+
+/* BOUTONS */
+button { width:100%; padding:18px; margin:10px 0; border:none; border-radius:12px; font-family:'Poppins',sans-serif; font-size:17px; font-weight:700; cursor:pointer; transition:all .15s; min-height:54px; }
+button:active { transform:scale(.96); }
+.btn-green { background:var(--green); color:#fff; box-shadow:0 4px 15px rgba(34,197,94,.4); }
+.btn-blue { background:var(--blue); color:#fff; box-shadow:0 4px 15px rgba(59,130,246,.4); }
+.btn-red { background:var(--red); color:#fff; box-shadow:0 4px 15px rgba(239,68,68,.4); }
+.btn-orange { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; box-shadow:0 4px 15px rgba(249,115,22,.4); }
+.btn-purple { background:linear-gradient(135deg,var(--purple),#6d28d9); color:#fff; }
+.btn-big { padding:22px; font-size:20px; }
+.btn-small { padding:12px; font-size:14px; min-height:44px; }
+.erreur { color:var(--red); text-align:center; font-weight:600; min-height:24px; margin:10px 0; }
+
+/* STATS MENU */
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:20px 0; }
+.stat { background:var(--bg); padding:15px 10px; border-radius:12px; text-align:center; font-size:13px; font-weight:600; }
+.stat b { display:block; font-size:24px; color:var(--yellow); }
+.online { text-align:center; background:var(--bg); padding:12px; border-radius:12px; margin:15px 0; font-weight:700; }
+.contact { text-align:center; color:var(--muted); font-size:14px; margin-top:20px; padding-top:20px; border-top:2px solid var(--border); }
+.contact b { color:var(--yellow); }
+
+/* TIMER MENU */
+.timer-menu-box { background:var(--bg); border:2px solid var(--border); border-radius:12px; padding:12px; text-align:center; margin:10px 0; font-weight:700; font-size:15px; }
+
+/* MINI CLASSEMENT */
+.mini-class-box { background:var(--bg); border:2px solid var(--border); border-radius:14px; padding:15px; margin:10px 0; }
+
+/* EXAM HEADER */
+.header { position:fixed; top:0; left:0; right:0; background:var(--card); border-bottom:3px solid var(--border); padding:12px 15px; display:flex; justify-content:space-between; align-items:center; z-index:100; font-weight:700; gap:8px; }
+.timer { background:var(--red); color:#fff; padding:8px 18px; border-radius:25px; font-size:18px; font-weight:800; min-width:90px; text-align:center; }
+.timer.warning { animation:blink 1s infinite; }
+@keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:.3} }
+.subheader { position:fixed; top:55px; left:0; right:0; background:var(--bg); padding:6px 10px; display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:var(--muted); z-index:99; border-bottom:2px solid var(--border); gap:6px; flex-wrap:wrap; }
+.subheader span { flex:1 1 auto; min-width:0; text-align:center; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#heureConcours { flex:1 1 100%; order:-1; font-weight:700; margin-bottom:2px; }
+#enLigne { font-weight:800; color:var(--green); }
+
+/* QUESTIONS */
+#questions { margin-top:115px; padding-bottom:100px; }
+.question-block { background:var(--card); border:2px solid var(--border); border-radius:16px; padding:20px; margin-bottom:15px; transition:.2s; }
+.question-numero { color:var(--yellow); font-weight:800; font-size:15px; margin-bottom:12px; }
+.question-texte { font-size:17px; font-weight:600; line-height:1.5; margin-bottom:15px; }
+.reponses-liste label { display:flex; align-items:center; background:var(--bg); padding:15px; border-radius:12px; margin-bottom:10px; cursor:pointer; border:2px solid var(--border); transition:all .15s; min-height:54px; font-weight:600; }
+.reponses-liste label:active { transform:scale(.98); border-color:var(--blue); }
+.reponses-liste input[type="checkbox"] { width:24px; height:24px; margin-right:12px; cursor:pointer; }
+
+/* FOOTER EXAM */
+.footer { position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:3px solid var(--border); padding:12px 15px; display:flex; gap:8px; z-index:100; }
+.footer button { flex:1; margin:0; min-height:50px; padding:12px 10px; font-size:14px; font-weight:700; }
+#btnNonRep { background:linear-gradient(135deg,var(--blue),#1d4ed8); color:#fff; }
+#btnFinir { background:linear-gradient(135deg,var(--red),#dc2626); color:#fff; }
+
+/* SALLE ATTENTE */
+#salle-attente .logo { font-size:80px; animation:pulse 2s infinite; }
+.timer-big { font-size:48px; font-weight:900; color:var(--yellow); text-align:center; margin:20px 0; }
+
+/* LOADER */
+.loader { width:60px; height:60px; border:5px solid var(--border); border-top:5px solid var(--yellow); border-radius:50%; animation:spin 1s linear infinite; margin:20px auto; }
+@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+
+/* RESULTAT */
+.score { font-size:64px; font-weight:900; color:var(--yellow); margin:20px 0; text-shadow:0 4px 15px rgba(250,204,21,.4); }
+.xp-badge { background:linear-gradient(135deg,var(--purple),var(--blue)); color:#fff; padding:12px 30px; border-radius:25px; font-size:24px; font-weight:800; display:inline-block; margin:15px 0; box-shadow:0 6px 20px rgba(139,92,246,.5); }
+.stats-mini { display:flex; justify-content:center; gap:25px; margin:25px 0; font-size:18px; font-weight:700; }
+.stats-mini span { display:flex; align-items:center; gap:8px; }
+.mention-box { font-size:20px; font-weight:800; padding:10px 25px; border-radius:25px; display:inline-block; margin:10px 0; background:linear-gradient(135deg,rgba(250,204,21,.2),rgba(249,115,22,.1)); border:2px solid var(--yellow); }
+.sorties-info { font-size:14px; font-weight:700; padding:8px 15px; border-radius:10px; background:rgba(249,115,22,.15); color:var(--orange); margin:8px 0; display:none; }
+
+/* CORRECTION */
+#correction { margin-top:20px; }
+.question-correction { background:var(--card); border:2px solid var(--border); border-left:5px solid var(--muted); border-radius:12px; padding:18px; margin-bottom:12px; font-size:15px; line-height:1.7; }
+.question-correction.correct { border-left-color:var(--green); background:rgba(34,197,94,.1); }
+.question-correction.partiel { border-left-color:var(--yellow); background:rgba(250,204,21,.1); }
+.question-correction.incorrect { border-left-color:var(--red); background:rgba(239,68,68,.1); }
+.question-correction strong { color:var(--yellow); }
+
+/* CLASSEMENT */
+.classement-item { display:flex; justify-content:space-between; align-items:center; background:var(--bg); padding:14px 15px; border-radius:12px; margin-bottom:8px; border:2px solid var(--border); font-weight:600; }
+.rang { font-size:20px; font-weight:900; color:var(--yellow); min-width:40px; }
+.nom { flex:1; margin:0 15px; }
+.score-cl { font-size:18px; font-weight:800; color:var(--green); }
+
+/* ADMIN */
+.status { padding:15px; border-radius:12px; text-align:center; font-weight:800; font-size:16px; margin:15px 0; background:rgba(34,197,94,.2); color:var(--green); }
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:20px 0; }
+.stat-box { background:var(--bg); padding:18px 10px; border-radius:12px; text-align:center; border:2px solid var(--border); }
+.stat-box b { display:block; font-size:28px; color:var(--yellow); font-weight:900; }
+.eleve-item { background:var(--bg); padding:15px; border-radius:12px; margin-bottom:10px; border:2px solid var(--border); font-size:14px; line-height:1.6; }
+.eleve-item strong { color:var(--yellow); font-size:16px; }
+.question-edit { background:var(--bg); border:2px solid var(--border); border-radius:12px; padding:15px; margin-bottom:15px; }
+.question-edit textarea { width:100%; padding:12px; background:var(--card); border:2px solid var(--border); border-radius:8px; color:var(--text); font-family:'Poppins',sans-serif; font-size:15px; min-height:80px; margin:10px 0; resize:vertical; }
+.reponse-edit { display:flex; gap:10px; margin:8px 0; align-items:center; }
+.reponse-edit input[type="text"] { flex:1; margin:0; padding:10px; font-size:14px; }
+.reponse-edit input[type="checkbox"] { width:24px; height:24px; }
+.btn-del { background:var(--red); color:#fff; padding:8px 12px; border:none; border-radius:8px; font-size:14px; min-height:auto; width:auto; }
+
+/* MODAL */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,.9); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+.modal-box { background:var(--card); border:3px solid var(--border); border-radius:20px; padding:30px; max-width:450px; width:100%; text-align:center; }
+.modal-box h2 { margin-bottom:15px; color:var(--yellow); }
+.modal-box p { margin-bottom:25px; color:var(--muted); line-height:1.6; white-space:pre-line; }
+.modal-btns { display:flex; gap:10px; }
+.modal-btns button { flex:1; margin:0; }
+
+/* TOAST */
+#toasts { position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:2000; width:90%; max-width:380px; }
+.toast { background:var(--card); border:2px solid var(--border); border-radius:12px; padding:14px 20px; margin-bottom:10px; font-weight:700; font-size:14px; box-shadow:0 8px 25px rgba(0,0,0,.5); animation:slideDown .3s ease; }
+.toast.success { border-color:var(--green); color:var(--green); }
+.toast.error { border-color:var(--red); color:var(--red); }
+.toast.warning { border-color:var(--orange); color:var(--orange); }
+@keyframes slideDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+
+/* FORM RESET */
+#formReset { animation:fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+
+/* RESPONSIVE */
+@media(max-width:480px) {
+    .stats-grid { grid-template-columns:repeat(2,1fr); }
+    h1 { font-size:26px; }
+    .score { font-size:50px; }
+    .timer-big { font-size:38px; }
+    .footer button { font-size:13px; min-height:46px; }
+    .subheader { font-size:10px; }
+    #questions { margin-top:125px; }
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
+::-webkit-scrollbar-thumb:hover { background:var(--yellow); }
+    </style>
 </head>
 <body>
-    <!-- SPLASH SCREEN -->
-    <div id="splash">
-        <div class="splash-logo">
-            <div class="logo-circle">BB</div>
-            <h1>Concours Blanc</h1>
-            <h2>BONOGO</h2>
-            <div class="loader"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+    <div class="splash-logo">
+        <div class="logo-circle">BB</div>
+        <h1>Concours Blanc</h1>
+        <h2>BONOGO</h2>
+        <div class="loader"></div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- ===== PAGE ACCUEIL ===== -->
+    <div id="page-accueil">
+        <div class="card">
+            <div class="logo">🇧🇫</div>
+            <h1>Concours Blanc Bonogo</h1>
+            <p class="sub">ENSOA · IDS · ENAM · ENAREF</p>
+
+            <!-- CONNEXION -->
+            <div id="formConnexion">
+                <input type="email" id="email" placeholder="Ton Gmail" autocomplete="email">
+                <input type="password" id="mdp" placeholder="Mot de passe" autocomplete="current-password">
+                <p id="erreur" class="erreur"></p>
+                <button id="btnLogin" class="btn-green">🔓 Connexion</button>
+                <button id="btnShowInscription" class="btn-blue">✨ Créer un compte</button>
+                <button id="btnShowReset" class="btn-small btn-orange">🔑 Mot de passe oublié ?</button>
+                <button id="btnAdmin" class="btn-small">👑 Admin</button>
+            </div>
+
+            <!-- INSCRIPTION -->
+            <div id="formInscription" style="display:none">
+                <input type="text" id="nom" placeholder="Nom" autocomplete="family-name" maxlength="20">
+                <input type="text" id="prenom" placeholder="Prénom" autocomplete="given-name" maxlength="20">
+                <input type="email" id="emailInscription" placeholder="Ton Gmail" autocomplete="email">
+                <input type="password" id="mdpInscription" placeholder="Mot de passe 4 car mini" autocomplete="new-password">
+                <p id="erreurInscription" class="erreur"></p>
+                <button id="btnInscription" class="btn-green">✅ S'inscrire</button>
+                <button id="btnShowConnexion" class="btn-small btn-blue">← J'ai déjà un compte</button>
+            </div>
+
+            <!-- RESET MDP -->
+            <div id="formReset" style="display:none">
+                <h2 style="text-align:center;margin-bottom:15px">🔑 Récupérer mon compte</h2>
+                <input type="email" id="emailReset" placeholder="Ton Gmail" autocomplete="email">
+                <input type="password" id="nouveauMdp" placeholder="Nouveau mot de passe" autocomplete="new-password">
+                <p id="erreurReset" class="erreur"></p>
+                <button id="btnReset" class="btn-orange">🔄 Changer le mot de passe</button>
+                <button id="btnRetourConnexion" class="btn-small btn-blue">← Retour connexion</button>
+            </div>
+
+            <div class="online">🟢 <span id="onlineCount">0</span> candidats en ligne</div>
+            <p class="contact">📞 Contact: <b>55 24 04 31</b> / <b>69 04 19 02</b></p>
         </div>
     </div>
 
-    <div class="container">
-
-        <!-- ACCUEIL -->
-        <div id="page-accueil">
-            <div class="card">
-                <div class="logo">🇧🇫</div>
-                <h1>Concours Blanc Bonogo</h1>
-                <p class="sub">ENSOA · IDS · ENAM · ENAREF</p>
-                
-                <!-- FORM CONNEXION -->
-                <div id="formConnexion">
-                    <input type="email" id="email" placeholder="Ton Gmail" autocomplete="email">
-                    <input type="password" id="mdp" placeholder="Mot de passe" autocomplete="current-password">
-                    <p id="erreur" class="erreur"></p>
-                    <button id="btnLogin" class="btn-green">🔓 Connexion</button>
-                    <button id="btnShowInscription" class="btn-blue">✨ Créer un compte</button>
-                    <button id="btnShowReset" class="btn-small btn-orange">🔑 Mot de passe oublié ?</button>
-                    <button id="btnAdmin" class="btn-small">👑 Admin</button>
-                </div>
-
-                <!-- FORM INSCRIPTION -->
-                <div id="formInscription" style="display:none;">
-                    <input type="text" id="nom" placeholder="Nom" autocomplete="family-name" maxlength="20">
-                    <input type="text" id="prenom" placeholder="Prénom" autocomplete="given-name" maxlength="20">
-                    <input type="email" id="emailInscription" placeholder="Ton Gmail" autocomplete="email">
-                    <input type="password" id="mdpInscription" placeholder="Mot de passe 4 car mini" autocomplete="new-password">
-                    <p id="erreurInscription" class="erreur"></p>
-                    <button id="btnInscription" class="btn-green">✅ S'inscrire</button>
-                    <button id="btnShowConnexion" class="btn-small btn-blue">← J'ai déjà un compte</button>
-                </div>
-
-                <!-- FORM RESET MDP -->
-                <div id="formReset" style="display:none;">
-                    <h2 style="text-align:center;margin-bottom:15px;">🔑 Récupérer mon compte</h2>
-                    <input type="email" id="emailReset" placeholder="Ton Gmail" autocomplete="email">
-                    <input type="password" id="nouveauMdp" placeholder="Nouveau mot de passe" autocomplete="new-password">
-                    <p id="erreurReset" class="erreur"></p>
-                    <button id="btnReset" class="btn-orange">🔄 Changer le mot de passe</button>
-                    <button id="btnRetourConnexion" class="btn-small btn-blue">← Retour connexion</button>
-                </div>
-                
-                <div class="online">🟢 <span id="onlineCount">0</span> candidats en ligne</div>
-                <p class="contact">📞 Contact: <b>55 24 04 31</b> / <b>69 04 19 02</b></p>
+    <!-- ===== PAGE MENU ===== -->
+    <div id="page-menu" style="display:none">
+        <div class="card">
+            <h2 id="nomMenu">Bienvenue!</h2>
+            <div class="stats">
+                <div class="stat">Niveau<b id="niv">1</b></div>
+                <div class="stat"><b id="xp">0</b>XP</div>
+                <div class="stat">🔥<b id="streak">0</b>j</div>
             </div>
+
+            <!-- TIMER MENU -->
+            <div class="timer-menu-box">
+                <span id="timerMenu" style="display:none"></span>
+            </div>
+
+            <button id="btnExam" class="btn-green btn-big">🚀 Commencer le Concours</button>
+            <button id="btnBadges" class="btn-orange">🎖️ Mes Badges</button>
+            <button id="btnClassement" class="btn-blue">🏆 Classement</button>
+            <button id="btnHistorique" class="btn-small btn-purple">📋 Mon Historique</button>
+            <button id="btnMesStats" class="btn-small" style="background:var(--border);color:var(--text)">📊 Mes Statistiques</button>
+            <button id="btnLogout" class="btn-red btn-small">Déconnexion</button>
         </div>
 
-        <!-- MENU CANDIDAT -->
-        <div id="page-menu" style="display:none;">
-            <div class="card">
-                <h2 id="nomMenu">Bienvenue!</h2>
-                <div class="stats">
-                    <div class="stat">Niveau <b id="niv">1</b></div>
-                    <div class="stat"><b id="xp">0</b> XP</div>
-                    <div class="stat">🔥 <b id="streak">0</b>j</div>
-                </div>
-                <button id="btnExam" class="btn-green btn-big">🚀 Commencer le Concours</button>
-                <button id="btnBadges" class="btn-orange">🏆 Mes Badges</button>
-                <button id="btnClassement" class="btn-blue">📊 Classement</button>
-                <button id="btnLogout" class="btn-red">Déconnexion</button>
+        <!-- MINI CLASSEMENT -->
+        <div class="card">
+            <h2>🏆 Classement en direct</h2>
+            <div id="miniClassement">
+                <p style="text-align:center;color:var(--muted);font-size:13px">Chargement...</p>
             </div>
+            <button onclick="son('click');afficherClassementMenu()" class="btn-small btn-blue" style="margin-top:10px">Voir classement complet →</button>
         </div>
 
-        <!-- ADMIN LOGIN -->
-        <div id="page-admin-login" style="display:none;">
-            <div class="card">
-                <h1>👑 Admin</h1>
-                <input type="password" id="adminPass" placeholder="Mot de passe admin">
-                <button id="btnLoginAdmin" class="btn-orange">Entrer</button>
-                <button id="btnRetour" class="btn-small btn-blue">← Retour</button>
-                <p id="erreurAdmin" class="erreur"></p>
-            </div>
-        </div>
+        <div class="online">🟢 <span id="onlineCountMenu">0</span> candidats en ligne</div>
+    </div>
 
-        <!-- EXAMEN -->
-        <div id="page-exam" style="display:none;">
-            <!-- SALLE D'ATTENTE -->
-            <div id="salle-attente" style="display:none;">
-                <div class="card center">
-                    <div class="logo">⏳</div>
-                    <h1>Concours pas encore commencé</h1>
-                    <p class="sub">Le concours commence à <b id="heureDebutAffich">--:--</b></p>
-                    <div class="timer-big" id="timerDebut">--:--:--</div>
-                    <p style="color:var(--muted);margin-top:20px;">Reste connecté. La page se lancera automatiquement.</p>
-                    <div class="online">🟢 <span id="onlineAttente">0</span> candidats en salle</div>
-                </div>
-            </div>
-
-            <div class="header">
-                <span id="nomConcours">📝 Concours Blanc Bonogo</span>
-                <span id="timer" class="timer">--:--</span>
-            </div>
-            <div class="subheader">
-                <span id="heureConcours">Durée: 1h30</span>
-                <span id="enLigne">🟢 0</span>
-                <span id="restant">50/50</span>
-            </div>
-            
-            <div id="questions"></div>
-            
-            <div class="footer">
-                <button id="btnNonRep" class="btn-blue">📋 Non répondu</button>
-                <button id="btnFinir" class="btn-red">🏁 Terminer</button>
-            </div>
-
-            <div id="attente" style="display:none;">
-                <div class="card center">
-                    <div class="loader"></div>
-                    <h2>✅ Copie envoyée</h2>
-                    <p>Attends la fin de l'heure pour voir ta note et le classement</p>
-                    <div class="timer-big" id="timerAttente">--:--</div>
-                </div>
-            </div>
-
-            <div id="resultat" style="display:none;">
-                <div class="card center">
-                    <h2>🎉 Résultat</h2>
-                    <div class="score" id="score">0/50</div>
-                    <div class="xp-badge">+<span id="xpGagne">0</span> XP</div>
-                    <div class="stats-mini">
-                        <span>✅ <b id="bonnes">0</b></span>
-                        <span>⚠️ <b id="partielles">0</b></span>
-                        <span>❌ <b id="fausses">0</b></span>
-                    </div>
-                    <button id="btnCorrection" class="btn-green">📖 Correction</button>
-                    <button id="btnVoirClass" class="btn-orange">🏆 Classement</button>
-                    <button id="btnRetourMenu" class="btn-blue">Menu</button>
-                </div>
-                <div id="correction"></div>
-            </div>
-        </div>
-
-        <!-- ADMIN PANEL -->
-        <div id="page-admin" style="display:none;">
-            <div class="card">
-                <h1>👑 Panel Admin - Concours Blanc Bonogo</h1>
-                <div class="status" id="status">🔴 Connexion...</div>
-                <div class="stats-grid">
-                    <div class="stat-box"><b id="statCandidats">0</b><br>Candidats</div>
-                    <div class="stat-box"><b id="statConcours">0</b><br>Concours</div>
-                    <div class="stat-box"><b id="statMoy">0</b><br>Moyenne</div>
-                    <div class="stat-box"><b id="statOnline">0</b><br>En ligne</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>⚙️ Config Concours</h2>
-                <label>Type Concours:</label>
-                <select id="typeConcours">
-                    <option>Concours Blanc Bonogo</option>
-                    <option>ENSOA</option>
-                    <option>IDS</option>
-                    <option>ENAM</option>
-                    <option>ENAREF</option>
-                    <option>EAMAU</option>
-                    <option>DOUANES</option>
-                    <option>POLICE</option>
-                </select>
-                <label>Heure début:</label>
-                <input type="time" id="hDebut" value="08:00">
-                <label>Heure fin:</label>
-                <input type="time" id="hFin" value="09:30">
-                <button id="btnSaveConfig" class="btn-green">💾 Sauver Config</button>
-            </div>
-
-            <div class="card">
-                <h2>⚡ Import 50 Questions D'un Coup</h2>
-                <textarea id="collerJSON" placeholder="COLLE ICI LES 50 QUESTIONS" style="width:100%;height:150px;padding:12px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--text);font-family:monospace;font-size:12px;margin-bottom:10px;"></textarea>
-                <button id="btnCharger50" class="btn-orange btn-big">📥 CHARGER LES 50 QUESTIONS</button>
-                <button id="btnEnvoyer50" class="btn-green btn-big" style="display:none;margin-top:10px;">🚀 BALANCER AUX ÉLÈVES</button>
-            </div>
-
-            <div class="card">
-                <h2>📝 Sujets - 50 Questions</h2>
-                <div id="listeQuestions"></div>
-                <button id="btnAjouterQ" class="btn-blue">+ Ajouter Question</button>
-                <button id="btnSaveSujet" class="btn-green">💾 Sauver Sujet</button>
-            </div>
-
-            <div class="card">
-                <h2>👥 Candidats Inscrits</h2>
-                <div id="listeCandidats"></div>
-            </div>
-
-            <div class="card">
-                <h2>🏆 Top 10 Live</h2>
-                <div id="top10"></div>
-            </div>
-
-            <button id="btnLogoutAdmin" class="btn-red">Déconnexion</button>
+    <!-- ===== ADMIN LOGIN ===== -->
+    <div id="page-admin-login" style="display:none">
+        <div class="card">
+            <h1>👑 Admin</h1>
+            <input type="password" id="adminPass" placeholder="Mot de passe admin">
+            <button id="btnLoginAdmin" class="btn-orange">Entrer</button>
+            <button id="btnRetour" class="btn-small btn-blue">← Retour</button>
+            <p id="erreurAdmin" class="erreur"></p>
         </div>
     </div>
 
-    <!-- MODALS -->
-    <div id="modal" class="modal" style="display:none;">
-        <div class="modal-box">
-            <h2 id="modalTitre">Confirmation</h2>
-            <p id="modalTexte"></p>
-            <div class="modal-btns">
-                <button id="btnAnnuler" class="btn-blue">Annuler</button>
-                <button id="btnConfirmer" class="btn-red">Confirmer</button>
+    <!-- ===== PAGE EXAMEN ===== -->
+    <div id="page-exam" style="display:none">
+
+        <!-- SALLE ATTENTE -->
+        <div id="salle-attente" style="display:none">
+            <div class="card center">
+                <div class="logo">⏳</div>
+                <h1>Concours pas encore commencé</h1>
+                <p class="sub">Début à <b id="heureDebutAffich">--:--</b></p>
+                <div class="timer-big" id="timerDebut">--:--:--</div>
+                <p style="color:var(--muted);margin-top:20px">Reste connecté. Le concours se lancera automatiquement.</p>
+                <div class="online">🟢 <span id="onlineAttente">0</span> candidats en salle</div>
             </div>
         </div>
-    </div>
 
-    <div id="toasts"></div>
+        <!-- HEADER EXAM -->
+        <div class="header">
+            <span id="nomConcours">📝 Concours Blanc Bonogo</span>
+            <span id="timer" class="timer">--:--</span>
+        </div>
+        <div class="subheader">
+            <span id="heureConcours">Durée: 1h30</span>
+            <span id="enLigne">🟢 0</span>
+            <span id="restant">0/50</span>
+        </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="script.js"></script>
-</body>
-  </html>
+        <div id="questions"></div>
+
+        <div class="footer">
+            <button id="btnNonRep">📋 Non répondu</button>
+            <button id="btnFinir">🏁 Terminer</button>
+        </div>
+
+        <!-- ATTENTE RÉSULTAT -->
+        <div id="attente" style="display:none">
+            <div class="card center" style="margin-top:80px">
+                <div class="loader"></div>
+                <h2 style="margin-top:10px">✅ Copie
