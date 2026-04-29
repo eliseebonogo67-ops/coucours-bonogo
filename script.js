@@ -1,6 +1,6 @@
 // ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 1/8 : FIREBASE + SPLASH + VARIABLES + UTILS
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 1/9 : FIREBASE + VARIABLES + UTILS + SONS
 // ============================================
 
 // === FIREBASE ===
@@ -11,7 +11,7 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 
-// === SPLASH SCREEN 2.5s ===
+// === SPLASH ===
 window.addEventListener('load', function() {
     setTimeout(function() {
         var splash = document.getElementById('splash');
@@ -122,19 +122,137 @@ var btnConfirmer = document.getElementById('btnConfirmer');
 var toasts       = document.getElementById('toasts');
 
 // === VARIABLES GLOBALES ===
-var user          = null;
-var userDisplay   = '';
-var userData      = {};
-var questionsData = [];
-var reponsesUser  = {};
-var finTimestamp  = 0;
-var timerInt      = null;
-var presenceRef   = null;
-var audioCtx      = null;
-var sujetActuel   = [];
-var alertesTimer  = {30:false, 20:false, 10:false, 5:false};
-var copieSubmise  = false;
-var reponsesFinales = {};
+var user             = null;
+var userDisplay      = '';
+var userData         = {};
+var questionsData    = [];
+var reponsesUser     = {};
+var finTimestamp     = 0;
+var timerInt         = null;
+var presenceRef      = null;
+var audioCtx         = null;
+var sujetActuel      = [];
+var alertesTimer     = {30:false, 20:false, 10:false, 5:false};
+var copieSubmise     = false;
+var reponsesFinales  = {};
+var configActuelle   = null;
+
+// === VARIABLES SORTIE ===
+var nbSorties        = 0;
+var MAX_SORTIES      = 4;
+var sortieTimeout    = null;
+var derniereFocus    = Date.now();
+var devourBloque     = false;
+var enExamen         = false;
+
+// === AUDIO CONTEXT ===
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+// === SONS AVANCÉS ===
+function son(type) {
+    try {
+        initAudio();
+        var o = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(audioCtx.destination);
+
+        switch(type) {
+            case 'click':
+                o.frequency.value = 800;
+                g.gain.value = 0.08;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.08);
+                break;
+            case 'success':
+                // Son de victoire montant
+                o.frequency.setValueAtTime(400, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.15);
+                o.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
+                g.gain.value = 0.15;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.4);
+                break;
+            case 'error':
+                o.frequency.value = 200;
+                g.gain.value = 0.15;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.3);
+                break;
+            case 'tick':
+                o.frequency.value = 600;
+                g.gain.value = 0.05;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.05);
+                break;
+            case 'alerte':
+                // Bip bip bip
+                for(var i = 0; i < 3; i++) {
+                    var o2 = audioCtx.createOscillator();
+                    var g2 = audioCtx.createGain();
+                    o2.connect(g2);
+                    g2.connect(audioCtx.destination);
+                    o2.frequency.value = 1000;
+                    g2.gain.value = 0.2;
+                    o2.start(audioCtx.currentTime + i * 0.2);
+                    o2.stop(audioCtx.currentTime + i * 0.2 + 0.1);
+                }
+                return;
+            case 'sortie':
+                // Son d'alarme
+                o.frequency.setValueAtTime(500, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(200, audioCtx.currentTime + 0.5);
+                g.gain.value = 0.2;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.5);
+                break;
+            case 'niveau':
+                // Fanfare niveau
+                var notes = [523, 659, 784, 1047];
+                notes.forEach(function(freq, i) {
+                    var oN = audioCtx.createOscillator();
+                    var gN = audioCtx.createGain();
+                    oN.connect(gN);
+                    gN.connect(audioCtx.destination);
+                    oN.frequency.value = freq;
+                    gN.gain.value = 0.15;
+                    oN.start(audioCtx.currentTime + i * 0.12);
+                    oN.stop(audioCtx.currentTime + i * 0.12 + 0.1);
+                });
+                return;
+            case 'top1':
+                // Fanfare champion
+                var notes1 = [523, 784, 1047, 1319, 1047, 1319];
+                notes1.forEach(function(freq, i) {
+                    var oT = audioCtx.createOscillator();
+                    var gT = audioCtx.createGain();
+                    oT.connect(gT);
+                    gT.connect(audioCtx.destination);
+                    oT.frequency.value = freq;
+                    gT.gain.value = 0.15;
+                    oT.start(audioCtx.currentTime + i * 0.15);
+                    oT.stop(audioCtx.currentTime + i * 0.15 + 0.12);
+                });
+                return;
+            case 'countdown':
+                // Tic tic urgent
+                o.frequency.value = 1200;
+                g.gain.value = 0.2;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.05);
+                break;
+            default:
+                o.frequency.value = 500;
+                g.gain.value = 0.08;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.1);
+        }
+    } catch(e) {}
+}
 
 // === UTILS ===
 function showPage(p) {
@@ -151,18 +269,6 @@ function toast(msg, type) {
     setTimeout(() => t.remove(), 4000);
 }
 
-function son(type) {
-    try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        var o = audioCtx.createOscillator();
-        var g = audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
-        o.frequency.value = type === 'click' ? 800 : type === 'success' ? 1200 : 300;
-        g.gain.value = 0.1;
-        o.start(); o.stop(audioCtx.currentTime + 0.1);
-    } catch(e) {}
-}
-
 function hash(str)      { return btoa(str); }
 function niveau(xpVal)  { return Math.floor(xpVal / 100) + 1; }
 function calcXp(sc,tot) { return Math.floor((sc / tot) * 50); }
@@ -174,9 +280,31 @@ function formatDate(ts) {
          + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
 }
 
-// === FIN PARTIE 1/8 ===// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 2/8 : CONNEXION + INSCRIPTION + RESET MDP
+function afficherBadgeAnimation(emoji, nom) {
+    var div = document.createElement('div');
+    div.style.cssText = `
+        position:fixed; top:50%; left:50%;
+        transform:translate(-50%,-50%) scale(0);
+        background:linear-gradient(135deg,var(--yellow),var(--orange));
+        color:var(--bg); padding:25px 35px;
+        border-radius:20px; z-index:3000;
+        text-align:center; font-weight:900;
+        font-size:18px; transition:transform 0.4s ease;
+        box-shadow:0 10px 40px rgba(250,204,21,0.6);
+    `;
+    div.innerHTML = `<div style="font-size:50px">${emoji}</div><div>Badge obtenu!</div><div style="font-size:14px">${nom}</div>`;
+    document.body.appendChild(div);
+    setTimeout(() => div.style.transform = 'translate(-50%,-50%) scale(1)', 50);
+    son('niveau');
+    setTimeout(() => {
+        div.style.transform = 'translate(-50%,-50%) scale(0)';
+        setTimeout(() => div.remove(), 400);
+    }, 2500);
+}
+
+// === FIN PARTIE 1/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 2/9 : CONNEXION + INSCRIPTION + RESET MDP
 // ============================================
 
 // === TOGGLE FORMS ===
@@ -246,7 +374,8 @@ btnInscription.onclick = async function() {
         xp: 0, niveau: 1, streak: 0,
         dernierJour: Date.now(),
         badges: {}, concoursFaits: 0, moyenne: 0,
-        historique: [], dateInscription: Date.now()
+        historique: [], dateInscription: Date.now(),
+        top10All: false
     });
 
     erreurInscription.textContent = '';
@@ -335,11 +464,35 @@ btnLogin.onclick = async function() {
 
 // === CHARGER MENU ===
 function chargerMenu(d) {
-    nomMenu.textContent = 'Salut ' + userDisplay + '!';
-    niv.textContent    = d.niveau;
-    xp.textContent     = d.xp;
-    streak.textContent = d.streak;
+    nomMenu.textContent = 'Salut ' + userDisplay + ' !';
+    niv.textContent    = d.niveau || 1;
+    xp.textContent     = d.xp || 0;
+    streak.textContent = d.streak || 0;
     showPage(pageMenu);
+    // Vérifier si concours en cours pour cet utilisateur
+    verifierConcoursenCours();
+}
+
+// === VÉRIFIER CONCOURS EN COURS ===
+async function verifierConcoursenCours() {
+    var configSnap = await db.ref('configConcours').once('value');
+    var config = configSnap.val();
+    if (!config) return;
+
+    var now = Date.now();
+
+    // Vérifier si le concours est actif
+    if (now < config.debutTimestamp || now > config.finTimestamp) return;
+
+    // Vérifier si le joueur a une session en cours
+    var sessionSnap = await db.ref('sessions/' + user).once('value');
+    var session = sessionSnap.val();
+
+    if (session && session.concoursId === config.debutTimestamp && !session.soumis) {
+        // Concours en cours non soumis - proposer de reprendre
+        toast('⚠️ Tu as un concours en cours! Clique sur Commencer pour reprendre.', 'warning');
+        son('alerte');
+    }
 }
 
 // === DÉCONNEXION ===
@@ -347,22 +500,19 @@ btnLogout.onclick = function() {
     son('click');
     if (presenceRef) presenceRef.remove();
     if (timerInt) clearInterval(timerInt);
+    stopperDetectionSortie();
     user = null; userDisplay = ''; userData = {};
     copieSubmise = false; reponsesFinales = {};
+    enExamen = false; nbSorties = 0; devourBloque = false;
     email.value=''; mdp.value='';
     showPage(pageAccueil);
 };
 
-// === FIN PARTIE 2/8 ===// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 3/8 : PRESENCE + ADMIN LOGIN + BADGES + CLASSEMENT
-// ============================================
-
-// === PRÉSENCE EN LIGNE ===
+// === PRÉSENCE ===
 function startPresence() {
     if (presenceRef) presenceRef.remove();
     presenceRef = db.ref('online/' + user);
-    presenceRef.set(true);
+    presenceRef.set({ name: userDisplay, ts: Date.now() });
     presenceRef.onDisconnect().remove();
     db.ref('online').on('value', snap => {
         var count = snap.numChildren();
@@ -373,359 +523,438 @@ function startPresence() {
     });
 }
 
+// === FIN PARTIE 2/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 3/9 : ADMIN LOGIN + MENU + NAVIGATION
+// ============================================
+
 // === ADMIN LOGIN ===
-btnAdmin.onclick    = function() { son('click'); showPage(pageAdminLogin); };
-btnRetour.onclick   = function() { son('click'); showPage(pageAccueil); };
+btnAdmin.onclick = function() { son('click'); showPage(pageAdminLogin); };
+btnRetour.onclick = function() { son('click'); showPage(pageAccueil); };
+
 btnLoginAdmin.onclick = function() {
     son('click');
-    if (adminPass.value === 'admin2025') {
+    if (adminPass.value === 'admin5531') {
         showPage(pageAdmin);
         loadAdmin();
         erreurAdmin.textContent = '';
         adminPass.value = '';
+        son('success');
     } else {
         erreurAdmin.textContent = 'MDP incorrect';
         son('error');
     }
 };
-btnLogoutAdmin.onclick = function() { son('click'); showPage(pageAccueil); };
+
+btnLogoutAdmin.onclick = function() {
+    son('click');
+    showPage(pageAccueil);
+};
+
+// === BOUTONS MENU ===
+btnBadges.onclick = function() {
+    son('click');
+    afficherBadges();
+};
+
+btnClassement.onclick = function() {
+    son('click');
+    afficherClassementMenu();
+};
+
+var btnHistorique = document.getElementById('btnHistorique');
+var btnMesStats = document.getElementById('btnMesStats');
+
+if (btnHistorique) {
+    btnHistorique.onclick = function() {
+        son('click');
+        afficherHistorique();
+    };
+}
+
+if (btnMesStats) {
+    btnMesStats.onclick = function() {
+        son('click');
+        afficherStats();
+    };
+}
+
+// === CRÉER OVERLAY ===
+function creerOverlay(titre, contenuId) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px;padding-bottom:80px';
+    overlay.innerHTML = '<div style="max-width:600px;margin:0 auto">'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;padding-top:10px">'
+        + '<button onclick="son(\'click\');this.parentElement.parentElement.parentElement.remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:16px;font-weight:700;min-height:auto;width:auto;margin:0">← Retour</button>'
+        + '<h2 style="margin:0;font-size:20px">' + titre + '</h2>'
+        + '</div>'
+        + '<div id="' + contenuId + '">'
+        + '<div style="text-align:center;padding:30px"><div class="loader"></div><p style="color:var(--muted);margin-top:10px">Chargement...</p></div>'
+        + '</div></div>';
+    document.body.appendChild(overlay);
+    return overlay;
+}
 
 // === BADGES ===
-btnBadges.onclick = async function() {
-    son('click');
+async function afficherBadges() {
+    var overlay = creerOverlay('Mes Badges', 'contenuBadges');
     var snap = await db.ref('users/' + user + '/badges').once('value');
     var badges = snap.val() || {};
 
     var badgeList = [
-        { key:'premier',  emoji:'🎯', nom:'Premier Concours',  desc:'Terminer son 1er concours' },
-        { key:'streak7',  emoji:'🔥', nom:'Série 7 jours',     desc:'7 jours consécutifs connecté' },
-        { key:'niveau10', emoji:'⭐', nom:'Niveau 10',          desc:'Atteindre le niveau 10' },
-        { key:'perfect',  emoji:'💯', nom:'Sans Faute',         desc:'Obtenir 50/50' },
-        { key:'rapide',   emoji:'⚡', nom:'Éclair',             desc:'Finir avec +1h restante' },
-        { key:'assidu',   emoji:'📅', nom:'Assidu',             desc:'5 concours ou plus passés' },
-        { key:'top3',     emoji:'🏅', nom:'Top 3',              desc:'Être dans le top 3 général' },
-        { key:'elite',    emoji:'👑', nom:'Élite',              desc:'Moyenne supérieure à 40/50' }
+        { key:'premier',   emoji:'🎯', nom:'Premier Concours',  desc:'Terminer son 1er concours' },
+        { key:'streak7',   emoji:'🔥', nom:'Serie 7 jours',     desc:'7 jours consecutifs connecte' },
+        { key:'niveau10',  emoji:'⭐', nom:'Niveau 10',          desc:'Atteindre le niveau 10' },
+        { key:'perfect',   emoji:'💯', nom:'Sans Faute',         desc:'Obtenir 50/50' },
+        { key:'rapide',    emoji:'⚡', nom:'Eclair',             desc:'Finir avec +1h restante' },
+        { key:'assidu',    emoji:'📅', nom:'Assidu',             desc:'5 concours ou plus passes' },
+        { key:'top3',      emoji:'🏅', nom:'Top 3',              desc:'Etre dans le top 3 du concours' },
+        { key:'elite',     emoji:'👑', nom:'Elite',              desc:'Moyenne superieure a 40/50' },
+        { key:'resistant', emoji:'🛡️', nom:'Resistant',          desc:'Finir sans sortir de l\'examen' },
+        { key:'top10all',  emoji:'🌟', nom:'Legende Top 10',     desc:'Etre dans le Top 10 permanent' }
     ];
 
-    var nbObtenu = badgeList.filter(b => badges[b.key]).length;
+    var nbObtenu = badgeList.filter(function(b) { return badges[b.key]; }).length;
+    var box = overlay.querySelector('#contenuBadges');
+    var pct = Math.round((nbObtenu / badgeList.length) * 100);
 
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px';
-    overlay.innerHTML = `
-        <div style="max-width:600px;margin:0 auto">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border)">
-                <button onclick="this.closest('div[style]').remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;min-height:auto;width:auto;margin:0">←</button>
-                <h2 style="margin:0">🎖️ Mes Badges</h2>
-            </div>
-            <div class="card center" style="margin-bottom:15px">
-                <div style="font-size:40px;margin-bottom:10px">🎖️</div>
-                <div style="font-size:28px;font-weight:900;color:var(--yellow)">${nbObtenu}/${badgeList.length}</div>
-                <div style="color:var(--muted);font-size:14px">badges obtenus</div>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
-                ${badgeList.map(b => {
-                    var has = badges[b.key];
-                    return `<div style="background:var(--card);border:2px solid ${has ? 'var(--yellow)' : 'var(--border)'};border-radius:14px;padding:15px;text-align:center;${has ? 'background:rgba(250,204,21,0.07)' : ''}">
-                        <div style="font-size:36px;margin-bottom:8px">${b.emoji}</div>
-                        <div style="font-size:13px;font-weight:700;margin-bottom:4px">${b.nom}</div>
-                        <div style="font-size:11px;color:var(--muted)">${b.desc}</div>
-                        <span style="display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${has ? 'rgba(250,204,21,0.2)' : 'rgba(148,163,184,0.1)'};color:${has ? 'var(--yellow)' : 'var(--muted)'}">${has ? '✅ Obtenu' : '🔒 Verrouillé'}</span>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-};
+    var html = '<div class="card center" style="margin-bottom:15px">'
+        + '<div style="font-size:50px;margin-bottom:10px">🎖️</div>'
+        + '<div style="font-size:32px;font-weight:900;color:var(--yellow)">' + nbObtenu + '<span style="font-size:18px;color:var(--muted)">/' + badgeList.length + '</span></div>'
+        + '<div style="color:var(--muted);font-size:14px;margin-top:5px">badges obtenus</div>'
+        + '<div style="background:var(--border);border-radius:10px;height:8px;margin:12px 0 4px;overflow:hidden">'
+        + '<div style="height:100%;background:linear-gradient(90deg,var(--yellow),var(--orange));border-radius:10px;width:' + pct + '%"></div>'
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--muted)">' + pct + '% complete</div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">';
 
-// === CLASSEMENT ANIMÉ ===
-btnClassement.onclick = async function() {
-    son('click');
+    badgeList.forEach(function(b) {
+        var has = badges[b.key];
+        html += '<div style="background:var(--card);border:2px solid ' + (has ? 'var(--yellow)' : 'var(--border)') + ';border-radius:14px;padding:15px;text-align:center">'
+            + '<div style="font-size:36px;margin-bottom:8px">' + b.emoji + '</div>'
+            + '<div style="font-size:13px;font-weight:700;margin-bottom:4px">' + b.nom + '</div>'
+            + '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + b.desc + '</div>'
+            + '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:' + (has ? 'rgba(250,204,21,0.2)' : 'rgba(148,163,184,0.1)') + ';color:' + (has ? 'var(--yellow)' : 'var(--muted)') + '">' + (has ? 'Obtenu' : 'Verrouille') + '</span>'
+            + '</div>';
+    });
 
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px';
-    overlay.innerHTML = `
-        <div style="max-width:600px;margin:0 auto">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border)">
-                <button onclick="this.closest('div[style]').remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;min-height:auto;width:auto;margin:0">←</button>
-                <h2 style="margin:0">🏆 Classement Général</h2>
-            </div>
-            <div id="clContent" style="text-align:center;padding:30px">
-                <div class="loader"></div>
-                <p style="color:var(--muted);margin-top:10px">Chargement...</p>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-
-    var snap = await db.ref('resultats').orderByChild('score').limitToLast(50).once('value');
-    var results = [];
-    snap.forEach(child => results.push({ key: child.key, ...child.val() }));
-    results.sort((a, b) => b.score - a.score || a.timestamp - b.timestamp);
-
-    var snapAll = await db.ref('users').once('value');
-    var total = snapAll.numChildren();
-    var monIdx = results.findIndex(r => r.key === user);
-
-    var clContent = overlay.querySelector('#clContent');
-
-    if (results.length === 0) {
-        clContent.innerHTML = `<div style="font-size:60px;margin-bottom:15px">🏆</div>
-            <p style="color:var(--muted);font-size:16px">Aucun résultat pour l'instant</p>`;
-        return;
-    }
-
-    // Mon rang
-    var monRangHtml = '';
-    if (monIdx >= 0) {
-        monRangHtml = `<div style="background:linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1));border:2px solid var(--yellow);border-radius:14px;padding:15px 20px;margin-bottom:15px;text-align:center;font-weight:700">
-            Ma position: <span style="font-size:32px;font-weight:900;color:var(--yellow);display:block">#${monIdx+1}</span>
-            <small style="color:var(--muted);font-size:13px">sur ${total} candidats inscrits</small>
-        </div>`;
-    }
-
-    // Liste animée
-    var lignes = results.map((r, i) => {
-        var isMe = r.key === user;
-        var med = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="font-size:15px;font-weight:800">#${i+1}</span>`;
-        var pct = Math.round((r.score/50)*100);
-        return `<div class="cl-item" style="display:flex;justify-content:space-between;align-items:center;background:${isMe?'linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1))':'var(--bg)'};padding:14px 15px;border-radius:12px;margin-bottom:8px;border:2px solid ${isMe?'var(--yellow)':'var(--border)'};font-weight:600;opacity:0;transform:translateX(-20px);transition:all 0.3s ease ${i*0.05}s">
-            <span style="font-size:20px;font-weight:900;color:var(--yellow);min-width:40px">${med}</span>
-            <div style="flex:1;margin:0 10px">
-                <div>${r.prenom} ${r.nom} ${isMe?'<span style="color:var(--yellow);font-size:11px">◀ Moi</span>':''}</div>
-                <div style="font-size:11px;color:var(--muted)">${pct}% · ${r.bonnes||0}✅ ${r.partielles||0}⚠️ ${r.fausses||0}❌</div>
-            </div>
-            <span style="font-size:17px;font-weight:800;color:${isMe?'var(--yellow)':'var(--green)'}">${r.score}/50</span>
-        </div>`;
-    }).join('');
-
-    clContent.innerHTML = monRangHtml + lignes;
-
-    // Animation entrée
-    setTimeout(() => {
-        overlay.querySelectorAll('.cl-item').forEach(el => {
-            el.style.opacity = '1';
-            el.style.transform = 'translateX(0)';
-        });
-    }, 100);
-};
+    html += '</div>';
+    box.innerHTML = html;
+}
 
 // === HISTORIQUE ===
 async function afficherHistorique() {
-    son('click');
+    var overlay = creerOverlay('Mon Historique', 'contenuHistorique');
     var snap = await db.ref('users/' + user + '/historique').once('value');
     var histo = snap.val() || [];
     if (!Array.isArray(histo)) histo = Object.values(histo);
-    histo.sort((a, b) => b.timestamp - a.timestamp);
+    histo.sort(function(a, b) { return b.timestamp - a.timestamp; });
 
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px';
+    var box = overlay.querySelector('#contenuHistorique');
 
-    var contenu = histo.length === 0
-        ? `<div style="text-align:center;padding:40px;color:var(--muted)">
-            <div style="font-size:60px;margin-bottom:15px">📋</div>
-            <div style="font-size:16px;font-weight:700">Aucun concours passé</div>
-            <div style="font-size:14px;margin-top:8px">Lance ton premier concours !</div>
-           </div>`
-        : histo.map(h => {
-            var note = parseFloat(h.score);
-            var pct  = Math.round((note/50)*100);
-            var color = pct>=70?'var(--green)':pct>=50?'var(--yellow)':'var(--red)';
-            var emoji = pct>=70?'🟢':pct>=50?'🟡':'🔴';
-            return `<div style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-                <div style="flex:1">
-                    <div style="font-size:12px;color:var(--muted);font-weight:600">${formatDate(h.timestamp)}</div>
-                    <div style="font-size:15px;font-weight:700;margin:3px 0">${h.type||'Concours Blanc Bonogo'}</div>
-                    <div style="font-size:13px;color:var(--muted)">${emoji} ${h.bonnes||0} bonnes · ⚠️ ${h.partielles||0} partielles · ❌ ${h.fausses||0} fausses</div>
-                    <div style="font-size:12px;color:var(--purple);font-weight:700;margin-top:4px">+${h.xp||0} XP gagné</div>
-                </div>
-                <div style="text-align:right">
-                    <div style="font-size:26px;font-weight:900;color:${color}">${note}/50</div>
-                    <div style="font-size:12px;color:var(--muted);font-weight:700">${pct}%</div>
-                </div>
-            </div>`;
-        }).join('');
+    if (histo.length === 0) {
+        box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">'
+            + '<div style="font-size:60px;margin-bottom:15px">📋</div>'
+            + '<div style="font-size:16px;font-weight:700">Aucun concours passe</div>'
+            + '<div style="font-size:14px;margin-top:8px">Lance ton premier concours !</div>'
+            + '</div>';
+        return;
+    }
 
-    overlay.innerHTML = `
-        <div style="max-width:600px;margin:0 auto">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border)">
-                <button onclick="this.closest('div[style]').remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;min-height:auto;width:auto;margin:0">←</button>
-                <h2 style="margin:0">📋 Mon Historique</h2>
-            </div>
-            ${contenu}
-        </div>`;
-    document.body.appendChild(overlay);
+    var scores = histo.map(function(h) { return parseFloat(h.score) || 0; });
+    var moy = (scores.reduce(function(a, b) { return a + b; }, 0) / scores.length).toFixed(1);
+    var best = Math.max.apply(null, scores);
+
+    var html = '<div class="card" style="margin-bottom:15px">'
+        + '<div style="display:flex;justify-content:space-around;text-align:center">'
+        + '<div><div style="font-size:28px;font-weight:900;color:var(--yellow)">' + histo.length + '</div><div style="font-size:12px;color:var(--muted)">Concours</div></div>'
+        + '<div><div style="font-size:28px;font-weight:900;color:var(--green)">' + moy + '/50</div><div style="font-size:12px;color:var(--muted)">Moyenne</div></div>'
+        + '<div><div style="font-size:28px;font-weight:900;color:var(--blue)">' + best + '/50</div><div style="font-size:12px;color:var(--muted)">Meilleur</div></div>'
+        + '</div></div>';
+
+    histo.forEach(function(h) {
+        var note = parseFloat(h.score);
+        var pct = Math.round((note / 50) * 100);
+        var color = pct >= 70 ? 'var(--green)' : pct >= 50 ? 'var(--yellow)' : 'var(--red)';
+        var emoji = pct >= 70 ? '🟢' : pct >= 50 ? '🟡' : '🔴';
+        var sorties = h.sorties || 0;
+        html += '<div style="background:var(--card);border:2px solid var(--border);border-left:4px solid ' + color + ';border-radius:14px;padding:15px;margin-bottom:10px">'
+            + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+            + '<div style="flex:1">'
+            + '<div style="font-size:12px;color:var(--muted);font-weight:600">' + formatDate(h.timestamp) + '</div>'
+            + '<div style="font-size:15px;font-weight:700;margin:4px 0">' + (h.type || 'Concours Blanc Bonogo') + '</div>'
+            + '<div style="font-size:13px;color:var(--muted)">' + emoji + ' ' + (h.bonnes || 0) + ' bonnes · ' + (h.partielles || 0) + ' partielles · ' + (h.fausses || 0) + ' fausses</div>'
+            + (sorties > 0 ? '<div style="font-size:12px;color:var(--orange);margin-top:4px">⚠️ ' + sorties + ' sortie(s)' + (h.bloque ? ' - Bloque' : '') + '</div>' : '')
+            + '<div style="font-size:12px;color:var(--purple);font-weight:700;margin-top:4px">+' + (h.xp || 0) + ' XP</div>'
+            + '</div>'
+            + '<div style="text-align:right;margin-left:10px">'
+            + '<div style="font-size:28px;font-weight:900;color:' + color + '">' + note + '/50</div>'
+            + '<div style="font-size:13px;color:var(--muted);font-weight:700">' + pct + '%</div>'
+            + '</div></div></div>';
+    });
+
+    box.innerHTML = html;
 }
 
 // === STATS ===
 async function afficherStats() {
-    son('click');
+    var overlay = creerOverlay('Mes Statistiques', 'contenuStats');
     var snap = await db.ref('users/' + user).once('value');
     var d = snap.val() || {};
     var histo = d.historique || [];
     if (!Array.isArray(histo)) histo = Object.values(histo);
 
-    var total  = histo.length;
-    var scores = histo.map(h => parseFloat(h.score)||0);
-    var moy    = total>0?(scores.reduce((a,b)=>a+b,0)/total).toFixed(1):0;
-    var best   = total>0?Math.max(...scores):0;
-    var worst  = total>0?Math.min(...scores):0;
-    var reussis= scores.filter(s=>s>=25).length;
-    var taux   = total>0?Math.round((reussis/total)*100):0;
-    var xpActuel = d.xp||0;
-    var xpCourant = xpActuel%100;
+    var total = histo.length;
+    var scores = histo.map(function(h) { return parseFloat(h.score) || 0; });
+    var moy = total > 0 ? (scores.reduce(function(a,b){return a+b;},0)/total).toFixed(1) : 0;
+    var best = total > 0 ? Math.max.apply(null, scores) : 0;
+    var worst = total > 0 ? Math.min.apply(null, scores) : 0;
+    var reussis = scores.filter(function(s){return s>=25;}).length;
+    var taux = total > 0 ? Math.round((reussis/total)*100) : 0;
+    var xpActuel = d.xp || 0;
+    var xpCourant = xpActuel % 100;
     var pctNiv = Math.min(100, xpCourant);
-    var niveauActuel = d.niveau||1;
+    var niveauActuel = d.niveau || 1;
+    var totalSorties = histo.reduce(function(a,h){return a+(h.sorties||0);},0);
 
-    var graphe = total>1 ? `
-        <div class="card">
-            <h2 style="margin-bottom:15px">📈 Évolution (10 derniers)</h2>
-            <div style="display:flex;align-items:flex-end;gap:4px;height:100px;padding:15px 0 5px">
-                ${scores.slice(-10).map(s => {
-                    var h = Math.max(8,Math.round((s/50)*100));
-                    var c = s>=35?'var(--green)':s>=25?'var(--yellow)':'var(--red)';
-                    return `<div style="flex:1;background:${c};height:${h}%;border-radius:4px 4px 0 0;position:relative;min-height:8px">
-                        <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted)">${s}</div>
-                    </div>`;
-                }).join('')}
-            </div>
-            <div style="text-align:center;font-size:13px;color:var(--muted);margin-top:8px">
-                Progression: <b style="color:${scores[scores.length-1]>=scores[0]?'var(--green)':'var(--red)'}">${scores[scores.length-1]>=scores[0]?'+':''}${(scores[scores.length-1]-scores[0]).toFixed(1)} pts</b>
-            </div>
-        </div>` : '';
+    var box = overlay.querySelector('#contenuStats');
 
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px';
-    overlay.innerHTML = `
-        <div style="max-width:600px;margin:0 auto">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border)">
-                <button onclick="this.closest('div[style]').remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;min-height:auto;width:auto;margin:0">←</button>
-                <h2 style="margin:0">📊 Mes Statistiques</h2>
-            </div>
-            <div class="card">
-                <h2 style="margin-bottom:15px">⚡ Niveau & XP</h2>
-                <div style="text-align:center;margin-bottom:10px">
-                    <span style="font-size:42px;font-weight:900;color:var(--yellow)">Niv. ${niveauActuel}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600">
-                    <span>${xpCourant}/100 XP</span><span>→ Niv. ${niveauActuel+1}</span>
-                </div>
-                <div style="background:var(--border);border-radius:10px;height:12px;margin:8px 0 4px;overflow:hidden">
-                    <div style="height:100%;background:linear-gradient(90deg,var(--yellow),var(--orange));border-radius:10px;width:${pctNiv}%;transition:width .6s ease"></div>
-                </div>
-                <div style="text-align:center;font-size:13px;color:var(--muted);font-weight:600">${pctNiv}% vers niveau suivant · Total: ${xpActuel} XP</div>
-            </div>
-            <div class="card">
-                <h2 style="margin-bottom:15px">🎯 Performances</h2>
-                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
-                    <div style="background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:18px;text-align:center">
-                        <span style="font-size:28px;font-weight:900;color:var(--yellow);display:block;margin-bottom:4px">${total}</span>
-                        <span style="font-size:12px;color:var(--muted);font-weight:600">Concours passés</span>
-                    </div>
-                    <div style="background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:18px;text-align:center">
-                        <span style="font-size:28px;font-weight:900;color:var(--yellow);display:block;margin-bottom:4px">${moy}/50</span>
-                        <span style="font-size:12px;color:var(--muted);font-weight:600">Score moyen</span>
-                    </div>
-                    <div style="background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:18px;text-align:center">
-                        <span style="font-size:28px;font-weight:900;color:var(--yellow);display:block;margin-bottom:4px">${best}/50</span>
-                        <span style="font-size:12px;color:var(--muted);font-weight:600">Meilleur score</span>
-                    </div>
-                    <div style="background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:18px;text-align:center">
-                        <span style="font-size:28px;font-weight:900;color:var(--yellow);display:block;margin-bottom:4px">${taux}%</span>
-                        <span style="font-size:12px;color:var(--muted);font-weight:600">Taux réussite</span>
-                    </div>
-                    <div style="background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:18px;text-align:center">
-                        <span style="font-size:28px;font-weight:900;color:var(--yellow);display:block;margin-bottom:4px">${worst}/50</span>
-                        <span style="font-size:12px;color:var(--muted);font-weight:600">Score le plus bas</span>
-                    </div>
-                    <div style="background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:18px;text-align:center">
-                        <span style="font-size:28px;font-weight:900;color:var(--yellow);display:block;margin-bottom:4px">${d.streak||0}🔥</span>
-                        <span style="font-size:12px;color:var(--muted);font-weight:600">Jours consécutifs</span>
-                    </div>
-                </div>
-            </div>
-            ${graphe}
-            <div class="card">
-                <h2 style="margin-bottom:15px">🗓️ Activité</h2>
-                <div style="background:var(--bg);border-radius:12px;padding:14px;display:flex;justify-content:space-between;margin-bottom:8px">
-                    <span style="font-weight:600">Membre depuis</span>
-                    <span style="color:var(--yellow);font-weight:700">${d.dateInscription?new Date(d.dateInscription).toLocaleDateString('fr-FR'):'N/A'}</span>
-                </div>
-                <div style="background:var(--bg);border-radius:12px;padding:14px;display:flex;justify-content:space-between;margin-bottom:8px">
-                    <span style="font-weight:600">Total XP</span>
-                    <span style="color:var(--purple);font-weight:700">${xpActuel} XP</span>
-                </div>
-                <div style="background:var(--bg);border-radius:12px;padding:14px;display:flex;justify-content:space-between">
-                    <span style="font-weight:600">Dernière connexion</span>
-                    <span style="color:var(--green);font-weight:700">${d.dernierJour?new Date(d.dernierJour).toLocaleDateString('fr-FR'):'N/A'}</span>
-                </div>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
+    var html = '<div class="card">'
+        + '<h2 style="margin-bottom:15px">Niveau et XP</h2>'
+        + '<div style="text-align:center;margin-bottom:15px"><span style="font-size:48px;font-weight:900;color:var(--yellow)">Niv.' + niveauActuel + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600"><span>' + xpCourant + '/100 XP</span><span>Niv.' + (niveauActuel+1) + '</span></div>'
+        + '<div style="background:var(--border);border-radius:10px;height:14px;margin:8px 0;overflow:hidden">'
+        + '<div style="height:100%;background:linear-gradient(90deg,var(--yellow),var(--orange));border-radius:10px;width:' + pctNiv + '%"></div>'
+        + '</div>'
+        + '<div style="text-align:center;font-size:13px;color:var(--muted)">Total: ' + xpActuel + ' XP</div>'
+        + '</div>'
+        + '<div class="card">'
+        + '<h2 style="margin-bottom:15px">Performances</h2>'
+        + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">';
+
+    var stats = [
+        ['🏆', total, 'Concours passes'],
+        ['📊', moy + '/50', 'Score moyen'],
+        ['🌟', best + '/50', 'Meilleur score'],
+        ['📉', worst + '/50', 'Score le plus bas'],
+        ['✅', taux + '%', 'Taux de reussite'],
+        ['🔥', (d.streak||0) + 'j', 'Jours consecutifs'],
+        ['⚠️', totalSorties, 'Sorties detectees'],
+        ['💰', xpActuel + ' XP', 'XP total']
+    ];
+
+    stats.forEach(function(s) {
+        html += '<div style="background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:15px;text-align:center">'
+            + '<div style="font-size:22px;margin-bottom:4px">' + s[0] + '</div>'
+            + '<div style="font-size:22px;font-weight:900;color:var(--yellow);margin-bottom:4px">' + s[1] + '</div>'
+            + '<div style="font-size:11px;color:var(--muted);font-weight:600">' + s[2] + '</div>'
+            + '</div>';
+    });
+
+    html += '</div></div>';
+    box.innerHTML = html;
 }
 
-// === FIN PARTIE 3/8 ===// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 4/8 : ADMIN PANEL + CONFIG + QUESTIONS
+// === CLASSEMENT MENU ===
+async function afficherClassementMenu() {
+    var overlay = creerOverlay('Classement', 'contenuClassement');
+    var box = overlay.querySelector('#contenuClassement');
+
+    box.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:15px">'
+        + '<button id="tabConcours" onclick="switchTabClass(\'concours\')" style="flex:1;padding:12px;border-radius:10px;background:var(--yellow);color:var(--bg);border:2px solid var(--yellow);font-size:13px;font-weight:700;min-height:auto;margin:0">Ce Concours</button>'
+        + '<button id="tabTop10" onclick="switchTabClass(\'top10\')" style="flex:1;padding:12px;border-radius:10px;background:var(--bg);color:var(--muted);border:2px solid var(--border);font-size:13px;font-weight:700;min-height:auto;margin:0">Top 10 Permanent</button>'
+        + '</div>'
+        + '<div id="classConcours"></div>'
+        + '<div id="classTop10" style="display:none"></div>';
+
+    chargerClassConcours();
+    chargerClassTop10();
+}
+
+window.switchTabClass = function(tab) {
+    son('click');
+    var tabC = document.getElementById('tabConcours');
+    var tabT = document.getElementById('tabTop10');
+    var divC = document.getElementById('classConcours');
+    var divT = document.getElementById('classTop10');
+    if (!tabC || !tabT) return;
+
+    if (tab === 'concours') {
+        tabC.style.background='var(--yellow)'; tabC.style.color='var(--bg)'; tabC.style.borderColor='var(--yellow)';
+        tabT.style.background='var(--bg)'; tabT.style.color='var(--muted)'; tabT.style.borderColor='var(--border)';
+        divC.style.display='block'; divT.style.display='none';
+    } else {
+        tabT.style.background='var(--yellow)'; tabT.style.color='var(--bg)'; tabT.style.borderColor='var(--yellow)';
+        tabC.style.background='var(--bg)'; tabC.style.color='var(--muted)'; tabC.style.borderColor='var(--border)';
+        divT.style.display='block'; divC.style.display='none';
+    }
+};
+
+async function chargerClassConcours() {
+    var snap = await db.ref('resultats').orderByChild('score').limitToLast(50).once('value');
+    var results = [];
+    snap.forEach(function(child) { results.push(Object.assign({key:child.key}, child.val())); });
+    results.sort(function(a,b) { return b.score-a.score || a.timestamp-b.timestamp; });
+
+    var snapAll = await db.ref('users').once('value');
+    var total = snapAll.numChildren();
+    var monIdx = results.findIndex(function(r) { return r.key===user; });
+    var divC = document.getElementById('classConcours');
+    if (!divC) return;
+
+    var html = '';
+    if (monIdx >= 0) {
+        html += '<div style="background:linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1));border:2px solid var(--yellow);border-radius:14px;padding:15px;margin-bottom:15px;text-align:center">'
+            + '<div style="font-size:13px;color:var(--muted);margin-bottom:5px">Ma position</div>'
+            + '<div style="font-size:40px;font-weight:900;color:var(--yellow)">#' + (monIdx+1) + '</div>'
+            + '<div style="font-size:13px;color:var(--muted)">sur ' + total + ' candidats · ' + results[monIdx].score + '/50 pts</div>'
+            + '</div>';
+    }
+
+    if (results.length === 0) {
+        divC.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)"><div style="font-size:50px">🏆</div><p>Aucun resultat</p></div>';
+        return;
+    }
+
+    results.forEach(function(r, i) { html += ligneClassement(r, i); });
+    divC.innerHTML = html;
+    setTimeout(function() {
+        divC.querySelectorAll('.cl-item').forEach(function(el) {
+            el.style.opacity='1'; el.style.transform='translateX(0)';
+        });
+    }, 100);
+}
+
+async function chargerClassTop10() {
+    var snap = await db.ref('top10Permanent').orderByChild('score').limitToLast(10).once('value');
+    var results = [];
+    snap.forEach(function(child) { results.push(Object.assign({key:child.key}, child.val())); });
+    results.sort(function(a,b) { return b.score-a.score; });
+
+    var divT = document.getElementById('classTop10');
+    if (!divT) return;
+
+    if (results.length === 0) {
+        divT.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)"><div style="font-size:50px">🌟</div><p>Top 10 vide pour le moment</p></div>';
+        return;
+    }
+
+    var html = '<div class="card" style="margin-bottom:15px;text-align:center"><div style="font-size:13px;color:var(--muted)">Hall of Fame - Meilleurs scores historiques</div></div>';
+    results.forEach(function(r, i) { html += ligneClassement(r, i, true); });
+    divT.innerHTML = html;
+    setTimeout(function() {
+        divT.querySelectorAll('.cl-item').forEach(function(el) {
+            el.style.opacity='1'; el.style.transform='translateX(0)';
+        });
+    }, 100);
+}
+
+function ligneClassement(r, i, isTop10) {
+    var isMe = r.key===user || r.pseudo===user;
+    var med = i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+    var pct = Math.round((r.score/50)*100);
+    var nomAffiche = (r.prenom && r.nom) ? r.prenom+' '+r.nom : (r.pseudo || 'Candidat');
+    var dateAffiche = (isTop10 && r.date) ? ' · '+r.date : '';
+    return '<div class="cl-item" style="display:flex;align-items:center;background:'
+        + (isMe?'linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1))':'var(--card)')
+        + ';padding:14px 15px;border-radius:12px;margin-bottom:8px;border:2px solid '
+        + (isMe?'var(--yellow)':'var(--border)')
+        + ';opacity:0;transform:translateX(-20px);transition:all 0.3s ease ' + (i*0.05) + 's">'
+        + '<span style="font-size:22px;font-weight:900;color:var(--yellow);min-width:45px;text-align:center">' + med + '</span>'
+        + '<div style="flex:1;margin:0 10px">'
+        + '<div style="font-size:15px;font-weight:700">' + nomAffiche + (isMe?' <span style="color:var(--yellow);font-size:11px">Moi</span>':'') + '</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + pct + '% · ' + (r.bonnes||0) + ' bonnes ' + (r.partielles||0) + ' partielles ' + (r.fausses||0) + ' fausses' + dateAffiche + '</div>'
+        + '</div>'
+        + '<div style="text-align:right">'
+        + '<div style="font-size:20px;font-weight:900;color:' + (isMe?'var(--yellow)':'var(--green)') + '">' + r.score + '/50</div>'
+        + '</div></div>';
+}
+
+// === FIN PARTIE 3/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 4/9 : ADMIN PANEL + CONFIG + QUESTIONS
 // ============================================
 
 // === ADMIN PANEL ===
 async function loadAdmin() {
-    status.textContent = '🟢 Connecté Firebase';
+    status.textContent = 'Connecte Firebase';
 
-    db.ref('users').on('value', snap => {
+    db.ref('users').on('value', function(snap) {
         statCandidats.textContent = snap.numChildren();
     });
 
-    db.ref('resultats').on('value', snap => {
+    db.ref('resultats').on('value', function(snap) {
         statConcours.textContent = snap.numChildren();
         var total = 0, count = 0;
-        snap.forEach(child => {
-            total += parseFloat(child.val().score||0);
+        snap.forEach(function(child) {
+            total += parseFloat(child.val().score || 0);
             count++;
         });
-        statMoy.textContent = count>0?(total/count).toFixed(1):0;
+        statMoy.textContent = count > 0 ? (total/count).toFixed(1) : 0;
     });
 
-    db.ref('configConcours').on('value', snap => {
+    db.ref('configConcours').on('value', function(snap) {
         var cfg = snap.val();
         if (cfg) {
-            typeConcours.value = cfg.type||'Concours Blanc Bonogo';
-            hDebut.value = cfg.heureDebut||'08:00';
-            hFin.value   = cfg.heureFin||'09:30';
+            typeConcours.value = cfg.type || 'Concours Blanc Bonogo';
+            hDebut.value = cfg.heureDebut || '08:00';
+            hFin.value   = cfg.heureFin   || '09:30';
         }
     });
 
-    db.ref('sujetActuel').on('value', snap => {
-        sujetActuel = snap.val()||[];
+    db.ref('sujetActuel').on('value', function(snap) {
+        sujetActuel = snap.val() || [];
         afficherQuestionsAdmin();
     });
 
-    db.ref('users').on('value', snap => {
+    db.ref('users').on('value', function(snap) {
         var html = '';
-        snap.forEach(child => {
+        snap.forEach(function(child) {
             var u = child.val();
             var date = new Date(u.dernierJour).toLocaleDateString('fr-FR');
-            html += `<div class="eleve-item">
-                <strong>${u.prenom} ${u.nom}</strong><br>
-                ${u.email}<br>
-                Niveau ${u.niveau} · ${u.xp} XP · Moy: ${u.moyenne}/50<br>
-                🔥 ${u.streak}j · ${u.concoursFaits} concours · Vu: ${date}
-            </div>`;
+            html += '<div class="eleve-item">'
+                + '<strong>' + u.prenom + ' ' + u.nom + '</strong><br>'
+                + u.email + '<br>'
+                + 'Niveau ' + u.niveau + ' · ' + u.xp + ' XP · Moy: ' + u.moyenne + '/50<br>'
+                + u.streak + 'j · ' + u.concoursFaits + ' concours · Vu: ' + date
+                + '</div>';
         });
-        listeCandidats.innerHTML = html||'<p style="text-align:center;color:var(--muted)">Aucun candidat</p>';
+        listeCandidats.innerHTML = html || '<p style="text-align:center;color:var(--muted)">Aucun candidat</p>';
     });
 
-    db.ref('resultats').orderByChild('score').limitToLast(10).on('value', snap => {
+    // Top 10 admin
+    db.ref('resultats').orderByChild('score').limitToLast(10).on('value', function(snap) {
         var results = [];
-        snap.forEach(child => results.push(child.val()));
-        results.sort((a,b) => b.score - a.score);
-        top10.innerHTML = results.map((r,i) => {
+        snap.forEach(function(child) { results.push(child.val()); });
+        results.sort(function(a,b) { return b.score - a.score; });
+        top10.innerHTML = results.map(function(r, i) {
             var med = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
-            return `<div class="classement-item">
-                <span class="rang">${med}</span>
-                <span class="nom">${r.prenom} ${r.nom}</span>
-                <span class="score">${r.score}/50</span>
-            </div>`;
-        }).join('')||'<p style="text-align:center;color:var(--muted)">Aucun résultat</p>';
+            var nom = (r.prenom && r.nom) ? r.prenom+' '+r.nom : (r.pseudo||'Candidat');
+            return '<div class="classement-item">'
+                + '<span class="rang">' + med + '</span>'
+                + '<span class="nom">' + nom + '</span>'
+                + '<span class="score">' + r.score + '/50</span>'
+                + '</div>';
+        }).join('') || '<p style="text-align:center;color:var(--muted)">Aucun resultat</p>';
+    });
+
+    // Top 10 permanent
+    db.ref('top10Permanent').orderByChild('score').limitToLast(10).on('value', function(snap) {
+        var results = [];
+        snap.forEach(function(child) { results.push(child.val()); });
+        results.sort(function(a,b) { return b.score - a.score; });
+        var top10PermanentEl = document.getElementById('top10Permanent');
+        if (!top10PermanentEl) return;
+        top10PermanentEl.innerHTML = results.map(function(r, i) {
+            var med = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+            var nom = (r.prenom && r.nom) ? r.prenom+' '+r.nom : (r.pseudo||'Candidat');
+            return '<div class="classement-item">'
+                + '<span class="rang">' + med + '</span>'
+                + '<span class="nom">' + nom + ' <small style="color:var(--muted)">' + (r.date||'') + '</small></span>'
+                + '<span class="score">' + r.score + '/50</span>'
+                + '</div>';
+        }).join('') || '<p style="text-align:center;color:var(--muted)">Aucune entree</p>';
     });
 }
 
@@ -733,145 +962,142 @@ async function loadAdmin() {
 btnSaveConfig.onclick = async function() {
     son('click');
     var type = typeConcours.value;
-    var debut = hDebut.value, fin = hFin.value;
-    if (!debut||!fin) { toast('Remplis les heures','error'); return; }
+    var debut = hDebut.value;
+    var fin = hFin.value;
+    if (!debut || !fin) { toast('Remplis les heures', 'error'); return; }
 
     var today = new Date();
-    var dP = debut.split(':'), fP = fin.split(':');
-    var dDate = new Date(today.getFullYear(),today.getMonth(),today.getDate(),+dP[0],+dP[1]);
-    var fDate = new Date(today.getFullYear(),today.getMonth(),today.getDate(),+fP[0],+fP[1]);
-    if (fDate<=dDate) { toast('Heure fin après début','error'); return; }
+    var dP = debut.split(':');
+    var fP = fin.split(':');
+    var dDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), +dP[0], +dP[1]);
+    var fDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), +fP[0], +fP[1]);
+    if (fDate <= dDate) { toast('Heure fin apres debut', 'error'); return; }
 
     await db.ref('configConcours').set({
-        type, heureDebut:debut, heureFin:fin,
-        debutTimestamp:dDate.getTime(),
-        finTimestamp:fDate.getTime()
+        type: type,
+        heureDebut: debut,
+        heureFin: fin,
+        debutTimestamp: dDate.getTime(),
+        finTimestamp: fDate.getTime()
     });
-    toast('✅ Config sauvegardée!','success');
+    toast('Config sauvegardee!', 'success');
+    son('success');
 };
 
-// === IMPORT 50 QUESTIONS (MULTI-FORMAT) ===
+// === IMPORT 50 QUESTIONS MULTI-FORMAT ===
 btnCharger50.onclick = function() {
     son('click');
     try {
         var qs = JSON.parse(collerJSON.value);
         if (!Array.isArray(qs)) {
-            toast('Format invalide : tableau JSON requis','error');
+            toast('Format invalide : tableau JSON requis', 'error');
             return;
         }
         if (qs.length !== 50) {
-            toast('Il faut exactement 50 questions. Tu as '+qs.length,'warning');
+            toast('Il faut exactement 50 questions. Tu as ' + qs.length, 'warning');
             return;
         }
 
-        // Convertir automatiquement selon le format détecté
         sujetActuel = qs.map(function(q) {
-
-            // Format 1 : déjà au bon format {texte, reponses:[]}
+            // Format 1 : deja bon {texte, reponses:[]}
             if (q.texte && q.reponses && Array.isArray(q.reponses)) {
                 return q;
             }
-
-            // Format 2 : ton format {question, options:[], reponse}
+            // Format 2 : {question, options:[], reponse}
             if (q.question && q.options && q.reponse) {
                 return {
                     texte: q.question,
                     reponses: q.options.map(function(opt) {
-                        return {
-                            texte: opt,
-                            correct: opt === q.reponse
-                        };
+                        return { texte: opt, correct: opt === q.reponse };
                     })
                 };
             }
-
             // Format 3 : {text, choices:[], answer}
             if (q.text && q.choices && q.answer) {
                 return {
                     texte: q.text,
                     reponses: q.choices.map(function(opt) {
-                        return {
-                            texte: opt,
-                            correct: opt === q.answer
-                        };
+                        return { texte: opt, correct: opt === q.answer };
                     })
                 };
             }
-
             // Format 4 : {enonce, propositions:[], bonne_reponse}
             if (q.enonce && q.propositions && q.bonne_reponse) {
                 return {
                     texte: q.enonce,
                     reponses: q.propositions.map(function(opt) {
-                        return {
-                            texte: opt,
-                            correct: opt === q.bonne_reponse
-                        };
+                        return { texte: opt, correct: opt === q.bonne_reponse };
                     })
                 };
             }
-
             return q;
         });
 
         afficherQuestionsAdmin();
         collerJSON.value = '';
         btnEnvoyer50.style.display = 'block';
-        toast('✅ 50 questions chargées et converties!','success');
+        toast('50 questions chargees et converties!', 'success');
+        son('success');
 
     } catch(e) {
-        toast('Erreur JSON : '+e.message,'error');
+        toast('Erreur JSON : ' + e.message, 'error');
+        son('error');
     }
 };
 
 btnEnvoyer50.onclick = async function() {
     son('click');
-    if (!confirm('Envoyer les 50 questions aux élèves maintenant?')) return;
+    if (!confirm('Envoyer les 50 questions aux eleves maintenant?')) return;
     await db.ref('sujetActuel').set(sujetActuel);
     btnEnvoyer50.style.display = 'none';
-    toast('🚀 50 QUESTIONS ENVOYÉES AUX ÉLÈVES!','success');
+    toast('50 QUESTIONS ENVOYEES AUX ELEVES!', 'success');
+    son('success');
 };
 
 // === AFFICHER QUESTIONS ADMIN ===
 function afficherQuestionsAdmin() {
     listeQuestions.innerHTML = '';
-    sujetActuel.forEach((q, idx) => {
+    sujetActuel.forEach(function(q, idx) {
         var div = document.createElement('div');
         div.className = 'question-edit';
-        div.innerHTML = `
-            <strong>Question ${idx+1}</strong>
-            <textarea placeholder="Énoncé" data-idx="${idx}">${q.texte||''}</textarea>
-            ${[0,1,2,3].map(ri=>`
-            <div class="reponse-edit">
-                <input type="checkbox" ${q.reponses[ri]?.correct?'checked':''} data-q="${idx}" data-r="${ri}">
-                <input type="text" placeholder="Réponse ${'ABCD'[ri]}" value="${q.reponses[ri]?.texte||''}" data-q="${idx}" data-r="${ri}">
-            </div>`).join('')}
-            <button class="btn-del" onclick="supprimerQuestion(${idx})">🗑️ Supprimer</button>`;
+        var html = '<strong>Question ' + (idx+1) + '</strong>'
+            + '<textarea placeholder="Enonce" data-idx="' + idx + '">' + (q.texte||'') + '</textarea>';
+        for (var ri = 0; ri < 4; ri++) {
+            var rep = q.reponses && q.reponses[ri] ? q.reponses[ri] : {};
+            html += '<div class="reponse-edit">'
+                + '<input type="checkbox" ' + (rep.correct ? 'checked' : '') + ' data-q="' + idx + '" data-r="' + ri + '">'
+                + '<input type="text" placeholder="Reponse ' + 'ABCD'[ri] + '" value="' + (rep.texte||'') + '" data-q="' + idx + '" data-r="' + ri + '">'
+                + '</div>';
+        }
+        html += '<button class="btn-del" onclick="supprimerQuestion(' + idx + ')">Supprimer</button>';
+        div.innerHTML = html;
         listeQuestions.appendChild(div);
     });
 
-    document.querySelectorAll('.question-edit textarea').forEach(ta => {
+    document.querySelectorAll('.question-edit textarea').forEach(function(ta) {
         ta.oninput = function() {
             var i = parseInt(this.dataset.idx);
-            if (!sujetActuel[i]) sujetActuel[i]={texte:'',reponses:[{},{},{},{}]};
+            if (!sujetActuel[i]) sujetActuel[i] = { texte:'', reponses:[{},{},{},{}] };
             sujetActuel[i].texte = this.value;
         };
     });
 
-    document.querySelectorAll('.reponse-edit input[type="text"]').forEach(inp => {
+    document.querySelectorAll('.reponse-edit input[type="text"]').forEach(function(inp) {
         inp.oninput = function() {
-            var q=parseInt(this.dataset.q), r=parseInt(this.dataset.r);
-            if (!sujetActuel[q]) sujetActuel[q]={texte:'',reponses:[{},{},{},{}]};
-            if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r]={};
+            var q = parseInt(this.dataset.q);
+            var r = parseInt(this.dataset.r);
+            if (!sujetActuel[q]) sujetActuel[q] = { texte:'', reponses:[{},{},{},{}] };
+            if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r] = {};
             sujetActuel[q].reponses[r].texte = this.value;
         };
     });
 
-    document.querySelectorAll('.reponse-edit input[type="checkbox"]').forEach(cb => {
+    document.querySelectorAll('.reponse-edit input[type="checkbox"]').forEach(function(cb) {
         cb.onchange = function() {
-            var q=parseInt(this.dataset.q), r=parseInt(this.dataset.r);
-            if (!sujetActuel[q]) sujetActuel[q]={texte:'',reponses:[{},{},{},{}]};
-            if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r]={};
+            var q = parseInt(this.dataset.q);
+            var r = parseInt(this.dataset.r);
+            if (!sujetActuel[q]) sujetActuel[q] = { texte:'', reponses:[{},{},{},{}] };
+            if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r] = {};
             sujetActuel[q].reponses[r].correct = this.checked;
         };
     });
@@ -880,165 +1106,372 @@ function afficherQuestionsAdmin() {
 function supprimerQuestion(idx) {
     son('click');
     if (confirm('Supprimer cette question?')) {
-        sujetActuel.splice(idx,1);
+        sujetActuel.splice(idx, 1);
         afficherQuestionsAdmin();
     }
 }
 
 btnAjouterQ.onclick = function() {
     son('click');
-    if (sujetActuel.length>=50) { toast('Maximum 50 questions','warning'); return; }
-    sujetActuel.push({texte:'',reponses:[
-        {texte:'',correct:false},{texte:'',correct:false},
-        {texte:'',correct:false},{texte:'',correct:false}
-    ]});
+    if (sujetActuel.length >= 50) { toast('Maximum 50 questions', 'warning'); return; }
+    sujetActuel.push({
+        texte: '',
+        reponses: [
+            {texte:'',correct:false},
+            {texte:'',correct:false},
+            {texte:'',correct:false},
+            {texte:'',correct:false}
+        ]
+    });
     afficherQuestionsAdmin();
 };
 
 btnSaveSujet.onclick = async function() {
     son('click');
-    var invalide = sujetActuel.some(q =>
-        !q.texte || q.reponses.filter(r=>r.texte).length<2 || !q.reponses.some(r=>r.correct)
-    );
-    if (invalide) { toast('Chaque question: énoncé + 2 réponses + 1 correcte minimum','error'); return; }
+    var invalide = sujetActuel.some(function(q) {
+        return !q.texte
+            || q.reponses.filter(function(r){return r.texte;}).length < 2
+            || !q.reponses.some(function(r){return r.correct;});
+    });
+    if (invalide) {
+        toast('Chaque question: enonce + 2 reponses + 1 correcte minimum', 'error');
+        return;
+    }
     await db.ref('sujetActuel').set(sujetActuel);
-    toast('✅ Sujet sauvegardé!','success');
+    toast('Sujet sauvegarde!', 'success');
+    son('success');
 };
 
-// === FIN PARTIE 4/8 ===// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 5/8 : LANCER CONCOURS + SALLE ATTENTE + TIMER
+// === NOUVEAU CONCOURS ADMIN ===
+var btnNouveauConcours = document.getElementById('btnNouveauConcours');
+if (btnNouveauConcours) {
+    btnNouveauConcours.onclick = function() {
+        son('click');
+        modalTitre.textContent = 'Nouveau Concours';
+        modalTexte.textContent = 'Cela va supprimer TOUS les resultats du classement actuel.\nLes eleves pourront repasser le nouveau concours.\nLe Top 10 permanent sera conserve.\n\nContinuer?';
+        modal.style.display = 'flex';
+
+        btnConfirmer.onclick = async function() {
+            modal.style.display = 'none';
+            await db.ref('resultats').remove();
+            await db.ref('sessions').remove();
+            toast('Resultats reinitialises! Nouveau concours pret.', 'success');
+            son('success');
+        };
+        btnAnnuler.onclick = function() {
+            modal.style.display = 'none';
+        };
+    };
+}
+
+// === FIN PARTIE 4/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 5/9 : LANCER CONCOURS + SALLE ATTENTE
+//              + TIMER + DETECTION SORTIE
 // ============================================
+
+// === DETECTION SORTIE (40 secondes) ===
+function demarrerDetectionSortie() {
+    enExamen = true;
+    derniereFocus = Date.now();
+
+    document.addEventListener('visibilitychange', gererVisibilite);
+    window.addEventListener('blur', gererBlur);
+    window.addEventListener('focus', gererFocus);
+}
+
+function stopperDetectionSortie() {
+    enExamen = false;
+    if (sortieTimeout) { clearTimeout(sortieTimeout); sortieTimeout = null; }
+    document.removeEventListener('visibilitychange', gererVisibilite);
+    window.removeEventListener('blur', gererBlur);
+    window.removeEventListener('focus', gererFocus);
+}
+
+function gererVisibilite() {
+    if (!enExamen || copieSubmise || devourBloque) return;
+    if (document.hidden) {
+        gererSortie();
+    } else {
+        gererRetour();
+    }
+}
+
+function gererBlur() {
+    if (!enExamen || copieSubmise || devourBloque) return;
+    gererSortie();
+}
+
+function gererFocus() {
+    if (!enExamen || copieSubmise || devourBloque) return;
+    gererRetour();
+}
+
+function gererSortie() {
+    if (sortieTimeout) return;
+    derniereFocus = Date.now();
+    sortieTimeout = setTimeout(function() {
+        if (!enExamen || copieSubmise) return;
+        nbSorties++;
+        son('sortie');
+
+        var restantes = MAX_SORTIES - nbSorties;
+
+        if (nbSorties >= MAX_SORTIES) {
+            // Bloquer le devoir
+            devourBloque = true;
+            stopperDetectionSortie();
+            toast('🚫 Devoir bloque! Trop de sorties. Score calcule automatiquement.', 'error');
+            son('error');
+
+            // Afficher alerte bloquage
+            afficherAlerteBloquage();
+
+            // Soumettre automatiquement après 3 secondes
+            setTimeout(function() {
+                soumettreEtAttendre(true);
+            }, 3000);
+        } else {
+            toast('⚠️ Sortie detectee! ' + restantes + ' sortie(s) restante(s) avant blocage.', 'warning');
+            son('alerte');
+
+            // Sauvegarder nb sorties dans Firebase
+            db.ref('sessions/' + user).update({ nbSorties: nbSorties });
+        }
+    }, 40000); // 40 secondes
+}
+
+function gererRetour() {
+    if (sortieTimeout) {
+        var tempsAbsent = Date.now() - derniereFocus;
+        clearTimeout(sortieTimeout);
+        sortieTimeout = null;
+
+        if (tempsAbsent > 5000 && tempsAbsent < 40000) {
+            // Retour avant 40s - avertissement leger
+            toast('👁️ Tu es de retour. Reste concentre!', 'warning');
+            son('tick');
+        }
+    }
+}
+
+function afficherAlerteBloquage() {
+    var div = document.createElement('div');
+    div.style.cssText = 'position:fixed;inset:0;background:rgba(239,68,68,0.95);z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px';
+    div.innerHTML = '<div style="background:var(--card);border-radius:20px;padding:30px;max-width:400px;width:100%;text-align:center">'
+        + '<div style="font-size:60px;margin-bottom:15px">🚫</div>'
+        + '<h2 style="color:var(--red);margin-bottom:15px">Devoir Bloque!</h2>'
+        + '<p style="color:var(--muted);margin-bottom:20px">Tu as quitte l\'examen trop de fois.<br>Ton score sera calcule sur ce que tu as fait.</p>'
+        + '<div style="font-size:32px;font-weight:900;color:var(--yellow);margin-bottom:20px">'
+        + nbSorties + ' sorties detectees'
+        + '</div>'
+        + '<p style="color:var(--muted);font-size:14px">Soumission automatique dans 3 secondes...</p>'
+        + '</div>';
+    document.body.appendChild(div);
+    setTimeout(function() { div.remove(); }, 3500);
+}
 
 // === LANCER CONCOURS ===
 btnExam.onclick = async function() {
     son('click');
+    initAudio();
+
     var configSnap = await db.ref('configConcours').once('value');
     var config = configSnap.val();
-    if (!config) { toast('Aucun concours configuré','error'); return; }
+    if (!config) { toast('Aucun concours configure', 'error'); return; }
 
+    configActuelle = config;
     var now = Date.now();
 
-    // Vérifier si déjà soumis
+    // Vérifier session en cours (reprise)
+    var sessionSnap = await db.ref('sessions/' + user).once('value');
+    var session = sessionSnap.val();
+
+    // Verifier si deja soumis pour CE concours
     var resSnap = await db.ref('resultats/' + user).once('value');
     if (resSnap.exists() && resSnap.val().timestamp >= config.debutTimestamp) {
-        // Déjà soumis — afficher page attente ou résultat
+        var r = resSnap.val();
         questionsData = (await db.ref('sujetActuel').once('value')).val() || [];
         finTimestamp = config.finTimestamp;
-        nomConcours.textContent   = '📝 ' + config.type;
+        nomConcours.textContent = config.type;
         heureConcours.textContent = 'Fin: ' + config.heureFin;
         showPage(pageExam);
         salleAttente.style.display = 'none';
-        questions.style.display   = 'none';
+        questions.style.display = 'none';
         document.querySelector('.footer').style.display = 'none';
 
         if (now < config.finTimestamp) {
-            // Heure pas encore finie = page attente
-            attente.style.display  = 'block';
+            attente.style.display = 'block';
             resultat.style.display = 'none';
             demarrerTimerAttente(config.finTimestamp);
-            // Écouter fin de l'heure
-            attendreFin(config.finTimestamp, resSnap.val());
+            attendreFin(config.finTimestamp, r);
         } else {
-            // Heure finie = afficher résultat
-            attente.style.display  = 'none';
-            var r = resSnap.val();
+            attente.style.display = 'none';
             afficherResultatFinal(r);
         }
         return;
     }
 
     var sujetSnap = await db.ref('sujetActuel').once('value');
-    if (!sujetSnap.exists() || !sujetSnap.val() || sujetSnap.val().length===0) {
-        toast('Aucun sujet disponible','error'); return;
+    if (!sujetSnap.exists() || !sujetSnap.val() || sujetSnap.val().length === 0) {
+        toast('Aucun sujet disponible', 'error'); return;
     }
 
     questionsData = sujetSnap.val();
     finTimestamp  = config.finTimestamp;
-    nomConcours.textContent   = '📝 ' + config.type;
+    nomConcours.textContent   = config.type;
     heureConcours.textContent = 'Fin: ' + config.heureFin;
-    copieSubmise = false;
-    reponsesFinales = {};
+    copieSubmise  = false;
+    devourBloque  = false;
+
+    // Reprise de session ?
+    if (session && session.concoursId === config.debutTimestamp && !session.soumis) {
+        nbSorties = session.nbSorties || 0;
+        // Restaurer reponses
+        if (session.reponses) {
+            reponsesUser = session.reponses;
+        } else {
+            reponsesUser = {};
+        }
+
+        if (now >= config.debutTimestamp && now <= config.finTimestamp) {
+            // Afficher message reprise
+            toast('↩️ Reprise de ton examen. ' + nbSorties + ' sortie(s) enregistree(s).', 'warning');
+            son('alerte');
+            salleAttente.style.display = 'none';
+            questions.style.display = 'block';
+            document.querySelector('.footer').style.display = 'flex';
+            afficherQuestionsConcours(true); // true = restaurer reponses
+            showPage(pageExam);
+            demarrerTimer();
+            demarrerDetectionSortie();
+            return;
+        }
+    } else {
+        nbSorties = 0;
+        reponsesUser = {};
+        reponsesFinales = {};
+    }
 
     // Salle d'attente
     if (now < config.debutTimestamp) {
         showPage(pageExam);
         salleAttente.style.display = 'block';
-        questions.style.display   = 'none';
+        questions.style.display = 'none';
         document.querySelector('.footer').style.display = 'none';
         heureDebutAffich.textContent = config.heureDebut;
+
+        // Créer session
+        await db.ref('sessions/' + user).set({
+            concoursId: config.debutTimestamp,
+            nbSorties: 0,
+            soumis: false,
+            reponses: {}
+        });
 
         var attenteInt = setInterval(function() {
             var reste = config.debutTimestamp - Date.now();
             if (reste <= 0) {
                 clearInterval(attenteInt);
                 salleAttente.style.display = 'none';
-                questions.style.display   = 'block';
+                questions.style.display = 'block';
                 document.querySelector('.footer').style.display = 'flex';
-                afficherQuestionsConcours();
+                afficherQuestionsConcours(false);
                 demarrerTimer();
-                toast('🚀 Le concours commence!','success');
+                demarrerDetectionSortie();
+                toast('Le concours commence!', 'success');
+                son('success');
                 return;
             }
-            var h = Math.floor(reste/3600000);
-            var m = Math.floor((reste%3600000)/60000);
-            var s = Math.floor((reste%60000)/1000);
+            var h = Math.floor(reste / 3600000);
+            var m = Math.floor((reste % 3600000) / 60000);
+            var s = Math.floor((reste % 60000) / 1000);
             timerDebut.textContent =
-                (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+                (h<10?'0':'') + h + ':' +
+                (m<10?'0':'') + m + ':' +
+                (s<10?'0':'') + s;
         }, 1000);
         return;
     }
 
-    // Concours terminé
+    // Concours termine
     if (now > config.finTimestamp) {
-        toast('Le concours est terminé','error'); return;
+        toast('Le concours est termine', 'error'); return;
     }
+
+    // Creer session
+    await db.ref('sessions/' + user).set({
+        concoursId: config.debutTimestamp,
+        nbSorties: 0,
+        soumis: false,
+        reponses: {}
+    });
 
     // Lancer direct
     salleAttente.style.display = 'none';
-    questions.style.display   = 'block';
+    questions.style.display = 'block';
     document.querySelector('.footer').style.display = 'flex';
-    afficherQuestionsConcours();
+    afficherQuestionsConcours(false);
     showPage(pageExam);
     demarrerTimer();
+    demarrerDetectionSortie();
 };
 
 // === AFFICHER QUESTIONS ===
-function afficherQuestionsConcours() {
+function afficherQuestionsConcours(restaurer) {
     questions.innerHTML = '';
-    reponsesUser = {};
     alertesTimer = {30:false, 20:false, 10:false, 5:false};
+    if (!restaurer) {
+        reponsesUser = {};
+    }
 
-    questionsData.forEach((q, idx) => {
+    questionsData.forEach(function(q, idx) {
         var div = document.createElement('div');
         div.className = 'question-block';
-        div.innerHTML = `
-            <div class="question-numero">Question ${idx+1}/${questionsData.length}</div>
-            <div class="question-texte">${q.texte}</div>
-            <div class="reponses-liste">
-                ${q.reponses.map((r,ridx) => r.texte?`
-                    <label>
-                        <input type="checkbox" data-q="${idx}" data-r="${ridx}">
-                        <span>${r.texte}</span>
-                    </label>`:''
-                ).join('')}
-            </div>`;
+        var reponsesHtml = '';
+        q.reponses.forEach(function(r, ridx) {
+            if (!r.texte) return;
+            var checked = reponsesUser[idx] && reponsesUser[idx].includes(ridx) ? 'checked' : '';
+            reponsesHtml += '<label>'
+                + '<input type="checkbox" data-q="' + idx + '" data-r="' + ridx + '" ' + checked + '>'
+                + '<span>' + r.texte + '</span>'
+                + '</label>';
+        });
+
+        div.innerHTML = '<div class="question-numero">Question ' + (idx+1) + '/' + questionsData.length + '</div>'
+            + '<div class="question-texte">' + q.texte + '</div>'
+            + '<div class="reponses-liste">' + reponsesHtml + '</div>';
         questions.appendChild(div);
     });
 
-    document.querySelectorAll('.reponses-liste input').forEach(cb => {
+    // Mettre à jour compteur
+    var count = Object.keys(reponsesUser).filter(function(k) {
+        return reponsesUser[k] && reponsesUser[k].length > 0;
+    }).length;
+    restant.textContent = count + '/' + questionsData.length;
+
+    document.querySelectorAll('.reponses-liste input').forEach(function(cb) {
         cb.onchange = function() {
-            son('click');
+            son('tick');
             var q = parseInt(this.dataset.q);
             var r = parseInt(this.dataset.r);
             if (!reponsesUser[q]) reponsesUser[q] = [];
             if (this.checked) {
                 if (!reponsesUser[q].includes(r)) reponsesUser[q].push(r);
             } else {
-                reponsesUser[q] = reponsesUser[q].filter(x => x!==r);
+                reponsesUser[q] = reponsesUser[q].filter(function(x) { return x !== r; });
             }
-            var count = Object.keys(reponsesUser).filter(k=>reponsesUser[k].length>0).length;
-            restant.textContent = count+'/'+questionsData.length;
+            var count = Object.keys(reponsesUser).filter(function(k) {
+                return reponsesUser[k] && reponsesUser[k].length > 0;
+            }).length;
+            restant.textContent = count + '/' + questionsData.length;
+
+            // Sauvegarder reponses en temps reel
+            db.ref('sessions/' + user + '/reponses').set(reponsesUser);
+
+            // Animer le bloc
+            var block = document.getElementById('qblock-' + q);
+            if (block) block.style.borderColor = 'var(--blue)';
         };
     });
 }
@@ -1052,47 +1485,55 @@ function demarrerTimer() {
     function maj() {
         var now = Date.now();
         var reste = finTimestamp - now;
+
         if (reste <= 0) {
             clearInterval(timerInt);
             timer.textContent = '00:00';
-            // Temps écoulé = soumettre automatiquement
             if (!copieSubmise) {
-                toast('⏰ Temps écoulé! Copie envoyée automatiquement','warning');
-                soumettreEtAttendre();
+                toast('Temps ecoule! Copie envoyee automatiquement.', 'warning');
+                son('alerte');
+                soumettreEtAttendre(false);
             }
             return;
         }
-        var min = Math.floor(reste/60000);
-        var sec = Math.floor((reste%60000)/1000);
-        timer.textContent = min+':'+(sec<10?'0':'')+sec;
 
-        if (min===30&&sec===0&&!alertesTimer[30]) {
+        var min = Math.floor(reste / 60000);
+        var sec = Math.floor((reste % 60000) / 1000);
+        timer.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+
+        // Alertes
+        if (min===30 && sec===0 && !alertesTimer[30]) {
             alertesTimer[30]=true;
-            toast('⚠️ Il vous reste 30 minutes','warning');
-            son('click');
+            toast('30 minutes restantes', 'warning');
+            son('alerte');
         }
-        if (min===20&&sec===0&&!alertesTimer[20]) {
+        if (min===20 && sec===0 && !alertesTimer[20]) {
             alertesTimer[20]=true;
-            toast('⚠️ Il vous reste 20 minutes','warning');
-            son('click');
+            toast('20 minutes restantes', 'warning');
+            son('alerte');
         }
-        if (min===10&&sec===0&&!alertesTimer[10]) {
+        if (min===10 && sec===0 && !alertesTimer[10]) {
             alertesTimer[10]=true;
-            toast('🔥 Il vous reste 10 minutes!','error');
+            toast('10 minutes restantes!', 'error');
             son('error');
             timer.classList.add('warning');
         }
-        if (reste<=5000&&reste>0&&!alertesTimer[5]) {
+        if (min===5 && sec===0 && !alertesTimer[5]) {
             alertesTimer[5]=true;
+            toast('5 minutes restantes!', 'error');
             son('error');
         }
-        if (min<5) timer.classList.add('warning');
+        if (reste <= 10000 && reste > 0) {
+            son('countdown');
+        }
+        if (min < 5) timer.classList.add('warning');
     }
+
     maj();
     timerInt = setInterval(maj, 1000);
 }
 
-// === TIMER ATTENTE (après soumission) ===
+// === TIMER ATTENTE ===
 function demarrerTimerAttente(finTs) {
     var intv = setInterval(function() {
         var reste = finTs - Date.now();
@@ -1101,52 +1542,55 @@ function demarrerTimerAttente(finTs) {
             if (timerAttente) timerAttente.textContent = '00:00';
             return;
         }
-        var min = Math.floor(reste/60000);
-        var sec = Math.floor((reste%60000)/1000);
-        if (timerAttente) timerAttente.textContent = min+':'+(sec<10?'0':'')+sec;
+        var min = Math.floor(reste / 60000);
+        var sec = Math.floor((reste % 60000) / 1000);
+        if (timerAttente) timerAttente.textContent = min + ':' + (sec<10?'0':'') + sec;
     }, 1000);
 }
 
-// === ATTENDRE FIN DE L'HEURE ===
-function attendreFin(finTs, resultatSauvegarde) {
+// === ATTENDRE FIN ===
+function attendreFin(finTs, resultatData) {
     var reste = finTs - Date.now();
     if (reste <= 0) {
-        afficherResultatFinal(resultatSauvegarde);
+        afficherResultatFinal(resultatData);
         return;
     }
     setTimeout(function() {
-        attente.style.display  = 'none';
-        afficherResultatFinal(resultatSauvegarde);
-        toast('🎉 L\'heure est terminée! Voici ton résultat!','success');
+        attente.style.display = 'none';
+        afficherResultatFinal(resultatData);
+        toast('Heure terminee! Voici ton resultat!', 'success');
         son('success');
     }, reste);
 }
 
-// === BOUTON NON RÉPONDU ===
+// === BOUTON NON REPONDU ===
 btnNonRep.onclick = function() {
     son('click');
     var nonRep = [];
-    for (var i=0; i<questionsData.length; i++) {
-        if (!reponsesUser[i]||reponsesUser[i].length===0) nonRep.push(i+1);
+    for (var i = 0; i < questionsData.length; i++) {
+        if (!reponsesUser[i] || reponsesUser[i].length === 0) nonRep.push(i+1);
     }
-    if (nonRep.length===0) {
-        toast('✅ Toutes les questions sont répondues','success');
+    if (nonRep.length === 0) {
+        toast('Toutes les questions sont repondues!', 'success');
+        son('success');
     } else {
-        toast('📋 Non répondues: '+nonRep.join(', '),'warning');
+        toast('Non repondues: ' + nonRep.join(', '), 'warning');
         var first = document.querySelectorAll('.question-block')[nonRep[0]-1];
-        if (first) first.scrollIntoView({behavior:'smooth',block:'center'});
+        if (first) first.scrollIntoView({behavior:'smooth', block:'center'});
     }
 };
 
-// === TERMINER CONCOURS ===
+// === TERMINER MANUELLEMENT ===
 btnFinir.onclick = function() {
     son('click');
-    var count = Object.keys(reponsesUser).filter(k=>reponsesUser[k].length>0).length;
-    var msg = `Tu as répondu à ${count}/${questionsData.length} questions.`;
-    msg += count<questionsData.length
+    var count = Object.keys(reponsesUser).filter(function(k) {
+        return reponsesUser[k] && reponsesUser[k].length > 0;
+    }).length;
+    var msg = 'Tu as repondu a ' + count + '/' + questionsData.length + ' questions.';
+    msg += count < questionsData.length
         ? '\n\nVeux-tu vraiment terminer?'
-        : "\n\nConfirmer l'envoi?";
-    msg += '\n\n⚠️ La correction sera visible à la fin de l\'heure seulement.';
+        : '\n\nConfirmer l\'envoi?';
+    msg += '\n\nLa correction sera visible a la fin de l\'heure seulement.';
 
     modalTitre.textContent = 'Terminer le concours';
     modalTexte.textContent = msg;
@@ -1154,84 +1598,117 @@ btnFinir.onclick = function() {
 
     btnConfirmer.onclick = function() {
         modal.style.display = 'none';
-        soumettreEtAttendre();
+        soumettreEtAttendre(false);
     };
     btnAnnuler.onclick = function() {
         modal.style.display = 'none';
     };
 };
 
-// === FIN PARTIE 5/8 ===// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 6/8 : SOUMETTRE + CORRIGER + BADGES + HISTORIQUE
+// === FIN PARTIE 5/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 6/9 : SOUMETTRE + CORRIGER + BADGES + HISTORIQUE
 // ============================================
 
 // === SOUMETTRE ET ATTENDRE ===
-async function soumettreEtAttendre() {
+async function soumettreEtAttendre(estBloque) {
     if (copieSubmise) return;
     copieSubmise = true;
 
     if (timerInt) clearInterval(timerInt);
+    stopperDetectionSortie();
 
-    // Sauvegarder les réponses
     reponsesFinales = JSON.parse(JSON.stringify(reponsesUser));
 
-    // Calculer score immédiatement
     var scoreTotal=0, bonnesRep=0, partiellesRep=0, faussesRep=0;
 
-    questionsData.forEach((q, idx) => {
+    questionsData.forEach(function(q, idx) {
         var repUser    = reponsesFinales[idx] || [];
         var repCorrect = [];
-        q.reponses.forEach((r,ri) => { if (r.correct) repCorrect.push(ri); });
+        q.reponses.forEach(function(r, ri) {
+            if (r.correct) repCorrect.push(ri);
+        });
 
-        if (repUser.length===0) {
+        if (repUser.length === 0) {
             faussesRep++;
         } else {
-            var nbOk  = repUser.filter(r => repCorrect.includes(r)).length;
-            var nbMau = repUser.filter(r => !repCorrect.includes(r)).length;
-            if (nbMau===0 && nbOk===repCorrect.length) { scoreTotal++; bonnesRep++; }
-            else if (nbOk>0 && nbMau===0) { scoreTotal+=0.5; partiellesRep++; }
-            else faussesRep++;
+            var nbOk  = repUser.filter(function(r) { return repCorrect.includes(r); }).length;
+            var nbMau = repUser.filter(function(r) { return !repCorrect.includes(r); }).length;
+            if (nbMau===0 && nbOk===repCorrect.length) {
+                scoreTotal++; bonnesRep++;
+            } else if (nbOk>0 && nbMau===0) {
+                scoreTotal+=0.5; partiellesRep++;
+            } else {
+                faussesRep++;
+            }
         }
     });
 
-    var xpGagné = calcXp(scoreTotal, questionsData.length);
+    var xpGagne_val = calcXp(scoreTotal, questionsData.length);
 
-    // Récupérer données user
     var snapUser = await db.ref('users/' + user).once('value');
     var dataUser = snapUser.val();
-    var configSnap = await db.ref('configConcours').once('value');
-    var config = configSnap.val() || {};
+    var config   = configActuelle || {};
 
-    var newXp            = (dataUser.xp||0) + xpGagné;
+    var newXp            = (dataUser.xp||0) + xpGagne_val;
     var newNiveau        = niveau(newXp);
     var newConcoursFaits = (dataUser.concoursFaits||0) + 1;
-    var newMoyenne       = (((parseFloat(dataUser.moyenne)||0) * (dataUser.concoursFaits||0)) + scoreTotal) / newConcoursFaits;
+    var ancienneMoyenne  = parseFloat(dataUser.moyenne) || 0;
+    var newMoyenne       = ((ancienneMoyenne * (dataUser.concoursFaits||0)) + scoreTotal) / newConcoursFaits;
 
-    // Badges
+    // === BADGES ===
     var badges = dataUser.badges || {};
-    if (newConcoursFaits===1)              badges.premier  = true;
-    if ((dataUser.streak||0)>=7)           badges.streak7  = true;
-    if (newNiveau>=10)                     badges.niveau10 = true;
-    if (scoreTotal===questionsData.length) badges.perfect  = true;
-    if ((finTimestamp-Date.now())>3600000) badges.rapide   = true;
-    if (newConcoursFaits>=5)              badges.assidu   = true;
-    if (newMoyenne>40)                     badges.elite    = true;
+    var nouveauxBadges = [];
 
-    // Historique
+    if (newConcoursFaits === 1 && !badges.premier) {
+        badges.premier = true;
+        nouveauxBadges.push({emoji:'🎯', nom:'Premier Concours'});
+    }
+    if ((dataUser.streak||0) >= 7 && !badges.streak7) {
+        badges.streak7 = true;
+        nouveauxBadges.push({emoji:'🔥', nom:'Serie 7 jours'});
+    }
+    if (newNiveau >= 10 && !badges.niveau10) {
+        badges.niveau10 = true;
+        nouveauxBadges.push({emoji:'⭐', nom:'Niveau 10'});
+    }
+    if (scoreTotal === questionsData.length && !badges.perfect) {
+        badges.perfect = true;
+        nouveauxBadges.push({emoji:'💯', nom:'Sans Faute'});
+    }
+    if ((finTimestamp - Date.now()) > 3600000 && !badges.rapide) {
+        badges.rapide = true;
+        nouveauxBadges.push({emoji:'⚡', nom:'Eclair'});
+    }
+    if (newConcoursFaits >= 5 && !badges.assidu) {
+        badges.assidu = true;
+        nouveauxBadges.push({emoji:'📅', nom:'Assidu'});
+    }
+    if (newMoyenne > 40 && !badges.elite) {
+        badges.elite = true;
+        nouveauxBadges.push({emoji:'👑', nom:'Elite'});
+    }
+    if (nbSorties === 0 && !estBloque && !badges.resistant) {
+        badges.resistant = true;
+        nouveauxBadges.push({emoji:'🛡️', nom:'Resistant'});
+    }
+
+    // === HISTORIQUE ===
     var histo = dataUser.historique || [];
     if (!Array.isArray(histo)) histo = Object.values(histo);
     histo.push({
         timestamp  : Date.now(),
         score      : scoreTotal,
-        xp         : xpGagné,
+        xp         : xpGagne_val,
         bonnes     : bonnesRep,
         partielles : partiellesRep,
         fausses    : faussesRep,
-        type       : config.type || 'Concours Blanc Bonogo'
+        type       : config.type || 'Concours Blanc Bonogo',
+        sorties    : nbSorties,
+        bloque     : estBloque || false
     });
 
-    // Sauver dans Firebase
+    // Sauvegarder dans Firebase
     await db.ref('users/' + user).update({
         xp            : newXp,
         niveau        : newNiveau,
@@ -1242,45 +1719,58 @@ async function soumettreEtAttendre() {
     });
 
     await db.ref('resultats/' + user).set({
-        key       : user,
-        pseudo    : user,
-        prenom    : dataUser.prenom,
-        nom       : dataUser.nom,
-        score     : scoreTotal,
-        xp        : xpGagné,
-        bonnes    : bonnesRep,
-        partielles: partiellesRep,
-        fausses   : faussesRep,
-        timestamp : Date.now()
+        key        : user,
+        pseudo     : user,
+        prenom     : dataUser.prenom,
+        nom        : dataUser.nom,
+        score      : scoreTotal,
+        xp         : xpGagne_val,
+        bonnes     : bonnesRep,
+        partielles : partiellesRep,
+        fausses    : faussesRep,
+        timestamp  : Date.now(),
+        sorties    : nbSorties,
+        bloque     : estBloque || false
     });
 
-    // Vérifier top 3
+    // Marquer session comme soumise
+    await db.ref('sessions/' + user).update({ soumis: true });
+
+    // Vérifier top 3 du concours
     var snapClass = await db.ref('resultats').orderByChild('score').limitToLast(3).once('value');
     var top3keys = [];
-    snapClass.forEach(c => top3keys.push(c.key));
-    if (top3keys.includes(user)) {
+    snapClass.forEach(function(c) { top3keys.push(c.key); });
+    if (top3keys.includes(user) && !badges.top3) {
         badges.top3 = true;
-        await db.ref('users/' + user + '/badges').update({ top3: true });
+        nouveauxBadges.push({emoji:'🏅', nom:'Top 3'});
     }
 
+    // Vérifier et mettre à jour Top 10 Permanent
+    await mettreAJourTop10Permanent(dataUser, scoreTotal, bonnesRep, partiellesRep, faussesRep, badges);
+
+    // Sauvegarder badges finaux
+    await db.ref('users/' + user + '/badges').set(badges);
+
     // Mettre à jour userData local
-    userData = {
-        ...dataUser,
+    userData = Object.assign({}, dataUser, {
         xp: newXp, niveau: newNiveau,
         concoursFaits: newConcoursFaits,
         moyenne: newMoyenne.toFixed(1),
-        badges, historique: histo
-    };
+        badges: badges, historique: histo
+    });
 
-    // Résultat à afficher plus tard
     var resultatData = {
-        score     : scoreTotal,
-        xp        : xpGagné,
-        bonnes    : bonnesRep,
-        partielles: partiellesRep,
-        fausses   : faussesRep,
-        newNiveau : newNiveau,
-        oldNiveau : dataUser.niveau||1
+        pseudo     : user,
+        prenom     : dataUser.prenom,
+        nom        : dataUser.nom,
+        score      : scoreTotal,
+        xp         : xpGagne_val,
+        bonnes     : bonnesRep,
+        partielles : partiellesRep,
+        fausses    : faussesRep,
+        newNiveau  : newNiveau,
+        oldNiveau  : dataUser.niveau || 1,
+        timestamp  : Date.now()
     };
 
     // Afficher page attente
@@ -1289,13 +1779,26 @@ async function soumettreEtAttendre() {
     attente.style.display  = 'block';
     resultat.style.display = 'none';
 
-    toast('✅ Copie envoyée! Résultat à la fin de l\'heure.','success');
-    son('success');
+    if (estBloque) {
+        toast('Devoir bloque soumis. Score: ' + scoreTotal + '/50', 'warning');
+    } else {
+        toast('Copie envoyee! Resultat a la fin de l\'heure.', 'success');
+        son('success');
+    }
 
-    // Démarrer timer attente
+    // Afficher badges obtenus avec animation
+    if (nouveauxBadges.length > 0) {
+        nouveauxBadges.forEach(function(b, i) {
+            setTimeout(function() {
+                afficherBadgeAnimation(b.emoji, b.nom);
+            }, i * 3000);
+        });
+    }
+
+    // Timer attente
     demarrerTimerAttente(finTimestamp);
 
-    // Attendre la fin de l'heure pour afficher résultat
+    // Attendre fin de l'heure
     var resteAvantFin = finTimestamp - Date.now();
     if (resteAvantFin <= 0) {
         attente.style.display = 'none';
@@ -1304,100 +1807,203 @@ async function soumettreEtAttendre() {
         setTimeout(function() {
             attente.style.display = 'none';
             afficherResultatFinal(resultatData);
-            toast('🎉 L\'heure est terminée! Voici ton résultat!','success');
+            toast('L\'heure est terminee! Voici ton resultat!', 'success');
             son('success');
         }, resteAvantFin);
     }
 }
 
+// === METTRE À JOUR TOP 10 PERMANENT ===
+async function mettreAJourTop10Permanent(dataUser, scoreTotal, bonnesRep, partiellesRep, faussesRep, badges) {
+    var snapTop10 = await db.ref('top10Permanent').once('value');
+    var top10Data = [];
+    snapTop10.forEach(function(child) {
+        top10Data.push(Object.assign({key: child.key}, child.val()));
+    });
+    top10Data.sort(function(a,b) { return b.score - a.score; });
+
+    var dateAujourdhui = new Date().toLocaleDateString('fr-FR');
+    var entree = {
+        pseudo    : user,
+        prenom    : dataUser.prenom,
+        nom       : dataUser.nom,
+        score     : scoreTotal,
+        bonnes    : bonnesRep,
+        partielles: partiellesRep,
+        fausses   : faussesRep,
+        date      : dateAujourdhui,
+        timestamp : Date.now()
+    };
+
+    // Verifier si le score mérite le top 10
+    var mériteTop10 = top10Data.length < 10 || scoreTotal > top10Data[top10Data.length - 1].score;
+
+    if (mériteTop10) {
+        // Supprimer ancienne entree de cet user si existe
+        var ancienIdx = top10Data.findIndex(function(r) { return r.pseudo === user; });
+        if (ancienIdx >= 0) {
+            if (scoreTotal > top10Data[ancienIdx].score) {
+                // Supprimer l'ancienne entree
+                await db.ref('top10Permanent/' + top10Data[ancienIdx].key).remove();
+                top10Data.splice(ancienIdx, 1);
+            } else {
+                return; // Ancien score meilleur, ne pas remplacer
+            }
+        }
+
+        // Ajouter nouvelle entree
+        await db.ref('top10Permanent').push(entree);
+        top10Data.push(entree);
+        top10Data.sort(function(a,b) { return b.score - a.score; });
+
+        // Garder seulement top 10
+        if (top10Data.length > 10) {
+            var aSupprimer = top10Data.slice(10);
+            for (var i = 0; i < aSupprimer.length; i++) {
+                if (aSupprimer[i].key) {
+                    await db.ref('top10Permanent/' + aSupprimer[i].key).remove();
+                }
+            }
+        }
+
+        // Badge top 10
+        var monRangTop10 = top10Data.findIndex(function(r) { return r.pseudo === user; });
+        if (monRangTop10 >= 0 && monRangTop10 < 10 && !badges.top10all) {
+            badges.top10all = true;
+            afficherBadgeAnimation('🌟', 'Legende Top 10');
+        }
+    }
+}
+
+// === FIN PARTIE 6/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 7/9 : RÉSULTAT FINAL + CORRECTION DÉTAILLÉE
+// ============================================
+
 // === AFFICHER RÉSULTAT FINAL ===
 async function afficherResultatFinal(r) {
-    // Récupérer rang
+    son('success');
+
+    // Calculer rang
     var allSnap = await db.ref('resultats').orderByChild('score').once('value');
     var allRes  = [];
-    allSnap.forEach(c => allRes.push({ key:c.key, score:c.val().score }));
-    allRes.sort((a,b) => b.score - a.score);
-    var monRang = allRes.findIndex(x => x.key===user) + 1;
+    allSnap.forEach(function(c) {
+        allRes.push({key: c.key, score: c.val().score});
+    });
+    allRes.sort(function(a,b) { return b.score - a.score; });
+    var monRang = allRes.findIndex(function(x) { return x.key === user; }) + 1;
 
-    // Afficher
+    // Son selon rang
+    if (monRang === 1) {
+        setTimeout(function() { son('top1'); }, 500);
+    } else if (monRang <= 3) {
+        setTimeout(function() { son('niveau'); }, 500);
+    }
+
+    // Afficher elements
     score.textContent      = r.score + '/50';
-    xpGagne.textContent    = r.xp;
-    bonnes.textContent     = r.bonnes;
-    partielles.textContent = r.partielles;
-    fausses.textContent    = r.fausses;
+    xpGagne.textContent    = r.xp || 0;
+    bonnes.textContent     = r.bonnes || 0;
+    partielles.textContent = r.partielles || 0;
+    fausses.textContent    = r.fausses || 0;
 
     // Rang
     var rangEl = document.getElementById('monRangRes');
-    if (rangEl) rangEl.textContent = monRang>0 ? '🏅 Rang #'+monRang+' sur '+allRes.length : '';
+    if (rangEl) {
+        var rangTexte = monRang === 1 ? '🥇 1er du classement!'
+            : monRang === 2 ? '🥈 2eme du classement!'
+            : monRang === 3 ? '🥉 3eme du classement!'
+            : '🏅 Rang #' + monRang + ' sur ' + allRes.length;
+        rangEl.textContent = rangTexte;
+        rangEl.style.color = monRang <= 3 ? 'var(--yellow)' : 'var(--text)';
+    }
+
+    // Mention selon score
+    var pct = Math.round((r.score / 50) * 100);
+    var mention = pct >= 90 ? 'Excellent!' : pct >= 70 ? 'Tres Bien!' : pct >= 50 ? 'Bien!' : pct >= 30 ? 'Passable' : 'A ameliorer';
+    var mentionEl = document.getElementById('mentionResultat');
+    if (mentionEl) mentionEl.textContent = mention;
+
+    // Sorties info
+    if (r.sorties > 0) {
+        var sortiesEl = document.getElementById('sortiesInfo');
+        if (sortiesEl) {
+            sortiesEl.textContent = r.bloque
+                ? '🚫 Devoir bloque (' + r.sorties + ' sorties)'
+                : '⚠️ ' + r.sorties + ' sortie(s) detectee(s)';
+            sortiesEl.style.display = 'block';
+        }
+    }
 
     attente.style.display  = 'none';
     resultat.style.display = 'block';
 
     // Notif nouveau niveau
     if (r.newNiveau && r.newNiveau > (r.oldNiveau||1)) {
-        setTimeout(() => toast('🎉 NIVEAU '+r.newNiveau+' ATTEINT!','success'), 1200);
+        setTimeout(function() {
+            toast('NIVEAU ' + r.newNiveau + ' ATTEINT!', 'success');
+            son('niveau');
+        }, 1500);
     }
 
-    // Mettre à jour menu
-    niv.textContent    = userData.niveau;
-    xp.textContent     = userData.xp;
-    streak.textContent = userData.streak||0;
+    // Mettre a jour menu
+    niv.textContent    = userData.niveau || 1;
+    xp.textContent     = userData.xp || 0;
+    streak.textContent = userData.streak || 0;
 }
-
-// === FIN PARTIE 6/8 ===// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 7/8 : CORRECTION DÉTAILLÉE + BOUTONS RÉSULTAT
-// ============================================
 
 // === BOUTON CORRECTION ===
 btnCorrection.onclick = function() {
     son('click');
     correction.innerHTML = '';
 
-    // Utiliser reponsesFinales (sauvegardées au moment de la soumission)
     var repAUtiliser = Object.keys(reponsesFinales).length > 0
-        ? reponsesFinales
-        : reponsesUser;
+        ? reponsesFinales : reponsesUser;
 
-    questionsData.forEach((q, idx) => {
+    questionsData.forEach(function(q, idx) {
         var repUser    = repAUtiliser[idx] || [];
         var repCorrect = [];
-        q.reponses.forEach((r,ri) => { if (r.correct) repCorrect.push(ri); });
+        q.reponses.forEach(function(r, ri) {
+            if (r.correct) repCorrect.push(ri);
+        });
 
-        var nbOk  = repUser.filter(r => repCorrect.includes(r)).length;
-        var nbMau = repUser.filter(r => !repCorrect.includes(r)).length;
-        var isCorrect = repUser.length>0 && nbMau===0 && nbOk===repCorrect.length;
-        var isPartiel = nbOk>0 && nbMau===0 && nbOk<repCorrect.length;
+        var nbOk  = repUser.filter(function(r) { return repCorrect.includes(r); }).length;
+        var nbMau = repUser.filter(function(r) { return !repCorrect.includes(r); }).length;
+        var isCorrect = repUser.length > 0 && nbMau===0 && nbOk===repCorrect.length;
+        var isPartiel = nbOk > 0 && nbMau===0 && nbOk < repCorrect.length;
 
         var div = document.createElement('div');
-        div.className = 'question-correction '+(isCorrect?'correct':isPartiel?'partiel':'incorrect');
+        div.className = 'question-correction ' + (isCorrect?'correct':isPartiel?'partiel':'incorrect');
 
-        var icon = isCorrect?'✅':isPartiel?'⚠️':'❌';
-        var pts  = isCorrect?'1 pt':isPartiel?'0.5 pt':'0 pt';
+        var icon = isCorrect ? 'Correct' : isPartiel ? 'Partiel' : 'Incorrect';
+        var pts  = isCorrect ? '1 pt' : isPartiel ? '0.5 pt' : '0 pt';
 
-        var repUserText    = repUser.length>0
-            ? repUser.map(r => q.reponses[r]?.texte||'?').join(', ')
-            : 'Aucune réponse';
-        var repCorrectText = repCorrect.map(r => q.reponses[r]?.texte||'?').join(', ');
+        var repUserText = repUser.length > 0
+            ? repUser.map(function(r) { return q.reponses[r] ? q.reponses[r].texte : '?'; }).join(', ')
+            : 'Aucune reponse';
+        var repCorrectText = repCorrect.map(function(r) {
+            return q.reponses[r] ? q.reponses[r].texte : '?';
+        }).join(', ');
 
-        div.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <div style="font-weight:800">${icon} Question ${idx+1}</div>
-                <div style="font-size:13px;font-weight:700;color:${isCorrect?'var(--green)':isPartiel?'var(--yellow)':'var(--red)'}">${pts}</div>
-            </div>
-            <div style="margin-bottom:10px;font-size:15px;line-height:1.5">${q.texte}</div>
-            <div style="background:var(--bg);padding:10px;border-radius:8px;margin-bottom:6px;font-size:13px">
-                <strong>Ta réponse:</strong> 
-                <span style="color:${isCorrect?'var(--green)':isPartiel?'var(--yellow)':'var(--red)'}">${repUserText}</span>
-            </div>
-            <div style="background:var(--bg);padding:10px;border-radius:8px;font-size:13px">
-                <strong>Bonne réponse:</strong> 
-                <span style="color:var(--green)">${repCorrectText}</span>
-            </div>`;
+        div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+            + '<div style="font-weight:800">Question ' + (idx+1) + ' - ' + icon + '</div>'
+            + '<div style="font-size:13px;font-weight:700;color:'
+            + (isCorrect?'var(--green)':isPartiel?'var(--yellow)':'var(--red)') + '">' + pts + '</div>'
+            + '</div>'
+            + '<div style="margin-bottom:10px;font-size:15px;line-height:1.5">' + q.texte + '</div>'
+            + '<div style="background:var(--bg);padding:10px;border-radius:8px;margin-bottom:6px;font-size:13px">'
+            + '<strong>Ta reponse:</strong> '
+            + '<span style="color:' + (isCorrect?'var(--green)':isPartiel?'var(--yellow)':'var(--red)') + '">'
+            + repUserText + '</span>'
+            + '</div>'
+            + '<div style="background:var(--bg);padding:10px;border-radius:8px;font-size:13px">'
+            + '<strong>Bonne reponse:</strong> '
+            + '<span style="color:var(--green)">' + repCorrectText + '</span>'
+            + '</div>';
+
         correction.appendChild(div);
     });
 
-    // Scroll vers correction
     correction.scrollIntoView({behavior:'smooth'});
 };
 
@@ -1407,75 +2013,7 @@ btnVoirClass.onclick = async function() {
     attente.style.display  = 'none';
     resultat.style.display = 'none';
     showPage(pageMenu);
-
-    // Ouvrir classement animé
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px';
-    overlay.innerHTML = `
-        <div style="max-width:600px;margin:0 auto">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border)">
-                <button onclick="this.closest('div[style]').remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;min-height:auto;width:auto;margin:0">←</button>
-                <h2 style="margin:0">🏆 Classement Final</h2>
-            </div>
-            <div id="clFinalContent" style="text-align:center;padding:30px">
-                <div class="loader"></div>
-                <p style="color:var(--muted);margin-top:10px">Chargement classement...</p>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-
-    var snap = await db.ref('resultats').orderByChild('score').limitToLast(50).once('value');
-    var results = [];
-    snap.forEach(child => results.push({key:child.key, ...child.val()}));
-    results.sort((a,b) => b.score - a.score || a.timestamp - b.timestamp);
-
-    var snapAll = await db.ref('users').once('value');
-    var total   = snapAll.numChildren();
-    var monIdx  = results.findIndex(r => r.key===user);
-
-    var clFinalContent = overlay.querySelector('#clFinalContent');
-
-    var monRangHtml = '';
-    if (monIdx>=0) {
-        monRangHtml = `
-            <div style="background:linear-gradient(135deg,rgba(250,204,21,.2),rgba(249,115,22,.1));border:2px solid var(--yellow);border-radius:14px;padding:20px;margin-bottom:20px;text-align:center;animation:pulse 2s infinite">
-                <div style="font-size:14px;font-weight:700;color:var(--muted);margin-bottom:5px">🎯 Ma Position</div>
-                <div style="font-size:48px;font-weight:900;color:var(--yellow)">#${monIdx+1}</div>
-                <div style="font-size:13px;color:var(--muted)">sur ${total} candidats inscrits</div>
-                <div style="font-size:20px;font-weight:800;color:var(--green);margin-top:8px">${results[monIdx].score}/50 pts</div>
-            </div>`;
-    }
-
-    if (results.length===0) {
-        clFinalContent.innerHTML = `<p style="color:var(--muted)">Aucun résultat</p>`;
-        return;
-    }
-
-    var lignes = results.map((r,i) => {
-        var isMe = r.key===user;
-        var med  = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="font-size:15px;font-weight:800">#${i+1}</span>`;
-        var pct  = Math.round((r.score/50)*100);
-        return `<div class="cl-item" style="display:flex;justify-content:space-between;align-items:center;background:${isMe?'linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1))':'var(--card)'};padding:14px 15px;border-radius:12px;margin-bottom:8px;border:2px solid ${isMe?'var(--yellow)':'var(--border)'};font-weight:600;opacity:0;transform:translateY(15px);transition:all 0.4s ease ${i*0.06}s">
-            <span style="font-size:20px;font-weight:900;color:var(--yellow);min-width:40px">${med}</span>
-            <div style="flex:1;margin:0 10px">
-                <div style="font-size:15px">${r.prenom} ${r.nom} ${isMe?'<span style="color:var(--yellow);font-size:11px;font-weight:800">◀ MOI</span>':''}</div>
-                <div style="font-size:11px;color:var(--muted);margin-top:2px">${pct}% · ✅${r.bonnes||0} ⚠️${r.partielles||0} ❌${r.fausses||0}</div>
-            </div>
-            <div style="text-align:right">
-                <div style="font-size:18px;font-weight:900;color:${isMe?'var(--yellow)':'var(--green)'}">${r.score}/50</div>
-            </div>
-        </div>`;
-    }).join('');
-
-    clFinalContent.innerHTML = monRangHtml + lignes;
-
-    // Animation entrée progressive
-    setTimeout(() => {
-        overlay.querySelectorAll('.cl-item').forEach(el => {
-            el.style.opacity    = '1';
-            el.style.transform  = 'translateY(0)';
-        });
-    }, 150);
+    afficherClassementMenu();
 };
 
 // === RETOUR MENU ===
@@ -1486,187 +2024,346 @@ btnRetourMenu.onclick = function() {
     questions.style.display = 'none';
     correction.innerHTML    = '';
     document.querySelector('.footer').style.display = 'none';
-    copieSubmise  = false;
+    copieSubmise   = false;
     reponsesFinales = {};
+    enExamen       = false;
+    nbSorties      = 0;
+    devourBloque   = false;
     showPage(pageMenu);
 
-    // Rafraîchir stats menu
-    db.ref('users/' + user).once('value').then(snap => {
+    // Rafraichir stats menu
+    db.ref('users/' + user).once('value').then(function(snap) {
         var d = snap.val();
         if (d) {
-            niv.textContent    = d.niveau;
-            xp.textContent     = d.xp;
-            streak.textContent = d.streak;
+            niv.textContent    = d.niveau || 1;
+            xp.textContent     = d.xp || 0;
+            streak.textContent = d.streak || 0;
         }
     });
 };
 
-// === FIN PARTIE 7/8 ===// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT V5 FINAL
-// PARTIE 8/8 : BOUTONS MENU + NOUVEAU CONCOURS + INIT
+// === FIN PARTIE 7/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 8/9 : CLASSEMENT DYNAMIQUE + TOP 10 LIVE
 // ============================================
 
-// === BOUTONS MENU PRINCIPAL ===
-btnBadges.onclick = async function() {
-    son('click');
-    var snap = await db.ref('users/' + user + '/badges').once('value');
-    var badges = snap.val() || {};
-
-    var badgeList = [
-        { key:'premier',  emoji:'🎯', nom:'Premier Concours',  desc:'Terminer son 1er concours' },
-        { key:'streak7',  emoji:'🔥', nom:'Série 7 jours',     desc:'7 jours consécutifs connecté' },
-        { key:'niveau10', emoji:'⭐', nom:'Niveau 10',          desc:'Atteindre le niveau 10' },
-        { key:'perfect',  emoji:'💯', nom:'Sans Faute',         desc:'Obtenir 50/50' },
-        { key:'rapide',   emoji:'⚡', nom:'Éclair',             desc:'Finir avec +1h restante' },
-        { key:'assidu',   emoji:'📅', nom:'Assidu',             desc:'5 concours ou plus passés' },
-        { key:'top3',     emoji:'🏅', nom:'Top 3',              desc:'Être dans le top 3 général' },
-        { key:'elite',    emoji:'👑', nom:'Élite',              desc:'Moyenne supérieure à 40/50' }
-    ];
-
-    var nbObtenu = badgeList.filter(b => badges[b.key]).length;
-
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px';
-    overlay.innerHTML = `
-        <div style="max-width:600px;margin:0 auto">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border)">
-                <button onclick="this.closest('[style]').remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;min-height:auto;width:auto;margin:0">←</button>
-                <h2 style="margin:0">🎖️ Mes Badges</h2>
-            </div>
-            <div class="card center" style="margin-bottom:15px">
-                <div style="font-size:40px;margin-bottom:10px">🎖️</div>
-                <div style="font-size:28px;font-weight:900;color:var(--yellow)">${nbObtenu}/${badgeList.length}</div>
-                <div style="color:var(--muted);font-size:14px">badges obtenus</div>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
-                ${badgeList.map(b => {
-                    var has = badges[b.key];
-                    return `<div style="background:var(--card);border:2px solid ${has?'var(--yellow)':'var(--border)'};border-radius:14px;padding:15px;text-align:center;${has?'background:rgba(250,204,21,0.07)':''}">
-                        <div style="font-size:36px;margin-bottom:8px">${b.emoji}</div>
-                        <div style="font-size:13px;font-weight:700;margin-bottom:4px">${b.nom}</div>
-                        <div style="font-size:11px;color:var(--muted)">${b.desc}</div>
-                        <span style="display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${has?'rgba(250,204,21,0.2)':'rgba(148,163,184,0.1)'};color:${has?'var(--yellow)':'var(--muted)'}">${has?'✅ Obtenu':'🔒 Verrouillé'}</span>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-};
-
-// === CLASSEMENT DEPUIS MENU ===
-btnClassement.onclick = async function() {
-    son('click');
-
-    var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:999;overflow-y:auto;padding:15px';
-    overlay.innerHTML = `
-        <div style="max-width:600px;margin:0 auto">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid var(--border)">
-                <button onclick="this.closest('[style]').remove()" style="background:var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;min-height:auto;width:auto;margin:0">←</button>
-                <h2 style="margin:0">🏆 Classement Général</h2>
-            </div>
-            <div id="clMenuContent" style="text-align:center;padding:30px">
-                <div class="loader"></div>
-                <p style="color:var(--muted);margin-top:10px">Chargement...</p>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-
-    var snap = await db.ref('resultats').orderByChild('score').limitToLast(50).once('value');
-    var results = [];
-    snap.forEach(child => results.push({key:child.key, ...child.val()}));
-    results.sort((a,b) => b.score - a.score || a.timestamp - b.timestamp);
-
-    var snapAll = await db.ref('users').once('value');
-    var total   = snapAll.numChildren();
-    var monIdx  = results.findIndex(r => r.key===user);
-    var clContent = overlay.querySelector('#clMenuContent');
-
-    if (results.length===0) {
-        clContent.innerHTML = `
-            <div style="font-size:60px;margin-bottom:15px">🏆</div>
-            <p style="color:var(--muted);font-size:16px">Aucun résultat pour l'instant</p>
-            <p style="color:var(--muted);font-size:14px">Passe le concours pour apparaître ici!</p>`;
-        return;
-    }
-
-    var monRangHtml = '';
-    if (monIdx>=0) {
-        monRangHtml = `
-            <div style="background:linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1));border:2px solid var(--yellow);border-radius:14px;padding:15px 20px;margin-bottom:15px;text-align:center;font-weight:700">
-                Ma position: <span style="font-size:32px;font-weight:900;color:var(--yellow);display:block">#${monIdx+1}</span>
-                <small style="color:var(--muted);font-size:13px">sur ${total} candidats inscrits</small>
-            </div>`;
-    }
-
-    var lignes = results.map((r,i) => {
-        var isMe = r.key===user;
-        var med  = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="font-size:15px;font-weight:800">#${i+1}</span>`;
-        var pct  = Math.round((r.score/50)*100);
-        return `<div class="cl-item" style="display:flex;justify-content:space-between;align-items:center;background:${isMe?'linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1))':'var(--card)'};padding:14px 15px;border-radius:12px;margin-bottom:8px;border:2px solid ${isMe?'var(--yellow)':'var(--border)'};font-weight:600;opacity:0;transform:translateX(-20px);transition:all 0.3s ease ${i*0.05}s">
-            <span style="font-size:20px;font-weight:900;color:var(--yellow);min-width:40px">${med}</span>
-            <div style="flex:1;margin:0 10px">
-                <div>${r.prenom} ${r.nom} ${isMe?'<span style="color:var(--yellow);font-size:11px">◀ Moi</span>':''}</div>
-                <div style="font-size:11px;color:var(--muted)">${pct}% · ✅${r.bonnes||0} ⚠️${r.partielles||0} ❌${r.fausses||0}</div>
-            </div>
-            <span style="font-size:17px;font-weight:800;color:${isMe?'var(--yellow)':'var(--green)'}">${r.score}/50</span>
-        </div>`;
-    }).join('');
-
-    clContent.innerHTML = monRangHtml + lignes;
-
-    setTimeout(() => {
-        overlay.querySelectorAll('.cl-item').forEach(el => {
-            el.style.opacity   = '1';
-            el.style.transform = 'translateX(0)';
+// === CLASSEMENT EN TEMPS RÉEL ===
+function demarrerClassementLive() {
+    db.ref('resultats').on('value', function(snap) {
+        var results = [];
+        snap.forEach(function(child) {
+            results.push(Object.assign({key: child.key}, child.val()));
         });
-    }, 100);
-};
+        results.sort(function(a,b) { return b.score - a.score || a.timestamp - b.timestamp; });
 
-// === HISTORIQUE DEPUIS MENU ===
-document.addEventListener('DOMContentLoaded', function() {
-    var btnHisto = document.getElementById('btnHistorique');
-    if (btnHisto) btnHisto.onclick = function() { afficherHistorique(); };
+        // Mettre à jour classement si overlay ouvert
+        var divC = document.getElementById('classConcours');
+        if (divC) {
+            var html = '';
+            var monIdx = results.findIndex(function(r) { return r.key === user; });
 
-    var btnStats = document.getElementById('btnMesStats');
-    if (btnStats) btnStats.onclick = function() { afficherStats(); };
-});
+            if (monIdx >= 0) {
+                html += '<div style="background:linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1));border:2px solid var(--yellow);border-radius:14px;padding:15px;margin-bottom:15px;text-align:center">'
+                    + '<div style="font-size:13px;color:var(--muted);margin-bottom:5px">Ma position</div>'
+                    + '<div style="font-size:40px;font-weight:900;color:var(--yellow)">#' + (monIdx+1) + '</div>'
+                    + '<div style="font-size:13px;color:var(--muted)">' + results[monIdx].score + '/50 pts</div>'
+                    + '</div>';
+            }
 
-// === NOUVEAU CONCOURS (Admin) ===
-// Réinitialise les résultats pour permettre un nouveau concours
-var btnNouveauConcours = document.getElementById('btnNouveauConcours');
-if (btnNouveauConcours) {
-    btnNouveauConcours.onclick = async function() {
-        son('click');
-        modalTitre.textContent = '⚠️ Nouveau Concours';
-        modalTexte.textContent = 'Cela va supprimer TOUS les résultats du classement.\nLes élèves pourront repasser le concours.\n\nContinuer?';
-        modal.style.display = 'flex';
+            results.forEach(function(r, i) { html += ligneClassement(r, i, false); });
+            divC.innerHTML = html;
+            setTimeout(function() {
+                divC.querySelectorAll('.cl-item').forEach(function(el) {
+                    el.style.opacity='1'; el.style.transform='translateX(0)';
+                });
+            }, 50);
+        }
 
-        btnConfirmer.onclick = async function() {
-            modal.style.display = 'none';
-            await db.ref('resultats').remove();
-            toast('✅ Résultats réinitialisés! Nouveau concours prêt.','success');
-            son('success');
-        };
-        btnAnnuler.onclick = function() {
-            modal.style.display = 'none';
-        };
-    };
+        // Mettre à jour top10 admin
+        if (top10) {
+            var top10results = results.slice(0, 10);
+            top10.innerHTML = top10results.map(function(r, i) {
+                var med = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+                var nomAffiche = (r.prenom && r.nom) ? r.prenom+' '+r.nom : (r.pseudo||'Candidat');
+                return '<div class="classement-item">'
+                    + '<span class="rang">' + med + '</span>'
+                    + '<span class="nom">' + nomAffiche + '</span>'
+                    + '<span class="score">' + r.score + '/50</span>'
+                    + '</div>';
+            }).join('') || '<p style="text-align:center;color:var(--muted)">Aucun resultat</p>';
+        }
+    });
 }
+
+// === TOP 10 PERMANENT EN TEMPS RÉEL ===
+function demarrerTop10Live() {
+    db.ref('top10Permanent').on('value', function(snap) {
+        var results = [];
+        snap.forEach(function(child) {
+            results.push(Object.assign({key: child.key}, child.val()));
+        });
+        results.sort(function(a,b) { return b.score - a.score; });
+
+        var divT = document.getElementById('classTop10');
+        if (!divT) return;
+
+        if (results.length === 0) {
+            divT.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">'
+                + '<div style="font-size:50px">🌟</div>'
+                + '<p>Top 10 vide pour le moment</p>'
+                + '</div>';
+            return;
+        }
+
+        var html = '<div class="card" style="margin-bottom:15px;text-align:center;'
+            + 'background:linear-gradient(135deg,rgba(250,204,21,.1),rgba(139,92,246,.1))">'
+            + '<div style="font-size:16px;font-weight:700;color:var(--yellow)">Hall of Fame</div>'
+            + '<div style="font-size:13px;color:var(--muted)">Meilleurs scores de tous les concours</div>'
+            + '</div>';
+        results.forEach(function(r, i) { html += ligneClassement(r, i, true); });
+        divT.innerHTML = html;
+
+        setTimeout(function() {
+            divT.querySelectorAll('.cl-item').forEach(function(el) {
+                el.style.opacity='1'; el.style.transform='translateX(0)';
+            });
+        }, 50);
+    });
+}
+
+// === WIDGET CLASSEMENT MINI SUR MENU ===
+function afficherMiniClassement() {
+    var miniEl = document.getElementById('miniClassement');
+    if (!miniEl) return;
+
+    db.ref('resultats').orderByChild('score').limitToLast(5).on('value', function(snap) {
+        var results = [];
+        snap.forEach(function(child) {
+            results.push(Object.assign({key: child.key}, child.val()));
+        });
+        results.sort(function(a,b) { return b.score - a.score; });
+
+        if (results.length === 0) {
+            miniEl.innerHTML = '<p style="text-align:center;color:var(--muted);font-size:13px">Aucun resultat</p>';
+            return;
+        }
+
+        var html = '<div style="font-size:13px;font-weight:700;color:var(--yellow);margin-bottom:10px">Top 5 Actuel</div>';
+        results.forEach(function(r, i) {
+            var isMe = r.key === user;
+            var med = i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+            var nomAffiche = (r.prenom && r.nom) ? r.prenom+' '+r.nom : (r.pseudo||'Candidat');
+            html += '<div style="display:flex;align-items:center;padding:8px;background:'
+                + (isMe?'rgba(250,204,21,0.1)':'var(--bg)')
+                + ';border-radius:8px;margin-bottom:6px;border:1px solid '
+                + (isMe?'var(--yellow)':'var(--border)') + '">'
+                + '<span style="font-size:16px;min-width:30px">' + med + '</span>'
+                + '<span style="flex:1;font-size:13px;font-weight:600">' + nomAffiche + (isMe?' (Moi)':'') + '</span>'
+                + '<span style="font-size:14px;font-weight:800;color:' + (isMe?'var(--yellow)':'var(--green)') + '">' + r.score + '/50</span>'
+                + '</div>';
+        });
+
+        miniEl.innerHTML = html;
+    });
+}
+
+// === STATISTIQUES LIVE MENU ===
+function mettreAJourStatsMenu() {
+    if (!user) return;
+    db.ref('users/' + user).on('value', function(snap) {
+        var d = snap.val();
+        if (!d) return;
+        if (niv) niv.textContent = d.niveau || 1;
+        if (xp)  xp.textContent  = d.xp || 0;
+        if (streak) streak.textContent = d.streak || 0;
+        userData = d;
+    });
+}
+
+// === FIN PARTIE 8/9 ===// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT V6 FINAL
+// PARTIE 9/9 : INIT + MODAL + BONUS + FIN
+// ============================================
 
 // === MODAL GLOBAL ===
 window.onclick = function(e) {
     if (e.target === modal) modal.style.display = 'none';
 };
 
-// === FIN PARTIE 8/8 ===
-// SCRIPT V5 COMPLET - CONCOURS BLANC BONOGO
-// ✅ Firebase quiz-pro-max
-// ✅ Connexion / Inscription / Reset MDP
-// ✅ Classement animé
-// ✅ Historique par candidat
-// ✅ Statistiques avec graphe
-// ✅ 8 Badges
-// ✅ Correction à la fin de l'heure seulement
-// ✅ Multi-format JSON (question/options/reponse)
-// ✅ Nouveau concours admin
+// === INITIALISATION AU CHARGEMENT ===
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Bouton nouveau concours admin
+    var btnNvConcours = document.getElementById('btnNouveauConcours');
+    if (btnNvConcours) {
+        btnNvConcours.onclick = function() {
+            son('click');
+            modalTitre.textContent = 'Nouveau Concours';
+            modalTexte.textContent = 'Supprimer TOUS les resultats actuels?\nLe Top 10 permanent sera conserve.\n\nContinuer?';
+            modal.style.display = 'flex';
+            btnConfirmer.onclick = async function() {
+                modal.style.display = 'none';
+                await db.ref('resultats').remove();
+                await db.ref('sessions').remove();
+                toast('Nouveau concours pret!', 'success');
+                son('success');
+            };
+            btnAnnuler.onclick = function() { modal.style.display = 'none'; };
+        };
+    }
+
+    // Bouton reset top 10 admin
+    var btnResetTop10 = document.getElementById('btnResetTop10');
+    if (btnResetTop10) {
+        btnResetTop10.onclick = function() {
+            son('click');
+            modalTitre.textContent = 'Reset Top 10 Permanent';
+            modalTexte.textContent = 'Supprimer tout le Top 10 permanent?\nCette action est irreversible.\n\nContinuer?';
+            modal.style.display = 'flex';
+            btnConfirmer.onclick = async function() {
+                modal.style.display = 'none';
+                await db.ref('top10Permanent').remove();
+                toast('Top 10 permanent reinitialise!', 'success');
+                son('success');
+            };
+            btnAnnuler.onclick = function() { modal.style.display = 'none'; };
+        };
+    }
+});
+
+// === BONUS : COMPTE A REBOURS GLOBAL SUR MENU ===
+function demarrerCompteReboursMenu() {
+    var timerMenuEl = document.getElementById('timerMenu');
+    if (!timerMenuEl) return;
+
+    var intv = setInterval(async function() {
+        var configSnap = await db.ref('configConcours').once('value');
+        var config = configSnap.val();
+        if (!config) {
+            timerMenuEl.style.display = 'none';
+            return;
+        }
+
+        var now = Date.now();
+
+        if (now < config.debutTimestamp) {
+            // Avant le concours
+            var reste = config.debutTimestamp - now;
+            var h = Math.floor(reste / 3600000);
+            var m = Math.floor((reste % 3600000) / 60000);
+            var s = Math.floor((reste % 60000) / 1000);
+            timerMenuEl.style.display = 'block';
+            timerMenuEl.style.color = 'var(--yellow)';
+            timerMenuEl.textContent = 'Debut dans: '
+                + (h<10?'0':'') + h + ':'
+                + (m<10?'0':'') + m + ':'
+                + (s<10?'0':'') + s;
+        } else if (now >= config.debutTimestamp && now <= config.finTimestamp) {
+            // Pendant le concours
+            var reste2 = config.finTimestamp - now;
+            var m2 = Math.floor(reste2 / 60000);
+            var s2 = Math.floor((reste2 % 60000) / 1000);
+            timerMenuEl.style.display = 'block';
+            timerMenuEl.style.color = m2 < 10 ? 'var(--red)' : 'var(--green)';
+            timerMenuEl.textContent = 'Concours en cours: ' + m2 + ':' + (s2<10?'0':'') + s2;
+        } else {
+            // Apres le concours
+            timerMenuEl.style.display = 'block';
+            timerMenuEl.style.color = 'var(--muted)';
+            timerMenuEl.textContent = 'Concours termine';
+            clearInterval(intv);
+        }
+    }, 1000);
+}
+
+// === BONUS : NOTIFICATION CLASSEMENT ===
+async function verifierChangementRang() {
+    if (!user) return;
+    var snap = await db.ref('resultats').orderByChild('score').once('value');
+    var results = [];
+    snap.forEach(function(c) {
+        results.push({key: c.key, score: c.val().score});
+    });
+    results.sort(function(a,b) { return b.score - a.score; });
+    var monRang = results.findIndex(function(r) { return r.key === user; }) + 1;
+
+    if (monRang > 0 && monRang <= 3) {
+        var msg = monRang===1 ? 'Tu es 1er du classement!' : 'Tu es dans le Top 3!';
+        toast(msg, 'success');
+    }
+}
+
+// === DÉMARRER TOUS LES LISTENERS ===
+function demarrerTousListeners() {
+    demarrerClassementLive();
+    demarrerTop10Live();
+    afficherMiniClassement();
+    mettreAJourStatsMenu();
+    demarrerCompteReboursMenu();
+}
+
+// Appeler chargerMenu pour démarrer les listeners
+var _chargerMenuOriginal = chargerMenu;
+chargerMenu = function(d) {
+    _chargerMenuOriginal(d);
+    demarrerTousListeners();
+};
+
+// === BONUS : ANIMATION CONFETTI VICTOIRE ===
+function lancerConfetti() {
+    var colors = ['#facc15', '#f97316', '#22c55e', '#3b82f6', '#8b5cf6'];
+    for (var i = 0; i < 80; i++) {
+        var confetti = document.createElement('div');
+        confetti.style.cssText = 'position:fixed;width:8px;height:8px;border-radius:2px;z-index:9999;pointer-events:none;'
+            + 'left:' + Math.random()*100 + '%;'
+            + 'top:-10px;'
+            + 'background:' + colors[Math.floor(Math.random()*colors.length)] + ';'
+            + 'animation:confettiFall ' + (1.5+Math.random()*2) + 's ease-in ' + Math.random()*0.5 + 's forwards';
+        document.body.appendChild(confetti);
+        setTimeout(function(el) { el.remove(); }, 4000, confetti);
+    }
+}
+
+// Style confetti
+var styleConfetti = document.createElement('style');
+styleConfetti.textContent = '@keyframes confettiFall {'
+    + 'to { top: 110%; transform: rotate(' + (Math.random()*720-360) + 'deg) translateX(' + (Math.random()*200-100) + 'px); opacity:0; }'
+    + '}';
+document.head.appendChild(styleConfetti);
+
+// Lancer confetti sur top 3
+var _afficherResultatFinalOriginal = afficherResultatFinal;
+afficherResultatFinal = async function(r) {
+    await _afficherResultatFinalOriginal(r);
+    // Verifier rang pour confetti
+    var snap = await db.ref('resultats').orderByChild('score').once('value');
+    var all = [];
+    snap.forEach(function(c) { all.push({key:c.key, score:c.val().score}); });
+    all.sort(function(a,b){ return b.score-a.score; });
+    var rang = all.findIndex(function(x){ return x.key===user; })+1;
+    if (rang <= 3) {
+        lancerConfetti();
+        setTimeout(function(){ lancerConfetti(); }, 1000);
+    }
+};
+
+// === FIN SCRIPT V6 COMPLET ===
+// Concours Blanc Bonogo - Toutes fonctionnalites:
+// Firebase quiz-pro-max
+// Connexion / Inscription / Reset MDP
+// Detection sortie 40s avec blocage apres 4 sorties
+// Reprise de session
+// Timer avec sons
+// Correction a la fin de l'heure seulement
+// Classement dynamique temps reel
+// Top 10 permanent avec Hall of Fame
+// Historique complet par candidat
+// Statistiques avec graphe
+// 10 Badges avec animation
+// Sons avances (tick, alerte, victoire, fanfare)
+// Confetti pour top 3
+// Compte a rebours sur menu
+// Mini classement sur menu
+// Admin: nouveau concours, reset top 10
+// Multi-format JSON
+// === FIN PARTIE 9/9 ===
