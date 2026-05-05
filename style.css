@@ -1,6 +1,6 @@
 /* ============================================
-   CONCOURS BLANC BONOGO - STYLE V4 CORRIGÉ
-   PARTIE 1/3 : BASE + CARTES + BOUTONS + INPUTS
+   CONCOURS BLANC BONOGO - STYLE ORIGINAL
+   PARTIE 1/4 : BASE + CARTES + BOUTONS + INPUTS
    ============================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
@@ -90,7 +90,7 @@ h2 {
     font-weight: 600;
 }
 
-/* === INPUTS - EMAIL INCLUS === */
+/* === INPUTS === */
 input[type="text"],
 input[type="password"],
 input[type="email"],
@@ -174,6 +174,19 @@ button:active {
     box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
 }
 
+.btn-purple {
+    background: var(--purple);
+    color: white;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+
+.btn-yellow {
+    background: var(--yellow);
+    color: var(--bg);
+    box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);
+    font-weight: 800;
+}
+
 .btn-big {
     padding: 22px;
     font-size: 20px;
@@ -193,12 +206,14 @@ button:active {
     margin: 10px 0;
 }
 
-/* === FIN PARTIE 1/3 === *//* ============================================
-   CONCOURS BLANC BONOGO - STYLE V4 CORRIGÉ
-   PARTIE 2/3 : STATS + EXAMEN + QUESTIONS + TIMER FIX
+/* ============================================
+   FIN PARTIE 1/4
+   ============================================ *//* ============================================
+   CONCOURS BLANC BONOGO - STYLE ORIGINAL
+   PARTIE 2/4 : STATS + MENU + EXAMEN + QUESTIONS + TIMER
    ============================================ */
 
-/* === STATS === */
+/* === STATS MENU === */
 .stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -243,7 +258,7 @@ button:active {
     color: var(--yellow);
 }
 
-/* === EXAM HEADER - FIX DÉFINITIF === */
+/* === HEADER EXAMEN === */
 .header {
     position: fixed;
     top: 0;
@@ -260,7 +275,7 @@ button:active {
     gap: 8px;
 }
 
-/* === TIMER ROUGE VISIBLE === */
+/* === TIMER === */
 .timer {
     background: var(--red);
     color: white;
@@ -282,7 +297,7 @@ button:active {
     51%, 100% { opacity: 0.3; }
 }
 
-/* === SUBHEADER - FIX OVERLAP === */
+/* === SUBHEADER === */
 .subheader {
     position: fixed;
     top: 55px;
@@ -349,8 +364,10 @@ button:active {
     font-weight: 600;
     line-height: 1.5;
     margin-bottom: 15px;
+    color: var(--text);
 }
 
+/* === RÉPONSES === */
 .reponses-liste label {
     display: flex;
     align-items: center;
@@ -358,11 +375,11 @@ button:active {
     padding: 15px;
     border-radius: 12px;
     margin-bottom: 10px;
-    cursor: pointer;
-    border: 2px solid var(--border);
+    cursor: pointer;border: 2px solid var(--border);
     transition: all 0.15s;
     min-height: 54px;
     font-weight: 600;
+    color: var(--text);
 }
 
 .reponses-liste label:active {
@@ -370,14 +387,20 @@ button:active {
     border-color: var(--blue);
 }
 
+.reponses-liste label.selected {
+    border-color: var(--blue);
+    background: rgba(59,130,246,0.12);
+}
+
 .reponses-liste input[type="checkbox"] {
     width: 24px;
     height: 24px;
     margin-right: 12px;
     cursor: pointer;
+    accent-color: var(--blue);
 }
 
-/* === FOOTER - BOUTONS RÉDUITS === */
+/* === FOOTER EXAM === */
 .footer {
     position: fixed;
     bottom: 0;
@@ -402,10 +425,12 @@ button:active {
 
 #btnNonRep {
     background: linear-gradient(135deg, var(--blue), #1d4ed8);
+    color: white;
 }
 
 #btnFinir {
     background: linear-gradient(135deg, var(--red), #dc2626);
+    color: white;
 }
 
 /* === SALLE D'ATTENTE === */
@@ -432,7 +457,7 @@ button:active {
     font-family: 'Poppins', sans-serif;
 }
 
-/* === ATTENTE === */
+/* === LOADER === */
 .loader {
     width: 60px;
     height: 60px;
@@ -448,12 +473,14 @@ button:active {
     100% { transform: rotate(360deg); }
 }
 
-/* === FIN PARTIE 2/3 === *//* ============================================
-   CONCOURS BLANC BONOGO - STYLE V4 CORRIGÉ
-   PARTIE 3/3 : RESULTAT + ADMIN + MODAL + FIX FINAL
+/* ============================================
+   FIN PARTIE 2/4
+   ============================================ *//* ============================================
+   CONCOURS BLANC BONOGO - STYLE ORIGINAL
+   PARTIE 3/4 : RÉSULTAT + ADMIN + MODAL + TOAST + BADGES
    ============================================ */
 
-/* === RESULTAT === */
+/* === RÉSULTAT === */
 .score {
     font-size: 64px;
     font-weight: 900;
@@ -481,12 +508,43 @@ button:active {
     margin: 25px 0;
     font-size: 18px;
     font-weight: 700;
+    flex-wrap: wrap;
 }
 
 .stats-mini span {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-direction: column;
+}
+
+.stats-mini span small {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#monRangRes {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    margin: 12px 0 4px;
+}
+
+#mentionResultat {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--yellow);
+    margin-bottom: 4px;
+}
+
+#sortiesInfo {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--orange);
+    margin: 6px 0;
 }
 
 /* === CORRECTION === */
@@ -510,19 +568,111 @@ button:active {
     background: rgba(34, 197, 94, 0.1);
 }
 
-.question-correction.partiel {
-    border-left-color: var(--yellow);
-    background: rgba(250, 204, 21, 0.1);
-}
-
 .question-correction.incorrect {
     border-left-color: var(--red);
     background: rgba(239, 68, 68, 0.1);
 }
 
-.question-correction strong {
-    color: var(--yellow);
+.question-correction.vide {
+    border-left-color: var(--muted);
+    background: rgba(148, 163, 184, 0.05);
+}
+
+.corr-entete {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.corr-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.corr-ico { font-size: 16px; }
+
+.corr-question {
+    font-size: 14px;
     font-weight: 700;
+    color: var(--text);
+    line-height: 1.55;
+    margin-bottom: 12px;
+}
+
+.corr-rep-ligne {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-bottom: 4px;
+}
+
+.corr-rep-ligne.cr-user-bon {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--green);
+    font-weight: 800;
+}
+
+.corr-rep-ligne.cr-user-faux {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--red);
+    font-weight: 800;
+}
+
+.corr-rep-ligne.cr-bonne {
+    background: rgba(34, 197, 94, 0.08);
+    color: var(--green);
+}
+
+.corr-bulle-sm {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    background: var(--border);
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.cr-user-bon  .corr-bulle-sm { background: var(--green); color: white; }
+.cr-user-faux .corr-bulle-sm { background: var(--red);   color: white; }
+.cr-bonne     .corr-bulle-sm { background: rgba(34,197,94,0.3); color: var(--green); }
+
+/* === EXPLICATION === */
+.corr-explication {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(59,130,246,0.08);
+    border: 1.5px solid rgba(59,130,246,0.2);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.65;
+    font-weight: 500;
+}
+
+.corr-explication-titre {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+    display: block;
 }
 
 /* === ADMIN === */
@@ -546,8 +696,7 @@ button:active {
 
 .stat-box {
     background: var(--bg);
-    padding: 18px 10px;
-    border-radius: 12px;
+    padding: 18px 10px;    border-radius: 12px;
     text-align: center;
     border: 2px solid var(--border);
 }
@@ -559,19 +708,11 @@ button:active {
     font-weight: 900;
 }
 
-.eleve-item {
-    background: var(--bg);
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    border: 2px solid var(--border);
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-.eleve-item strong {
-    color: var(--yellow);
-    font-size: 16px;
+.stat-box span {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
 }
 
 .classement-item {
@@ -593,12 +734,20 @@ button:active {
     min-width: 40px;
 }
 
-.nom {
+.cl-nom {
     flex: 1;
     margin: 0 15px;
+    font-size: 14px;
+    font-weight: 700;
 }
 
-.score {
+.cl-meta {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.cl-score {
     font-size: 18px;
     font-weight: 800;
     color: var(--green);
@@ -644,6 +793,7 @@ button:active {
 .reponse-edit input[type="checkbox"] {
     width: 24px;
     height: 24px;
+    accent-color: var(--green);
 }
 
 .btn-del {
@@ -653,6 +803,9 @@ button:active {
     border: none;
     border-radius: 8px;
     font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
     min-height: auto;
     width: auto;
 }
@@ -660,10 +813,7 @@ button:active {
 /* === MODAL === */
 .modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.9);
     display: flex;
     align-items: center;
@@ -687,10 +837,11 @@ button:active {
     color: var(--yellow);
 }
 
-.modal-box p {
+#modalTexte {
     margin-bottom: 25px;
     color: var(--muted);
     line-height: 1.6;
+    font-size: 14px;
 }
 
 .modal-btns {
@@ -710,6 +861,8 @@ button:active {
     left: 50%;
     transform: translateX(-50%);
     z-index: 2000;
+    width: 90%;
+    max-width: 380px;
 }
 
 .toast {
@@ -721,33 +874,17 @@ button:active {
     font-weight: 700;
     box-shadow: 0 8px 25px rgba(0,0,0,0.5);
     animation: slideDown 0.3s ease;
-}
-
-.toast.success {
-    border-color: var(--green);
-    color: var(--green);
-}
-
-.toast.error {
-    border-color: var(--red);
-    color: var(--red);
-}
-
-.toast.warning {
-    border-color: var(--orange);
-    color: var(--orange);
+    font-size: 13px;
 }
 
 @keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
+
+.toast.success { border-color: var(--green);  color: var(--green);  }
+.toast.error   { border-color: var(--red);    color: var(--red);    }
+.toast.warning { border-color: var(--orange); color: var(--orange); }
 
 /* === BADGES === */
 .badge-item {
@@ -762,18 +899,321 @@ button:active {
     font-weight: 700;
 }
 
-.badge-emoji {
-    font-size: 28px;
+.badge-emoji { font-size: 28px; }
+
+.badge-popup {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: linear-gradient(135deg, var(--yellow), var(--orange));
+    color: var(--bg);
+    padding: 25px 35px;
+    border-radius: 20px;
+    z-index: 3000;
+    text-align: center;
+    font-weight: 900;
+    font-size: 18px;
+    transition: transform 0.4s ease;
+    box-shadow: 0 10px 40px rgba(250,204,21,0.6);
 }
 
-/* === FORM RESET MDP === */
+.badge-popup.show {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* ============================================
+   FIN PARTIE 3/4
+   ============================================ *//* ============================================
+   CONCOURS BLANC BONOGO - STYLE ORIGINAL
+   PARTIE 4/4 : HISTORIQUE + STATS + RESPONSIVE + ANIMATIONS
+   ============================================ */
+
+/* === PAGE HEADER (Historique / Stats) === */
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 0 12px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 50;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 15px;
+}
+
+.page-header h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--yellow);
+    text-align: left;
+    margin-bottom: 0;
+}
+
+.btn-back {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+    margin: 0;
+    min-height: unset;
+    flex-shrink: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.btn-back:active {
+    background: var(--border);
+    transform: scale(0.95);
+}
+
+/* === HISTORIQUE === */
+.histo-resume {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 15px;
+}
+
+.histo-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.3s ease both;
+}
+
+.histo-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 5px;
+    border-radius: 5px 0 0 5px;
+}
+
+.histo-card.histo-excellent::before { background: var(--green);  }
+.histo-card.histo-bien::before      { background: var(--yellow); }
+.histo-card.histo-passable::before  { background: var(--orange); }
+.histo-card.histo-faible::before    { background: var(--red);    }
+
+.histo-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.histo-type-label {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 3px;
+}
+
+.histo-date-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.histo-score-big { text-align: right; }
+
+.histo-score-big .score-num {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--yellow);    line-height: 1;
+    display: block;
+}
+
+.histo-score-big .score-pct {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    display: block;
+    margin-top: 2px;
+}
+
+.histo-details-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.histo-badge {
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.histo-badge.b-bon    { color: var(--green);  }
+.histo-badge.b-part   { color: var(--yellow); }
+.histo-badge.b-faux   { color: var(--red);    }
+.histo-badge.b-xp     { color: var(--purple); }
+.histo-badge.b-sortie { color: var(--orange); }
+
+.mention-tag {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 25px;
+    margin-top: 8px;
+    display: inline-block;
+}
+
+.mention-tag.m-excellent { background: rgba(34,197,94,0.15);  color: var(--green);  }
+.mention-tag.m-bien      { background: rgba(250,204,21,0.15); color: var(--yellow); }
+.mention-tag.m-passable  { background: rgba(249,115,22,0.15); color: var(--orange); }
+.mention-tag.m-faible    { background: rgba(239,68,68,0.15);  color: var(--red);    }
+
+/* === STATS PAGE === */
+.stats-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.stat-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 14px;
+    text-align: center;
+    animation: fadeUp 0.3s ease both;
+}
+
+.stat-card-emoji {
+    font-size: 26px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.stat-card-val {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--yellow);
+    display: block;
+    margin-bottom: 4px;
+    line-height: 1;
+}
+
+.stat-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+/* === BARRE DE PROGRESSION === */
+.progress-wrap {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.progress-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.progress-val {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--yellow);
+}
+
+.progress-track {
+    height: 10px;
+    background: var(--bg);
+    border-radius: 25px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 25px;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+    background: linear-gradient(135deg, var(--green), #16a34a);
+}
+
+.progress-fill.pf-orange { background: linear-gradient(135deg, var(--orange), #ea580c); }
+.progress-fill.pf-yellow { background: linear-gradient(135deg, var(--yellow), #eab308); }
+.progress-fill.pf-red    { background: linear-gradient(135deg, var(--red), #dc2626);    }
+.progress-fill.pf-purple { background: linear-gradient(135deg, var(--purple), #7c3aed); }
+
+/* === BADGES GRID === */
+.badges-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-height: 440px;
+    overflow-y: auto;
+    padding: 2px;
+}
+
+.badge-card {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 12px;
+    text-align: center;
+    opacity: 0.35;
+    transition: all 0.2s;
+}
+
+.badge-card.obtenu {
+    opacity: 1;
+    border-color: var(--yellow);
+    background: rgba(250,204,21,0.06);
+    box-shadow: 0 0 20px rgba(250,204,21,0.1);
+}
+
+.badge-card-emoji { font-size: 34px; display: block; margin-bottom: 8px; }
+.badge-card-nom   { font-size: 12px; font-weight: 800; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+.badge-card-desc  { font-size: 10px; color: var(--muted); line-height: 1.4; }
+.badge-card-ok    { font-size: 10px; font-weight: 800; color: var(--green); margin-top: 7px; display: block; }
+
+/* === FORM RESET ANIMATION === */
 #formReset {
     animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* === ANIMATIONS === */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0);    }
 }
 
 /* === RESPONSIVE === */
@@ -781,50 +1221,30 @@ button:active {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
-    h1 {
-        font-size: 28px;
-    }
-    
-    .score {
-        font-size: 52px;
-    }
-    
-    .timer-big {
-        font-size: 40px;
-        padding: 15px 30px;
-    }
-    
-    .footer button {
-        font-size: 13px;
-        min-height: 46px;
-    }
-    
-    .subheader {
-        font-size: 10px;
-    }
-    
-    #questions {
-        margin-top: 125px;
-    }
+
+    h1 { font-size: 26px; }
+
+    .score { font-size: 52px; }
+
+    .timer-big { font-size: 40px; }
+
+    .footer button { font-size: 13px; min-height: 46px; }
+
+    .subheader { font-size: 10px; }
+
+    #questions { margin-top: 125px; }
+
+    .stats-mini { gap: 15px; }
+
+    .badges-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* === SCROLL === */
-::-webkit-scrollbar {
-    width: 8px;
-}
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--yellow); }
 
-::-webkit-scrollbar-track {
-    background: var(--bg);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--yellow);
-}
-
-/* === FIN CSS COMPLET V4 === */
+/* ============================================
+   FIN CSS ORIGINAL COMPLET — 4 PARTIES ✅
+   ============================================ */
