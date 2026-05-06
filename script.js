@@ -1156,8 +1156,6 @@ if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
     btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
 };
 
-// ============================================
-// FIN PARTIE 5/10
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 6/10 : TOP 10 + CANDIDATS + LOGOUT ADMIN
@@ -1291,7 +1289,7 @@ if (btnLogoutAdmin) btnLogoutAdmin.onclick = function() {
 // FIN PARTIE 6/10
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 7/10 — SECTION A
+// PARTIE 7/10 — SECTION A — CORRIGÉE
 // ============================================
 
 if (btnExam) btnExam.onclick = async function() {
@@ -1314,22 +1312,83 @@ if (btnExam) btnExam.onclick = async function() {
         toast('Aucune question disponible', 'error'); return;
     }
 
+    var now = Date.now();
+    if (now < configActuelle.debutTimestamp) {
+        showPage(pageExam);
+        if (attenteEl)  attenteEl.style.display  = 'none';
+        if (resultatEl) resultatEl.style.display = 'none';
+        afficherSalleAttente();
+        return;
+    }
+
+    if (now > configActuelle.finTimestamp) {
+        toast('Ce concours est termine', 'error');
+        return;
+    }
+
+    // Vérifier si déjà soumis
+    var resSnap = await db.ref('resultats/' + user).once('value');
+    if (resSnap.exists()) {
+        // Déjà soumis → montrer résultat directement
+        var res = resSnap.val();
+        showPage(pageExam);
+        if (attenteEl)  attenteEl.style.display  = 'none';
+        questionsEl.style.display                = 'none';
+        document.querySelector('.footer').style.display    = 'none';
+        document.querySelector('.header').style.display    = 'flex';
+        document.querySelector('.subheader').style.display = 'none';
+
+        // Reconstruire reponsesFinales depuis Firebase
+        reponsesFinales = res.reponses || {};
+        questionsData   = sujetSnap.val() || [];
+        finTimestamp    = configActuelle.finTimestamp;
+
+        if (now < finTimestamp) {
+            // Temps pas encore fini → écran attente
+            afficherAttenteDepuisResultatExistant(res);
+        } else {
+            // Temps fini → afficher résultat
+            afficherResultat(
+                res.score, res.bonnes,
+                res.partielles, res.fausses, res.xp
+            );
+        }
+        return;
+    }
+
+    // Pas encore soumis → lancer examen
+    finTimestamp = configActuelle.finTimestamp;
     showPage(pageExam);
     if (attenteEl)  attenteEl.style.display  = 'none';
     if (resultatEl) resultatEl.style.display = 'none';
-
-    var now = Date.now();
-    if (now < configActuelle.debutTimestamp) {
-        afficherSalleAttente();
-    } else if (now >= configActuelle.debutTimestamp
-            && now <= configActuelle.finTimestamp) {
-        finTimestamp = configActuelle.finTimestamp;
-        lancerExamen();
-    } else {
-        toast('Ce concours est termine', 'error');
-        showPage(pageMenu);
-    }
+    lancerExamen();
 };
+
+// Si copie déjà envoyée mais temps pas fini
+function afficherAttenteDepuisResultatExistant(res) {
+    questionsEl.style.display                          = 'none';
+    document.querySelector('.footer').style.display    = 'none';
+    document.querySelector('.header').style.display    = 'none';
+    document.querySelector('.subheader').style.display = 'none';
+    if (attenteEl) attenteEl.style.display = 'block';
+
+    var intv = setInterval(function() {
+        var reste = finTimestamp - Date.now();
+        if (reste <= 0) {
+            clearInterval(intv);
+            if (attenteEl) attenteEl.style.display = 'none';
+            reponsesFinales = res.reponses || {};
+            afficherResultat(
+                res.score, res.bonnes,
+                res.partielles, res.fausses, res.xp
+            );
+            return;
+        }
+        var min = Math.floor(reste / 60000);
+        var sec = Math.floor((reste % 60000) / 1000);
+        if (timerAttenteEl) timerAttenteEl.textContent = min + ':' + pad(sec);
+    }, 1000);
+}
 
 function afficherSalleAttente() {
     salleAttenteEl.style.display                       = 'block';
@@ -1382,7 +1441,7 @@ async function lancerExamen() {
         heureConcoursEl.textContent = 'Duree : ' + dureeMin + ' min';
     }
 
-    // REPRISE SESSION
+    // Vérifier session
     var sessionSnap = await db.ref('sessions/' + user).once('value');
     var session     = sessionSnap.val();
 
@@ -1462,10 +1521,6 @@ function continuerExamen() {
     demarrerAntiTriche();
 }
 
-// ============================================
-// AFFICHER QUESTIONS
-// Sans badge orange — toutes les cases cochables
-// ============================================
 function afficherQuestions() {
     questionsEl.innerHTML = '';
     questionsData.forEach(function(q, qi) {
@@ -1473,7 +1528,6 @@ function afficherQuestions() {
         block.className = 'question-block';
         block.id = 'q-' + qi;
 
-        // Numéro sans indication de nombre de réponses
         var html = '<div class="question-numero">Question '
             + (qi+1) + ' / ' + questionsData.length
             + '</div>'
@@ -1496,7 +1550,7 @@ function afficherQuestions() {
         html += '</div>';
         block.innerHTML = html;
 
-        // TOUTES LES CASES COCHABLES — sélection multiple toujours active
+        // Toutes les cases cochables
         block.querySelectorAll('label').forEach(function(lbl) {
             lbl.onclick = function() {
                 son('click');
@@ -1605,12 +1659,12 @@ function demarrerTimer() {
 
 // ============================================
 // FIN PARTIE 7A
-// ============================================// ============================================
+// ============================================
+// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 7/10 — SECTION B
+// PARTIE 7/10 — SECTION B — CORRIGÉE
 // ============================================
 
-// ANTI-TRICHE — ignore écran veille
 var dernierMouvement = Date.now();
 
 document.addEventListener('touchstart', function() {
@@ -1646,12 +1700,9 @@ function gererSortie() {
         if (!sortieTimeout) {
             sortieTimeout = setTimeout(async function() {
                 sortieTimeout = null;
-
-                // Écran veille = inactivité > 60s → ignorer
                 var inactivite = Date.now() - dernierMouvement;
                 if (inactivite > 60000) return;
 
-                // Vraie sortie
                 nbSorties++;
                 son('sortie');
                 await sauvegarderSession();
@@ -1684,7 +1735,7 @@ function afficherAvertissementSortie() {
     }
 
     var div = document.createElement('div');
-    div.id = 'avertissement-sortie';
+    div.id  = 'avertissement-sortie';
     div.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;'
         + 'background:rgba(0,0,0,0.92);z-index:5000;'
         + 'display:flex;align-items:center;'
@@ -1709,8 +1760,8 @@ function afficherAvertissementSortie() {
         + '<div style="background:rgba(239,68,68,0.1);'
         + 'border:1.5px solid rgba(239,68,68,0.25);'
         + 'border-radius:12px;padding:14px;margin-bottom:20px">'
-        + '<div style="font-size:13px;color:var(--muted);'
-        + 'margin-bottom:6px">Sorties enregistrees</div>'
+        + '<div style="font-size:13px;color:var(--muted);margin-bottom:6px">'
+        + 'Sorties enregistrees</div>'
         + '<div style="font-size:28px;font-weight:900;color:var(--red);">'
         + nbSorties + ' / ' + MAX_SORTIES + '</div>'
         + '<div style="font-size:12px;color:var(--muted);margin-top:4px">'
@@ -1762,14 +1813,13 @@ function afficherBlocageDevourAvecAttente() {
         + MAX_SORTIES + ').</p>'
         + '<p style="color:var(--muted);margin-bottom:8px;'
         + 'font-size:13px;line-height:1.6;">'
-        + 'Tes reponses actuelles ont ete sauvegardees.<br>'
+        + 'Tes reponses ont ete sauvegardees.<br>'
         + 'Ta note sera calculee a la fin du temps imparti.</p>'
         + '<div style="background:var(--card);'
-        + 'border:2px solid var(--border);'
-        + 'border-radius:16px;padding:16px;'
-        + 'margin:20px auto;max-width:280px;">'
+        + 'border:2px solid var(--border);border-radius:16px;'
+        + 'padding:16px;margin:20px auto;max-width:280px;">'
         + '<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">'
-        + 'Temps restant avant calcul de ta note</div>'
+        + 'Temps restant</div>'
         + '<div id="timerBlocage" class="timer-big" '
         + 'style="font-size:36px;">--:--</div>'
         + '</div>'
@@ -1811,11 +1861,7 @@ async function soumettreBloque() {
         if (repUser === undefined
             || (Array.isArray(repUser) && repUser.length === 0)) {
             nbF++;
-            repFin[qi] = {
-                user:   [],
-                bonnes: bonnesReponses,
-                statut: 'vide'
-            };
+            repFin[qi] = { user: [], bonnes: bonnesReponses, statut: 'vide' };
             return;
         }
 
@@ -1824,36 +1870,22 @@ async function soumettreBloque() {
         var toutessBonnes = bonnesReponses.every(function(b) {
             return reponsesChoisies.indexOf(b) !== -1;
         });
-
         var aucuneFausse = reponsesChoisies.every(function(r) {
             return bonnesReponses.indexOf(r) !== -1;
         });
-
         var auMoinsUneBonne = reponsesChoisies.some(function(r) {
             return bonnesReponses.indexOf(r) !== -1;
         });
 
         if (toutessBonnes && aucuneFausse) {
             nbB++;
-            repFin[qi] = {
-                user:   reponsesChoisies,
-                bonnes: bonnesReponses,
-                statut: 'bonne'
-            };
+            repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'bonne' };
         } else if (auMoinsUneBonne && aucuneFausse) {
             nbP++;
-            repFin[qi] = {
-                user:   reponsesChoisies,
-                bonnes: bonnesReponses,
-                statut: 'partielle'
-            };
+            repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'partielle' };
         } else {
             nbF++;
-            repFin[qi] = {
-                user:   reponsesChoisies,
-                bonnes: bonnesReponses,
-                statut: 'fausse'
-            };
+            repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'fausse' };
         }
     });
 
@@ -1861,19 +1893,12 @@ async function soumettreBloque() {
     var xpGagneVal = calcXp(scoreFinal, questionsData.length);
 
     await db.ref('resultats/' + user).set({
-        score:      scoreFinal,
-        total:      questionsData.length,
-        bonnes:     nbB,
-        partielles: nbP,
-        fausses:    nbF,
-        xp:         xpGagneVal,
-        bloque:     true,
-        sorties:    nbSorties,
-        timestamp:  Date.now(),
-        pseudo:     userDisplay,
-        prenom:     userData.prenom || '',
-        nom:        userData.nom    || '',
-        reponses:   repFin
+        score: scoreFinal, total: questionsData.length,
+        bonnes: nbB, partielles: nbP, fausses: nbF,
+        xp: xpGagneVal, bloque: true, sorties: nbSorties,
+        timestamp: Date.now(), pseudo: userDisplay,
+        prenom: userData.prenom || '', nom: userData.nom || '',
+        reponses: repFin
     });
 
     await db.ref('sessions/' + user).update({ termine: true });
@@ -1881,20 +1906,14 @@ async function soumettreBloque() {
     var histo = userData.historique || [];
     if (!Array.isArray(histo)) histo = Object.values(histo);
     histo.push({
-        score:      scoreFinal,
-        total:      questionsData.length,
-        bonnes:     nbB,
-        partielles: nbP,
-        fausses:    nbF,
-        xp:         xpGagneVal,
-        sorties:    nbSorties,
-        type:       configActuelle.type || 'Concours Blanc Bonogo',
-        timestamp:  Date.now(),
-        date:       formatDate(Date.now())
+        score: scoreFinal, total: questionsData.length,
+        bonnes: nbB, partielles: nbP, fausses: nbF,
+        xp: xpGagneVal, sorties: nbSorties,
+        type: configActuelle.type || 'Concours Blanc Bonogo',
+        timestamp: Date.now(), date: formatDate(Date.now())
     });
 
     await db.ref('users/' + user).update({ historique: histo });
-
     reponsesFinales = repFin;
     afficherResultat(scoreFinal, nbB, nbP, nbF, xpGagneVal);
 }
@@ -1903,7 +1922,7 @@ async function soumettreBloque() {
 // FIN PARTIE 7 COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 8/10 — SECTION A
+// PARTIE 8/10 — SECTION A — FINALE
 // ============================================
 
 // === BOUTON NON RÉPONDU ===
@@ -1933,8 +1952,9 @@ if (btnNonRep) btnNonRep.onclick = function() {
     }
 
     modalTitreEl.textContent = 'Questions non repondues';
-    var html = '<p style="margin-bottom:12px">Tu as <b style="color:var(--yellow)">'
-        + nonRep.length + '</b> question(s) sans reponse :</p>'
+    var html = '<p style="margin-bottom:12px">Tu as '
+        + '<b style="color:var(--yellow)">' + nonRep.length
+        + '</b> question(s) sans reponse :</p>'
         + '<div style="display:flex;flex-wrap:wrap;gap:8px;'
         + 'max-height:200px;overflow-y:auto;'
         + 'background:var(--bg);padding:12px;border-radius:12px;">';
@@ -1979,7 +1999,7 @@ window.scrollVersQuestion = function(idx) {
 // === BOUTON TERMINER ===
 if (btnFinir) btnFinir.onclick = function() {
     son('click');
-    var rep   = 0;
+    var rep = 0;
     for (var i = 0; i < questionsData.length; i++) {
         var r = reponsesUser[i];
         if (r !== undefined && !(Array.isArray(r) && r.length === 0)) rep++;
@@ -1987,15 +2007,19 @@ if (btnFinir) btnFinir.onclick = function() {
     var total = questionsData.length;
 
     modalTitreEl.textContent = 'Terminer le concours';
-    modalTexteEl.innerHTML = '<p>Tu as repondu a <b style="color:var(--yellow)">'
-        + rep + '/' + total + '</b> questions.</p>'
+    modalTexteEl.innerHTML = '<p>Tu as repondu a '
+        + '<b style="color:var(--yellow)">' + rep + '/' + total
+        + '</b> questions.</p>'
         + (rep < total
-            ? '<p style="color:var(--orange);margin-top:8px">'
-            + 'Il reste <b>' + (total - rep) + '</b> questions sans reponse.</p>'
-            : '')
+            ? '<p style="color:var(--orange);margin-top:8px;">'
+            + 'Il reste <b>' + (total - rep)
+            + '</b> question(s) sans reponse.</p>'
+            : '<p style="color:var(--green);margin-top:8px;">'
+            + 'Toutes les questions sont repondues !</p>')
         + '<p style="margin-top:12px;color:var(--muted);">'
         + 'Une fois soumis, tu ne pourras plus modifier tes reponses.</p>'
-        + '<p style="margin-top:10px;font-weight:800">Confirmer la soumission ?</p>';
+        + '<p style="margin-top:10px;font-weight:800">'
+        + 'Confirmer la soumission ?</p>';
     modalEl.style.display = 'flex';
 
     btnConfirmer.onclick = async function() {
@@ -2007,34 +2031,43 @@ if (btnFinir) btnFinir.onclick = function() {
     };
 };
 
-// === SOUMETTRE ET ATTENDRE ===
+// ============================================
+// SOUMETTRE ET ATTENDRE
+// Corrections :
+// - Pas de double soumission même sans connexion
+// - Timer local force soumission à la fin
+// - Stats correctement mises à jour
+// - Nouveau concours possible après
+// ============================================
 async function soumettreEtAttendre() {
     if (copieSubmise) return;
     copieSubmise = true;
     enExamen     = false;
     clearInterval(timerInt);
 
+    // Arrêter anti-triche
+    document.removeEventListener('visibilitychange', gererSortie);
+    window.removeEventListener('blur',  gererSortie);
+    window.removeEventListener('focus', gererRetour);
+
     // ============================================
     // CALCUL SCORE INTELLIGENT
-    // 1 point  = toutes les bonnes cochées + aucune fausse
-    // 0.5 point = certaines bonnes cochées + aucune fausse
-    // 0 point  = au moins une fausse cochée ou rien
+    // 1 pt  = toutes bonnes + aucune fausse
+    // 0.5pt = certaines bonnes + aucune fausse
+    // 0 pt  = fausse cochée ou rien
     // ============================================
-    var nbBonnes    = 0;
+    var nbBonnes     = 0;
     var nbPartielles = 0;
     var nbFausses    = 0;
     reponsesFinales  = {};
 
     questionsData.forEach(function(q, qi) {
         var repUser = reponsesUser[qi];
-
-        // Toutes les bonnes réponses de cette question
         var bonnesReponses = [];
         (q.reponses || []).forEach(function(r, ri) {
             if (r.correct) bonnesReponses.push(ri);
         });
 
-        // Question non répondue
         if (repUser === undefined
             || (Array.isArray(repUser) && repUser.length === 0)) {
             nbFausses++;
@@ -2046,20 +2079,14 @@ async function soumettreEtAttendre() {
             return;
         }
 
-        // Normaliser en tableau
         var reponsesChoisies = Array.isArray(repUser) ? repUser : [repUser];
 
-        // Toutes les bonnes sont cochées ?
         var toutessBonnes = bonnesReponses.every(function(b) {
             return reponsesChoisies.indexOf(b) !== -1;
         });
-
-        // Aucune fausse cochée ?
         var aucuneFausse = reponsesChoisies.every(function(r) {
             return bonnesReponses.indexOf(r) !== -1;
         });
-
-        // Au moins une bonne cochée ?
         var auMoinsUneBonne = reponsesChoisies.some(function(r) {
             return bonnesReponses.indexOf(r) !== -1;
         });
@@ -2091,114 +2118,155 @@ async function soumettreEtAttendre() {
     var scoreFinal = Math.round((nbBonnes + nbPartielles * 0.5) * 10) / 10;
     var xpGagneVal = calcXp(scoreFinal, questionsData.length);
     var pctVal     = getPct(scoreFinal, questionsData.length);
-
-    // Sauver résultat Firebase
-    await db.ref('resultats/' + user).set({
-        score:      scoreFinal,
-        total:      questionsData.length,
-        bonnes:     nbBonnes,
-        partielles: nbPartielles,
-        fausses:    nbFausses,
-        xp:         xpGagneVal,
-        timestamp:  Date.now(),
-        pseudo:     userDisplay,
-        prenom:     userData.prenom || '',
-        nom:        userData.nom    || '',
-        sorties:    nbSorties,
-        bloque:     false,
-        reponses:   reponsesFinales
-    });
-
-    await db.ref('sessions/' + user).update({ termine: true });
-
-    // Mettre à jour userData
-    var newXp  = (userData.xp || 0) + xpGagneVal;
-    var newNiv = niveau(newXp);
-    var oldNiv = userData.niveau || 1;
-    var histo  = userData.historique || [];
-    if (!Array.isArray(histo)) histo = Object.values(histo);
-
-    histo.push({
-        score:      scoreFinal,
-        total:      questionsData.length,
-        bonnes:     nbBonnes,
-        partielles: nbPartielles,
-        fausses:    nbFausses,
-        xp:         xpGagneVal,
-        sorties:    nbSorties,
-        type:       configActuelle.type || 'Concours Blanc Bonogo',
-        timestamp:  Date.now(),
-        date:       formatDate(Date.now()),
-        pct:        pctVal + '%'
-    });
-
-    var nbConcours    = (userData.concoursFaits || 0) + 1;
-    var totalScoreAll = (userData.totalScore    || 0) + scoreFinal;
-    var newMoyenne    = parseFloat((totalScoreAll / nbConcours).toFixed(1));
-
-    var updates = {
-        xp:            newXp,
-        niveau:        newNiv,
-        concoursFaits: nbConcours,
-        totalScore:    totalScoreAll,
-        moyenne:       newMoyenne,
-        historique:    histo
-    };
+    var timestamp  = Date.now();
 
     // ============================================
-    // FIN PARTIE 8A
-    // ============================================// ============================================
-    // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-    // PARTIE 8/10 — SECTION B (suite soumettreEtAttendre)
+    // SAUVEGARDER DANS FIREBASE
     // ============================================
+    try {
+        await db.ref('resultats/' + user).set({
+            score:      scoreFinal,
+            total:      questionsData.length,
+            bonnes:     nbBonnes,
+            partielles: nbPartielles,
+            fausses:    nbFausses,
+            xp:         xpGagneVal,
+            timestamp:  timestamp,
+            pseudo:     userDisplay,
+            prenom:     userData.prenom || '',
+            nom:        userData.nom    || '',
+            sorties:    nbSorties,
+            bloque:     false,
+            reponses:   reponsesFinales
+        });
 
-    // === VÉRIFICATION BADGES AVEC NOTIFICATIONS ===
-    var badges = userData.badges || {};
-
-    if (nbConcours === 1) {
-        badges.premier = true;
-        afficherBadgeAnimation('🎯', 'Premier Concours !');
-        notifBadge('🎯', 'Premier Concours');
-    }
-    if (nbConcours >= 5) {
-        badges.assidu = true;
-    }
-    if (scoreFinal === 50) {
-        badges.perfect = true;
-        afficherBadgeAnimation('💯', 'Sans Faute !');
-        notifBadge('💯', 'Sans Faute');
-    }
-    if (newNiv >= 10 && !badges.niveau10) {
-        badges.niveau10 = true;
-        afficherBadgeAnimation('⭐', 'Niveau 10 !');
-        notifBadge('⭐', 'Niveau 10 atteint');
-    }
-    if (nbSorties === 0) {
-        badges.resistant = true;
-    }
-    if (newMoyenne > 40) {
-        badges.elite = true;
-    }
-    if ((userData.streak || 0) >= 7) {
-        badges.streak7 = true;
-    }
-    if (finTimestamp - Date.now() > 3600000) {
-        badges.rapide = true;
+        await db.ref('sessions/' + user).update({ termine: true });
+    } catch(e) {
+        // Pas de connexion → stocker localement et réessayer
+        localStorage.setItem('bb_pending_result_' + user, JSON.stringify({
+            score: scoreFinal, total: questionsData.length,
+            bonnes: nbBonnes, partielles: nbPartielles,
+            fausses: nbFausses, xp: xpGagneVal,
+            timestamp: timestamp, pseudo: userDisplay,
+            prenom: userData.prenom || '', nom: userData.nom || '',
+            sorties: nbSorties, bloque: false,
+            reponses: reponsesFinales
+        }));
+        toast('Connexion perdue. Resultat sauvegarde localement.', 'warning');
     }
 
-    updates.badges = badges;
-    await db.ref('users/' + user).update(updates);
-    userData = Object.assign(userData, updates);
+    // ============================================
+    // MISE À JOUR STATS UTILISATEUR
+    // ============================================
+    try {
+        var newXp  = (userData.xp || 0) + xpGagneVal;
+        var newNiv = niveau(newXp);
+        var oldNiv = userData.niveau || 1;
 
-    // Level up notification
-    if (newNiv > oldNiv) {
-        toast('NIVEAU ' + newNiv + ' ATTEINT !', 'success');
-        son('niveau');
-        notifBadge('⭐', 'Niveau ' + newNiv + ' atteint !');
+        // Récupérer historique frais depuis Firebase
+        var freshSnap = await db.ref('users/' + user + '/historique').once('value');
+        var histo = freshSnap.val() || [];
+        if (!Array.isArray(histo)) histo = Object.values(histo);
+
+        histo.push({
+            score:      scoreFinal,
+            total:      questionsData.length,
+            bonnes:     nbBonnes,
+            partielles: nbPartielles,
+            fausses:    nbFausses,
+            xp:         xpGagneVal,
+            sorties:    nbSorties,
+            type:       configActuelle
+                ? (configActuelle.type || 'Concours Blanc Bonogo')
+                : 'Concours Blanc Bonogo',
+            timestamp:  timestamp,
+            date:       formatDate(timestamp),
+            pct:        pctVal + '%'
+        });
+
+        // Recalculer moyenne sur tout l'historique
+        var nbConcours    = histo.length;
+        var totalScoreAll = 0;
+        histo.forEach(function(h) {
+            totalScoreAll += (typeof h.score === 'number') ? h.score : 0;
+        });
+        var newMoyenne = parseFloat((totalScoreAll / nbConcours).toFixed(1));
+
+        var updates = {
+            xp:            newXp,
+            niveau:        newNiv,
+            concoursFaits: nbConcours,
+            totalScore:    totalScoreAll,
+            moyenne:       newMoyenne,
+            historique:    histo
+        };
+
+        // Vérification badges
+        var badges = userData.badges || {};
+
+        if (nbConcours === 1) {
+            badges.premier = true;
+            afficherBadgeAnimation('🎯', 'Premier Concours !');
+            notifBadge('🎯', 'Premier Concours');
+        }
+        if (nbConcours >= 5 && !badges.assidu) {
+            badges.assidu = true;
+            afficherBadgeAnimation('📅', 'Assidu !');
+            notifBadge('📅', 'Assidu - 5 concours passes');
+        }
+        if (scoreFinal === 50 && !badges.perfect) {
+            badges.perfect = true;
+            afficherBadgeAnimation('💯', 'Sans Faute !');
+            notifBadge('💯', 'Sans Faute - 50/50 !');
+        }
+        if (newNiv >= 10 && !badges.niveau10) {
+            badges.niveau10 = true;
+            afficherBadgeAnimation('⭐', 'Niveau 10 !');
+            notifBadge('⭐', 'Niveau 10 atteint');
+        }
+        if (nbSorties === 0 && !badges.resistant) {
+            badges.resistant = true;
+        }
+        if (newMoyenne > 40 && !badges.elite) {
+            badges.elite = true;
+            afficherBadgeAnimation('👑', 'Elite !');
+            notifBadge('👑', 'Elite - Moyenne > 40/50');
+        }
+        if ((userData.streak || 0) >= 7 && !badges.streak7) {
+            badges.streak7 = true;
+            afficherBadgeAnimation('🔥', 'Serie 7 jours !');
+            notifBadge('🔥', 'Serie de 7 jours !');
+        }
+        if (configActuelle
+            && (finTimestamp - timestamp) > 3600000
+            && !badges.rapide) {
+            badges.rapide = true;
+            afficherBadgeAnimation('⚡', 'Eclair !');
+            notifBadge('⚡', 'Termine 1h avant la fin');
+        }
+
+        updates.badges = badges;
+        await db.ref('users/' + user).update(updates);
+        userData = Object.assign(userData, updates);
+
+        if (newNiv > oldNiv) {
+            toast('NIVEAU ' + newNiv + ' ATTEINT !', 'success');
+            son('niveau');
+            notifBadge('⭐', 'Niveau ' + newNiv + ' atteint !');
+        }
+
+    } catch(e) {
+        console.warn('Erreur mise a jour stats:', e);
     }
 
-    await verifierTop10(scoreFinal);
+    // Top 10
+    try {
+        await verifierTop10(scoreFinal);
+    } catch(e) {
+        console.warn('Erreur top 10:', e);
+    }
 
+    // Afficher résultat ou attendre
     var now = Date.now();
     if (now < finTimestamp) {
         afficherAttente(scoreFinal, nbBonnes, nbPartielles, nbFausses, xpGagneVal);
@@ -2207,7 +2275,40 @@ async function soumettreEtAttendre() {
     }
 }
 
-// === TOP 10 PERMANENT ===
+// ============================================
+// SOUMETTRE RÉSULTAT EN ATTENTE (hors connexion)
+// Appelé automatiquement quand connexion revient
+// ============================================
+async function soumettreResultatEnAttente() {
+    var key = 'bb_pending_result_' + user;
+    var pending = localStorage.getItem(key);
+    if (!pending) return;
+
+    try {
+        var res = JSON.parse(pending);
+        // Vérifier si pas déjà soumis
+        var snap = await db.ref('resultats/' + user).once('value');
+        if (!snap.exists()) {
+            await db.ref('resultats/' + user).set(res);
+            await db.ref('sessions/' + user).update({ termine: true });
+            toast('Resultat synchronise avec succes !', 'success');
+        }
+        localStorage.removeItem(key);
+    } catch(e) {
+        console.warn('Erreur sync resultat:', e);
+    }
+}
+
+// Vérifier résultat en attente quand connexion revient
+window.addEventListener('online', function() {
+    if (user) {
+        soumettreResultatEnAttente();
+    }
+});
+
+// ============================================
+// TOP 10 PERMANENT
+// ============================================
 async function verifierTop10(score) {
     var snap = await db.ref('top10Permanent').once('value');
     var top  = [];
@@ -2244,7 +2345,7 @@ async function verifierTop10(score) {
         notifBadge('🌟', 'Tu entres dans le Hall of Fame !');
 
         await db.ref('users/' + user).update({
-            top10All:         true,
+            top10All:          true,
             'badges/top10all': true
         });
         userData.badges          = userData.badges || {};
@@ -2253,7 +2354,209 @@ async function verifierTop10(score) {
 }
 
 // ============================================
-// FIN PARTIE 8 COMPLETE ✅
+// FIN PARTIE 8A COMPLETE ✅
+// ============================================// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
+// PARTIE 8/10 — SECTION B — FINALE
+// ============================================
+
+// ============================================
+// TIMER LOCAL DE SÉCURITÉ
+// Force la soumission même sans connexion
+// ============================================
+function demarrerTimerSecurite() {
+    // Vérifier toutes les 10 secondes si le temps est écoulé
+    var timerSecurite = setInterval(async function() {
+        if (!enExamen && !copieSubmise) {
+            // Pas en examen et pas soumis → vérifier si temps écoulé
+            if (finTimestamp > 0 && Date.now() >= finTimestamp) {
+                clearInterval(timerSecurite);
+            }
+            return;
+        }
+
+        if (copieSubmise) {
+            clearInterval(timerSecurite);
+            return;
+        }
+
+        var now = Date.now();
+        if (finTimestamp > 0 && now >= finTimestamp) {
+            clearInterval(timerSecurite);
+            if (!copieSubmise) {
+                // Forcer soumission même sans connexion
+                copieSubmise = true;
+                enExamen     = false;
+                clearInterval(timerInt);
+
+                // Stocker localement si pas de connexion
+                var timestamp = now;
+                var nbB = 0, nbP = 0, nbF = 0;
+                var repFin = {};
+
+                questionsData.forEach(function(q, qi) {
+                    var repUser = reponsesUser[qi];
+                    var bonnesReponses = [];
+                    (q.reponses || []).forEach(function(r, ri) {
+                        if (r.correct) bonnesReponses.push(ri);
+                    });
+
+                    if (repUser === undefined
+                        || (Array.isArray(repUser) && repUser.length === 0)) {
+                        nbF++;
+                        repFin[qi] = { user: [], bonnes: bonnesReponses, statut: 'vide' };
+                        return;
+                    }
+
+                    var reponsesChoisies = Array.isArray(repUser)
+                        ? repUser : [repUser];
+
+                    var toutessBonnes = bonnesReponses.every(function(b) {
+                        return reponsesChoisies.indexOf(b) !== -1;
+                    });
+                    var aucuneFausse = reponsesChoisies.every(function(r) {
+                        return bonnesReponses.indexOf(r) !== -1;
+                    });
+                    var auMoinsUneBonne = reponsesChoisies.some(function(r) {
+                        return bonnesReponses.indexOf(r) !== -1;
+                    });
+
+                    if (toutessBonnes && aucuneFausse) {
+                        nbB++;
+                        repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'bonne' };
+                    } else if (auMoinsUneBonne && aucuneFausse) {
+                        nbP++;
+                        repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'partielle' };
+                    } else {
+                        nbF++;
+                        repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'fausse' };
+                    }
+                });
+
+                var scoreFinal = Math.round((nbB + nbP * 0.5) * 10) / 10;
+                var xpGagneVal = calcXp(scoreFinal, questionsData.length || 50);
+
+                // Stocker localement
+                localStorage.setItem('bb_pending_result_' + user, JSON.stringify({
+                    score: scoreFinal, total: questionsData.length,
+                    bonnes: nbB, partielles: nbP, fausses: nbF,
+                    xp: xpGagneVal, timestamp: timestamp,
+                    pseudo: userDisplay,
+                    prenom: userData.prenom || '',
+                    nom:    userData.nom    || '',
+                    sorties: nbSorties, bloque: false,
+                    reponses: repFin
+                }));
+
+                reponsesFinales = repFin;
+
+                // Essayer Firebase
+                try {
+                    await db.ref('resultats/' + user).set({
+                        score: scoreFinal, total: questionsData.length,
+                        bonnes: nbB, partielles: nbP, fausses: nbF,
+                        xp: xpGagneVal, timestamp: timestamp,
+                        pseudo: userDisplay,
+                        prenom: userData.prenom || '',
+                        nom:    userData.nom    || '',
+                        sorties: nbSorties, bloque: false,
+                        reponses: repFin
+                    });
+                    await db.ref('sessions/' + user).update({ termine: true });
+                    localStorage.removeItem('bb_pending_result_' + user);
+                } catch(e) {
+                    toast('Connexion perdue. Resultat sauvegarde.', 'warning');
+                }
+
+                afficherResultat(scoreFinal, nbB, nbP, nbF, xpGagneVal);
+            }
+        }
+    }, 10000);
+}
+
+// ============================================
+// VÉRIFICATION AU DÉMARRAGE
+// Si résultat en attente → synchroniser
+// Si nouveau concours → ne pas bloquer
+// ============================================
+async function verifierEtatAuDemarrage() {
+    if (!user) return;
+
+    // Synchroniser résultat en attente
+    await soumettreResultatEnAttente();
+
+    // Vérifier si config concours a changé
+    var configSnap = await db.ref('configConcours').once('value');
+    var config = configSnap.val();
+    if (!config) return;
+
+    var now = Date.now();
+
+    // Si concours terminé → nettoyer session locale
+    if (now > config.finTimestamp) {
+        // Vérifier si résultat existe
+        var resSnap = await db.ref('resultats/' + user).once('value');
+        if (!resSnap.exists()) {
+            // Pas de résultat → soumettre ce qu'on a en local
+            var pending = localStorage.getItem('bb_pending_result_' + user);
+            if (pending) {
+                try {
+                    var res = JSON.parse(pending);
+                    await db.ref('resultats/' + user).set(res);
+                    await db.ref('sessions/' + user).update({ termine: true });
+                    localStorage.removeItem('bb_pending_result_' + user);
+                    toast('Resultat synchronise !', 'success');
+                } catch(e) {}
+            }
+        }
+    }
+}
+
+// Appeler au login
+async function autoLogin(savedKey) {
+    try {
+        var snap = await db.ref('users/' + savedKey).once('value');
+        if (!snap.exists()) {
+            localStorage.removeItem('bb_user'); return;
+        }
+        var d       = snap.val();
+        user        = savedKey;
+        userDisplay = (d.prenom || '') + ' ' + (d.nom || '');
+        userData    = d;
+        startPresence();
+        chargerMenu(d);
+
+        // Vérifier état au démarrage
+        setTimeout(verifierEtatAuDemarrage, 1000);
+    } catch(e) {
+        localStorage.removeItem('bb_user');
+    }
+}
+
+// ============================================
+// NOUVEAU CONCOURS — PAS DE BLOCAGE
+// L'admin lance un nouveau concours →
+// les anciens résultats sont effacés →
+// les candidats peuvent repasser
+// ============================================
+db.ref('resultats/' + (user || 'none')).on('value', function(snap) {
+    // Si résultat supprimé par admin (nouveau concours)
+    // et que le candidat est sur la page menu → rien à faire
+    // Il pourra relancer normalement
+});
+
+// Écouter suppression résultat (nouveau concours admin)
+db.ref('resultats').on('child_removed', function(snap) {
+    if (snap.key === user) {
+        // Mon résultat a été supprimé → nouveau concours
+        copieSubmise = false;
+        toast('Nouveau concours disponible !', 'success');
+        son('success');
+    }
+});
+
+// ============================================
+// FIN PARTIE 8B COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 9/10 — SECTION A
@@ -2621,24 +2924,133 @@ if (btnRetourMenu) btnRetourMenu.onclick = function() {
 
 // ============================================
 // FIN PARTIE 9 COMPLETE ✅
-// ============================================// ============================================================
-// CONCOURS BLANC BONOGO - SCRIPT V7 COMPLET
-// PARTIE 10/10 : INITIALISATION + AUTO-SAVE + LISTENERS GLOBAUX
-// ============================================================
+// ============================================// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
+// PARTIE 10/10 CORRIGÉE
+// ============================================
 
-// ============================================================
-// AUTO-SAVE TOUTES LES 30 SECONDES
-// ============================================================
-setInterval(async function () {
-    if (enExamen && !copieSubmise && user && Object.keys(reponsesUser).length > 0) {
+function demanderPermissionNotif() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+        Notification.requestPermission().then(function(permission) {
+            if (permission === 'granted') {
+                toast('Notifications activees !', 'success');
+            }
+        });
+    }
+}
+
+function envoyerNotif(titre, message) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    try {
+        new Notification(titre, {
+            body:    message,
+            icon:    'https://em-content.zobj.net/source/microsoft-teams/363/flag-burkina-faso_1f1e7-1f1eb.png',
+            vibrate: [200, 100, 200],
+            tag:     'bonogo-notif'
+        });
+    } catch(e) {}
+}
+
+function notifResultatDisponible(score, total) {
+    var pct = Math.round((score / total) * 100);
+    envoyerNotif(
+        'Ton resultat est disponible !',
+        'Tu as obtenu ' + score + '/' + total + ' (' + pct + '%)'
+    );
+}
+
+function notifBadge(emoji, nomBadge) {
+    envoyerNotif(
+        emoji + ' Badge obtenu !',
+        'Felicitations ! Tu as debloque : ' + nomBadge
+    );
+}
+
+// Timeouts notifications (pour les annuler si nécessaire)
+var timeoutNotif5min  = null;
+var timeoutNotifDebut = null;
+
+function surveillerDebutConcours() {
+    // Annuler anciens timeouts
+    if (timeoutNotif5min)  clearTimeout(timeoutNotif5min);
+    if (timeoutNotifDebut) clearTimeout(timeoutNotifDebut);
+
+    db.ref('configConcours').once('value').then(function(snap) {
+        var config = snap.val();
+        if (!config || !config.debutTimestamp) return;
+
+        var now     = Date.now();
+        var debut   = config.debutTimestamp;
+        var resteMs = debut - now;
+
+        if (resteMs <= 0) return; // Concours déjà commencé
+
+        // Notif 5 minutes avant
+        var resteAvant5min = resteMs - 300000;
+        if (resteAvant5min > 0) {
+            timeoutNotif5min = setTimeout(function() {
+                envoyerNotif(
+                    'Concours dans 5 minutes !',
+                    'Prepare-toi. Le concours Bonogo commence bientot.'
+                );
+                toast('Concours dans 5 minutes !', 'warning');
+                son('alerte');
+            }, resteAvant5min);
+        } else if (resteMs > 0) {
+            // Moins de 5 min restantes → notif immédiate
+            envoyerNotif(
+                'Concours bientot !',
+                'Le concours commence dans moins de 5 minutes !'
+            );
+        }
+
+        // Notif au démarrage exact
+        timeoutNotifDebut = setTimeout(function() {
+            envoyerNotif(
+                'Le concours commence !',
+                'Ouvre l\'application maintenant pour commencer.'
+            );
+            toast('Le concours a commence !', 'success');
+            son('alerte');
+        }, resteMs);
+    });
+}
+
+function chargerMenu(d) {
+    var p = d.prenom || '';
+    var n = d.nom    || '';
+    if (nomMenuEl)    nomMenuEl.textContent    = 'Bonjour, ' + p + ' ' + n + ' !';
+    if (avatarMenuEl) avatarMenuEl.textContent = initiales(p, n);
+    if (nivEl)        nivEl.textContent        = d.niveau || 1;
+    if (xpEl)         xpEl.textContent         = d.xp || 0;
+    if (streakEl)     streakEl.textContent     = (d.streak || 0) + 'j';
+    showPage(pageMenu);
+    demanderPermissionNotif();
+    surveillerDebutConcours();
+}
+
+function startPresence() {
+    if (presenceRef) presenceRef.remove();
+    presenceRef = db.ref('online/' + user);
+    presenceRef.set({
+        nom: userDisplay,
+        ts:  firebase.database.ServerValue.TIMESTAMP
+    });
+    presenceRef.onDisconnect().remove();
+    demanderPermissionNotif();
+}
+
+// Auto-save
+setInterval(async function() {
+    if (enExamen && !copieSubmise && user
+        && Object.keys(reponsesUser).length > 0) {
         await sauvegarderSession();
     }
 }, 30000);
 
-// ============================================================
-// ÉCOUTE CONFIG EN TEMPS RÉEL
-// ============================================================
-db.ref('configConcours').on('value', function (snap) {
+db.ref('configConcours').on('value', function(snap) {
     var config = snap.val();
     if (!config) return;
     if (nomConcoursEl && enExamen) {
@@ -2646,41 +3058,31 @@ db.ref('configConcours').on('value', function (snap) {
     }
 });
 
-// ============================================================
-// ÉCOUTE SUJET EN TEMPS RÉEL
-// ============================================================
-db.ref('sujetActuel').on('value', function (snap) {
+db.ref('sujetActuel').on('value', function(snap) {
     var data = snap.val();
     if (data && Array.isArray(data) && !enExamen) {
         questionsData = data;
     }
 });
 
-// ============================================================
-// EMPÊCHER RECHARGEMENT ACCIDENTEL PENDANT EXAM
-// ============================================================
-window.addEventListener('beforeunload', function (e) {
+window.addEventListener('beforeunload', function(e) {
     if (enExamen && !copieSubmise) {
         e.preventDefault();
-        e.returnValue = 'Tu es en plein concours ! Tes réponses sont sauvegardées.';
+        e.returnValue = 'Tu es en plein concours !';
         return e.returnValue;
     }
 });
 
-// ============================================================
-// FERMER MODAL AVEC ÉCHAP
-// ============================================================
-document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && modalEl && modalEl.style.display !== 'none') {
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape'
+        && modalEl
+        && modalEl.style.display !== 'none') {
         modalEl.style.display      = 'none';
         btnConfirmer.style.display = '';
         btnAnnuler.textContent     = 'Annuler';
     }
 });
 
-// ============================================================
-// RAFRAICHIR DONNÉES UTILISATEUR
-// ============================================================
 async function rafraichirUser() {
     if (!user) return;
     var snap = await db.ref('users/' + user).once('value');
@@ -2690,11 +3092,8 @@ async function rafraichirUser() {
     }
 }
 
-// ============================================================
-// LOG DE DÉMARRAGE
-// ============================================================
-console.log('🇧🇫 Concours Blanc Bonogo V7 — Chargé avec succès');
+console.log('Concours Blanc Bonogo — Script charge');
 
-// ============================================================
-// FIN PARTIE 10/10 — SCRIPT COMPLET
-// ============================================================
+// ============================================
+// FIN PARTIE 10 COMPLETE ✅
+// ============================================
