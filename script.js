@@ -1154,7 +1154,8 @@ if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
         son('success');
     };
     btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
-};
+};// ============================================
+// FIN PARTIE 5/10
 
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
