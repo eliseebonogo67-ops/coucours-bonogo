@@ -1154,12 +1154,13 @@ if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
         son('success');
     };
     btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
-};// ============================================
-// FIN PARTIE 5/10
+};
 
+// ============================================
+// FIN PARTIE 5/10
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 6/10 : TOP 10 + CANDIDATS + LOGOUT ADMIN
+// PARTIE 6/10 — COMPLETE AVEC PAIEMENT
 // ============================================
 
 // === TOP 10 PERMANENT LIVE ===
@@ -1174,17 +1175,21 @@ function demarrerTop10Live() {
         if (!top10PermanentEl) return;
 
         if (results.length === 0) {
-            top10PermanentEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">'
+            top10PermanentEl.innerHTML = '<div style="text-align:center;'
+                + 'padding:30px;color:var(--muted)">'
                 + '<div style="font-size:40px;margin-bottom:10px">🌟</div>'
                 + '<p>Hall of Fame vide pour le moment</p>'
                 + '</div>';
             return;
         }
 
-        var html = '<div style="font-size:11px;font-weight:700;color:var(--muted);'
-            + 'text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">'
+        var html = '<div style="font-size:11px;font-weight:700;'
+            + 'color:var(--muted);text-transform:uppercase;'
+            + 'letter-spacing:1px;margin-bottom:12px">'
             + 'Meilleurs scores de tous les concours</div>';
-        results.forEach(function(r, i) { html += ligneClassement(r, i, true); });
+        results.forEach(function(r, i) {
+            html += ligneClassement(r, i, true);
+        });
         top10PermanentEl.innerHTML = html;
     });
 }
@@ -1193,14 +1198,13 @@ function demarrerTop10Live() {
 if (btnResetTop10) btnResetTop10.onclick = function() {
     son('click');
     modalTitreEl.textContent = 'Reset Hall of Fame';
-    modalTexteEl.innerHTML   = '<p>Supprimer tout le Hall of Fame ?<br>'
-        + 'Cette action est <b style="color:var(--red)">irréversible</b>.</p>';
+    modalTexteEl.innerHTML = '<p>Supprimer tout le Hall of Fame ?<br>'
+        + 'Cette action est <b style="color:var(--red)">irreversible</b>.</p>';
     modalEl.style.display = 'flex';
-
     btnConfirmer.onclick = async function() {
         modalEl.style.display = 'none';
         await db.ref('top10Permanent').remove();
-        toast('🗑️ Hall of Fame réinitialisé', 'success');
+        toast('Hall of Fame reinitialise', 'success');
         son('success');
     };
     btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
@@ -1213,25 +1217,32 @@ function demarrerClassementLive() {
         snap.forEach(function(child) {
             results.push(Object.assign({ key: child.key }, child.val()));
         });
-        results.sort(function(a, b) { return b.score - a.score || a.timestamp - b.timestamp; });
+        results.sort(function(a, b) {
+            return b.score - a.score || a.timestamp - b.timestamp;
+        });
 
         if (top10El) {
             var top = results.slice(0, 10);
             if (top.length === 0) {
-                top10El.innerHTML = '<p style="text-align:center;color:var(--muted)">Aucun résultat encore</p>';
+                top10El.innerHTML = '<p style="text-align:center;'
+                    + 'color:var(--muted)">Aucun resultat encore</p>';
             } else {
                 top10El.innerHTML = top.map(function(r, i) {
                     var p   = r.prenom || '';
                     var n   = r.nom    || '';
-                    var nom = (p || n) ? (p + ' ' + n).trim() : (r.pseudo || 'Candidat');
-                    var med = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
+                    var nom = (p || n) ? (p+' '+n).trim()
+                            : (r.pseudo || 'Candidat');
+                    var med = i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
                     return '<div class="classement-item">'
                         + '<span class="rang">' + med + '</span>'
                         + '<div style="flex:1;min-width:0">'
                         +   '<div class="cl-nom">' + nom + '</div>'
-                        +   (r.sorties > 0 ? '<div class="cl-meta">⚠️ ' + r.sorties + ' sortie(s)</div>' : '')
+                        +   (r.sorties > 0
+                            ? '<div class="cl-meta">⚠️ '
+                            + r.sorties + ' sortie(s)</div>' : '')
                         + '</div>'
-                        + '<span class="cl-score">' + (r.score || 0) + '/50</span>'
+                        + '<span class="cl-score">'
+                        + (r.score || 0) + '/50</span>'
                         + '</div>';
                 }).join('');
             }
@@ -1239,13 +1250,15 @@ function demarrerClassementLive() {
 
         if (statConcoursEl) statConcoursEl.textContent = results.length;
         if (statMoyEl && results.length > 0) {
-            var s = results.reduce(function(a, r) { return a + (r.score || 0); }, 0);
+            var s = results.reduce(function(a, r) {
+                return a + (r.score || 0);
+            }, 0);
             statMoyEl.textContent = (s / results.length).toFixed(1) + '/50';
         }
     });
 }
 
-// === LISTE CANDIDATS LIVE ===
+// === LISTE CANDIDATS AVEC SYSTÈME PAIEMENT ===
 db.ref('users').on('value', function(snap) {
     if (!listeCandidatsEl) return;
     var users = [];
@@ -1255,50 +1268,254 @@ db.ref('users').on('value', function(snap) {
     users.sort(function(a, b) { return (b.xp || 0) - (a.xp || 0); });
 
     if (users.length === 0) {
-        listeCandidatsEl.innerHTML = '<p style="text-align:center;color:var(--muted)">Aucun candidat inscrit</p>';
+        listeCandidatsEl.innerHTML = '<p style="text-align:center;'
+            + 'color:var(--muted)">Aucun candidat inscrit</p>';
         return;
     }
 
-    listeCandidatsEl.innerHTML = users.map(function(u) {
-        var badgesCount = Object.keys(u.badges || {}).length;
-        return '<div class="eleve-item" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'
-            + '<div style="flex:1;min-width:0">'
-            +   '<strong>' + (u.prenom || '?') + ' ' + (u.nom || '?') + '</strong>'
-            +   '<div style="font-size:11px;color:var(--muted)">' + (u.email || '?') + '</div>'
-            +   '<div style="font-size:11px;color:var(--muted);margin-top:3px">'
-            +     'Niv.' + (u.niveau || 1) + ' · ' + (u.xp || 0) + ' XP · ' + badgesCount + ' badge(s)'
-            +   '</div>'
-            + '</div>'
-            + '<div style="text-align:right;flex-shrink:0">'
-            +   '<div style="font-size:13px;font-weight:800;color:var(--yellow)">'
-            +     (u.concoursFaits || 0) + ' concours'
-            +   '</div>'
-            +   '<div style="font-size:11px;color:var(--muted)">Moy: ' + (u.moyenne || 0) + '/50</div>'
-            + '</div>'
-            + '</div>';
-    }).join('');
+    // Stats paiements
+    var nbPayes   = users.filter(function(u) { return u.accesPaye; }).length;
+    var nbNonPaye = users.length - nbPayes;
+
+    listeCandidatsEl.innerHTML = '<div style="display:flex;gap:10px;'
+        + 'margin-bottom:12px;flex-wrap:wrap;">'
+        + '<span style="background:rgba(34,197,94,0.15);'
+        + 'color:var(--green);padding:5px 12px;border-radius:20px;'
+        + 'font-size:12px;font-weight:700">✅ ' + nbPayes + ' payes</span>'
+        + '<span style="background:rgba(239,68,68,0.15);'
+        + 'color:var(--red);padding:5px 12px;border-radius:20px;'
+        + 'font-size:12px;font-weight:700">❌ ' + nbNonPaye + ' non payes</span>'
+        + '</div>'
+        + users.map(function(u) {
+            var badgesCount = Object.keys(u.badges || {}).length;
+            var paye        = u.accesPaye === true;
+            var dateP = u.datePaiement
+                ? formatDate(u.datePaiement) : '';
+
+            return '<div class="candidat-item">'
+                + '<div style="flex:1;min-width:0">'
+                +   '<div class="candidat-nom">'
+                +     (u.prenom || '?') + ' ' + (u.nom || '?')
+                +   '</div>'
+                +   '<div class="candidat-email">'
+                +     (u.email || '?')
+                +   '</div>'
+                +   '<div class="candidat-meta">'
+                +     'Niv.' + (u.niveau || 1)
+                +     ' · ' + (u.xp || 0) + ' XP'
+                +     ' · ' + badgesCount + ' badge(s)'
+                +     ' · ' + (u.concoursFaits || 0) + ' concours'
+                +   '</div>'
+                +   (paye && dateP
+                    ? '<div style="font-size:10px;color:var(--muted);'
+                    + 'margin-top:2px">Paye le ' + dateP + '</div>'
+                    : '')
+                + '</div>'
+                + '<div style="display:flex;flex-direction:column;'
+                + 'align-items:flex-end;gap:6px;flex-shrink:0">'
+                +   '<div style="font-size:12px;font-weight:800;'
+                +     'color:' + (paye ? 'var(--green)' : 'var(--red)') + '">'
+                +     (paye ? '✅ Paye' : '❌ Non paye')
+                +   '</div>'
+                +   (paye
+                    ? '<button onclick="revoquerAcces(\'' + u.key + '\')" '
+                    + 'style="background:rgba(239,68,68,0.15);'
+                    + 'border:1px solid var(--red);color:var(--red);'
+                    + 'padding:5px 10px;border-radius:8px;font-size:11px;'
+                    + 'font-weight:700;cursor:pointer;width:auto;'
+                    + 'min-height:auto;margin:0;'
+                    + 'font-family:Poppins,sans-serif">'
+                    + 'Revoquer</button>'
+                    : '<button onclick="activerAcces(\'' + u.key + '\')" '
+                    + 'style="background:var(--green);color:white;'
+                    + 'padding:5px 10px;border-radius:8px;font-size:11px;'
+                    + 'font-weight:700;cursor:pointer;width:auto;'
+                    + 'min-height:auto;margin:0;'
+                    + 'font-family:Poppins,sans-serif">'
+                    + 'Activer</button>')
+                + '</div>'
+                + '</div>';
+        }).join('');
 });
+
+// Activer accès paiement
+window.activerAcces = async function(userKey) {
+    son('click');
+    await db.ref('users/' + userKey).update({
+        accesPaye:    true,
+        datePaiement: Date.now()
+    });
+    toast('Acces active !', 'success');
+    son('success');
+};
+
+// Révoquer accès paiement
+window.revoquerAcces = async function(userKey) {
+    son('click');
+    modalTitreEl.textContent = 'Revoquer l\'acces';
+    modalTexteEl.innerHTML = '<p>Revoquer l\'acces de ce candidat ?<br>'
+        + 'Il devra repayer pour le prochain concours.</p>';
+    modalEl.style.display = 'flex';
+    btnConfirmer.onclick = async function() {
+        modalEl.style.display = 'none';
+        await db.ref('users/' + userKey).update({ accesPaye: false });
+        toast('Acces revoque', 'success');
+    };
+    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
+};
+
+// === ACTIVER TOUS LES CANDIDATS ===
+var btnActiverTous = document.getElementById('btnActiverTous');
+if (btnActiverTous) btnActiverTous.onclick = async function() {
+    son('click');
+    modalTitreEl.textContent = 'Activer tous les candidats';
+    modalTexteEl.innerHTML = '<p>Activer l\'acces de <b>tous</b> '
+        + 'les candidats inscrits ?</p>'
+        + '<p style="color:var(--muted);font-size:13px;margin-top:8px">'
+        + 'Utile pour un concours gratuit ou apres '
+        + 'verification manuelle.</p>';
+    modalEl.style.display = 'flex';
+    btnConfirmer.onclick = async function() {
+        modalEl.style.display = 'none';
+        var snap    = await db.ref('users').once('value');
+        var updates = {};
+        snap.forEach(function(child) {
+            updates[child.key + '/accesPaye']    = true;
+            updates[child.key + '/datePaiement'] = Date.now();
+        });
+        await db.ref('users').update(updates);
+        toast('Tous les candidats sont actives !', 'success');
+        son('success');
+    };
+    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
+};
+
+// === NOUVEAU CONCOURS AVEC GESTION PAIEMENTS ===
+if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
+    son('click');
+    modalTitreEl.textContent = 'Nouveau Concours';
+    modalTexteEl.innerHTML = '<p style="margin-bottom:14px">'
+        + 'Choisir comment reinitialiser :</p>'
+        + '<div style="display:flex;flex-direction:column;gap:10px">'
+        + '<button id="btnNvConservePaiement" '
+        + 'style="background:var(--blue);color:white;padding:14px;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:14px;font-weight:700;cursor:pointer;">'
+        + '✅ Conserver les paiements</button>'
+        + '<button id="btnNvReinitialisePaiement" '
+        + 'style="background:var(--orange);color:white;padding:14px;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:14px;font-weight:700;cursor:pointer;">'
+        + '🔄 Reinitialiser les paiements</button>'
+        + '</div>';
+    modalEl.style.display      = 'flex';
+    btnConfirmer.style.display = 'none';
+    btnAnnuler.textContent     = 'Annuler';
+    btnAnnuler.onclick = function() {
+        modalEl.style.display      = 'none';
+        btnConfirmer.style.display = '';
+        btnAnnuler.textContent     = 'Annuler';
+    };
+
+    setTimeout(function() {
+        var btnC = document.getElementById('btnNvConservePaiement');
+        var btnR = document.getElementById('btnNvReinitialisePaiement');
+
+        if (btnC) btnC.onclick = async function() {
+            modalEl.style.display      = 'none';
+            btnConfirmer.style.display = '';
+            btnAnnuler.textContent     = 'Annuler';
+            await db.ref('resultats').remove();
+            await db.ref('sessions').remove();
+            copieSubmise = false;
+            toast('Nouveau concours pret ! Paiements conserves.', 'success');
+            son('success');
+        };
+
+        if (btnR) btnR.onclick = async function() {
+            modalEl.style.display      = 'none';
+            btnConfirmer.style.display = '';
+            btnAnnuler.textContent     = 'Annuler';
+            await db.ref('resultats').remove();
+            await db.ref('sessions').remove();
+            var snap    = await db.ref('users').once('value');
+            var updates = {};
+            snap.forEach(function(child) {
+                updates[child.key + '/accesPaye'] = false;
+            });
+            await db.ref('users').update(updates);
+            copieSubmise = false;
+            toast('Nouveau concours pret ! Paiements reinitialises.', 'success');
+            son('success');
+        };
+    }, 100);
+};
 
 // === LOGOUT ADMIN ===
 if (btnLogoutAdmin) btnLogoutAdmin.onclick = function() {
     son('click');
     showPage(pageAccueil);
-    toast('Déconnecté', 'success');
+    toast('Deconnecte', 'success');
 };
 
+// Ecouter suppression résultat (nouveau concours)
+db.ref('resultats').on('child_removed', function(snap) {
+    if (snap.key === user) {
+        copieSubmise = false;
+        toast('Nouveau concours disponible !', 'success');
+        son('success');
+    }
+});
+
 // ============================================
-// FIN PARTIE 6/10
+// FIN PARTIE 6/10 COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 7/10 — SECTION A — CORRIGÉE
+// PARTIE 7/10 — SECTION A — RETARD CORRIGÉ
 // ============================================
 
 if (btnExam) btnExam.onclick = async function() {
     son('click');
-    nbSorties     = 0; sortieTimeout = null;
-    derniereFocus = Date.now(); devourBloque = false;
-    copieSubmise  = false;     enExamen     = false;
 
+    // Vérification paiement
+    var userSnap      = await db.ref('users/' + user).once('value');
+    var userDataFresh = userSnap.val() || {};
+
+    if (!userDataFresh.accesPaye) {
+        modalTitreEl.textContent = 'Acces au concours';
+        modalTexteEl.innerHTML = '<div style="text-align:center;padding:10px 0">'
+            + '<div style="font-size:50px;margin-bottom:16px">💳</div>'
+            + '<p style="font-weight:800;font-size:16px;margin-bottom:12px">'
+            + 'Acces payant : 100 FCFA</p>'
+            + '<p style="color:var(--muted);font-size:13px;'
+            + 'line-height:1.7;margin-bottom:16px">'
+            + 'Pour participer, envoie '
+            + '<b style="color:var(--yellow)">100 FCFA</b>'
+            + ' par Orange Money au :<br><br>'
+            + '<span style="font-size:22px;font-weight:900;'
+            + 'color:var(--green)">55 24 04 31</span><br><br>'
+            + 'Ensuite envoie la capture WhatsApp au meme numero.<br>'
+            + 'Ton acces sera active dans les minutes qui suivent.</p>'
+            + '<div style="background:rgba(250,204,21,0.1);'
+            + 'border:1.5px solid rgba(250,204,21,0.3);'
+            + 'border-radius:12px;padding:12px;'
+            + 'font-size:12px;color:var(--muted)">'
+            + 'Une fois paye, reviens ici et appuie sur Commencer.'
+            + '</div></div>';
+        modalEl.style.display      = 'flex';
+        btnConfirmer.style.display = 'none';
+        btnAnnuler.textContent     = 'Fermer';
+        btnAnnuler.onclick = function() {
+            modalEl.style.display      = 'none';
+            btnConfirmer.style.display = '';
+            btnAnnuler.textContent     = 'Annuler';
+        };
+        return;
+    }
+
+    // Récupérer config
     var configSnap = await db.ref('configConcours').once('value');
     configActuelle = configSnap.val();
 
@@ -1314,58 +1531,139 @@ if (btnExam) btnExam.onclick = async function() {
     }
 
     var now = Date.now();
+
+    // ============================================
+    // CAS 1 : Concours pas encore commencé
+    // ============================================
     if (now < configActuelle.debutTimestamp) {
         showPage(pageExam);
-        if (attenteEl)  attenteEl.style.display  = 'none';
-        if (resultatEl) resultatEl.style.display = 'none';
+        if (attenteEl)    attenteEl.style.display    = 'none';
+        if (resultatEl)   resultatEl.style.display   = 'none';
         afficherSalleAttente();
         return;
     }
 
+    // ============================================
+    // CAS 2 : Concours terminé
+    // ============================================
     if (now > configActuelle.finTimestamp) {
-        toast('Ce concours est termine', 'error');
-        return;
-    }
-
-    // Vérifier si déjà soumis
-    var resSnap = await db.ref('resultats/' + user).once('value');
-    if (resSnap.exists()) {
-        // Déjà soumis → montrer résultat directement
-        var res = resSnap.val();
-        showPage(pageExam);
-        if (attenteEl)  attenteEl.style.display  = 'none';
-        questionsEl.style.display                = 'none';
-        document.querySelector('.footer').style.display    = 'none';
-        document.querySelector('.header').style.display    = 'flex';
-        document.querySelector('.subheader').style.display = 'none';
-
-        // Reconstruire reponsesFinales depuis Firebase
-        reponsesFinales = res.reponses || {};
-        questionsData   = sujetSnap.val() || [];
-        finTimestamp    = configActuelle.finTimestamp;
-
-        if (now < finTimestamp) {
-            // Temps pas encore fini → écran attente
-            afficherAttenteDepuisResultatExistant(res);
-        } else {
-            // Temps fini → afficher résultat
+        // Vérifier si résultat existe → afficher
+        var resSnap = await db.ref('resultats/' + user).once('value');
+        if (resSnap.exists()) {
+            var res = resSnap.val();
+            finTimestamp    = configActuelle.finTimestamp;
+            reponsesFinales = res.reponses || {};
+            showPage(pageExam);
+            if (attenteEl) attenteEl.style.display = 'none';
+            questionsEl.style.display = 'none';
+            document.querySelector('.footer').style.display    = 'none';
+            document.querySelector('.header').style.display    = 'flex';
+            document.querySelector('.subheader').style.display = 'none';
             afficherResultat(
                 res.score, res.bonnes,
                 res.partielles, res.fausses, res.xp
+            );
+        } else {
+            toast('Ce concours est termine', 'error');
+        }
+        return;
+    }
+
+    finTimestamp = configActuelle.finTimestamp;
+
+    // ============================================
+    // CAS 3 : Concours en cours — vérifier résultat
+    // ============================================
+    var resSnap2 = await db.ref('resultats/' + user).once('value');
+    if (resSnap2.exists()) {
+        // Déjà soumis → attente ou résultat
+        var res2 = resSnap2.val();
+        showPage(pageExam);
+        if (attenteEl)  attenteEl.style.display  = 'none';
+        questionsEl.style.display = 'none';
+        document.querySelector('.footer').style.display    = 'none';
+        document.querySelector('.header').style.display    = 'flex';
+        document.querySelector('.subheader').style.display = 'none';
+        reponsesFinales = res2.reponses || {};
+
+        if (now < finTimestamp) {
+            afficherAttenteDepuisResultatExistant(res2);
+        } else {
+            afficherResultat(
+                res2.score, res2.bonnes,
+                res2.partielles, res2.fausses, res2.xp
             );
         }
         return;
     }
 
-    // Pas encore soumis → lancer examen
-    finTimestamp = configActuelle.finTimestamp;
+    // ============================================
+    // CAS 4 : Concours en cours — arrivée en retard
+    // Pas encore soumis → proposer de commencer
+    // ============================================
+    var tempsEcoule = now - configActuelle.debutTimestamp;
+    var dureeTotal  = configActuelle.finTimestamp - configActuelle.debutTimestamp;
+    var retardMin   = Math.floor(tempsEcoule / 60000);
+
+    if (retardMin > 5) {
+        // Arrivée en retard de plus de 5 minutes
+        // Afficher page retard avec temps restant
+        showPage(pageExam);
+        if (attenteEl)  attenteEl.style.display  = 'none';
+        if (resultatEl) resultatEl.style.display = 'none';
+        salleAttenteEl.style.display = 'none';
+
+        var salleRetardEl = document.getElementById('salle-retard');
+        if (salleRetardEl) {
+            salleRetardEl.style.display = 'block';
+            questionsEl.style.display  = 'none';
+            document.querySelector('.footer').style.display    = 'none';
+            document.querySelector('.header').style.display    = 'none';
+            document.querySelector('.subheader').style.display = 'none';
+
+            // Timer retard
+            var timerRetardEl = document.getElementById('timerRetard');
+            var intvRetard = setInterval(function() {
+                var resteRetard = finTimestamp - Date.now();
+                if (resteRetard <= 0) {
+                    clearInterval(intvRetard);
+                    if (timerRetardEl) timerRetardEl.textContent = '00:00';
+                    return;
+                }
+                var mr = Math.floor(resteRetard / 60000);
+                var sr = Math.floor((resteRetard % 60000) / 1000);
+                if (timerRetardEl) {
+                    timerRetardEl.textContent = pad(mr) + ':' + pad(sr);
+                }
+            }, 1000);
+
+            // Bouton commencer quand même
+            var btnCommencerRetard = document.getElementById('btnCommencerRetard');
+            if (btnCommencerRetard) {
+                btnCommencerRetard.onclick = function() {
+                    clearInterval(intvRetard);
+                    salleRetardEl.style.display = 'none';
+                    // Réinitialiser et lancer
+                    nbSorties     = 0; sortieTimeout = null;
+                    derniereFocus = Date.now(); devourBloque = false;
+                    copieSubmise  = false;     enExamen     = false;
+                    lancerExamen();
+                };
+            }
+        }
+        return;
+    }
+
+    // Arrivée dans les 5 premières minutes → lancer directement
+    nbSorties     = 0; sortieTimeout = null;
+    derniereFocus = Date.now(); devourBloque = false;
+    copieSubmise  = false;     enExamen     = false;
     showPage(pageExam);
     if (attenteEl)  attenteEl.style.display  = 'none';
     if (resultatEl) resultatEl.style.display = 'none';
     lancerExamen();
 };
 
-// Si copie déjà envoyée mais temps pas fini
 function afficherAttenteDepuisResultatExistant(res) {
     questionsEl.style.display                          = 'none';
     document.querySelector('.footer').style.display    = 'none';
@@ -1387,7 +1685,9 @@ function afficherAttenteDepuisResultatExistant(res) {
         }
         var min = Math.floor(reste / 60000);
         var sec = Math.floor((reste % 60000) / 1000);
-        if (timerAttenteEl) timerAttenteEl.textContent = min + ':' + pad(sec);
+        if (timerAttenteEl) {
+            timerAttenteEl.textContent = min + ':' + pad(sec);
+        }
     }, 1000);
 }
 
@@ -1425,6 +1725,8 @@ function afficherSalleAttente() {
 
 async function lancerExamen() {
     enExamen = true;
+    var salleRetardEl = document.getElementById('salle-retard');
+    if (salleRetardEl) salleRetardEl.style.display = 'none';
     salleAttenteEl.style.display                       = 'none';
     questionsEl.style.display                          = 'block';
     document.querySelector('.footer').style.display    = 'flex';
@@ -1434,7 +1736,8 @@ async function lancerExamen() {
     if (resultatEl) resultatEl.style.display = 'none';
 
     if (nomConcoursEl) {
-        nomConcoursEl.textContent = configActuelle.type || 'Concours Blanc Bonogo';
+        nomConcoursEl.textContent = configActuelle.type
+            || 'Concours Blanc Bonogo';
     }
     var dureeMs  = configActuelle.finTimestamp - configActuelle.debutTimestamp;
     var dureeMin = Math.round(dureeMs / 60000);
@@ -1520,6 +1823,7 @@ function continuerExamen() {
     afficherQuestions();
     demarrerTimer();
     demarrerAntiTriche();
+    demarrerTimerSecurite();
 }
 
 function afficherQuestions() {
@@ -1551,7 +1855,6 @@ function afficherQuestions() {
         html += '</div>';
         block.innerHTML = html;
 
-        // Toutes les cases cochables
         block.querySelectorAll('label').forEach(function(lbl) {
             lbl.onclick = function() {
                 son('click');
@@ -1609,10 +1912,20 @@ function majRestant() {
 
 async function sauvegarderSession() {
     if (!copieSubmise && user) {
-        await db.ref('sessions/' + user).update({
-            reponses:  reponsesUser,
-            nbSorties: nbSorties
-        });
+        try {
+            await db.ref('sessions/' + user).update({
+                reponses:  reponsesUser,
+                nbSorties: nbSorties
+            });
+        } catch(e) {
+            localStorage.setItem(
+                'bb_session_' + user,
+                JSON.stringify({
+                    reponses:  reponsesUser,
+                    nbSorties: nbSorties
+                })
+            );
+        }
     }
 }
 
@@ -1659,11 +1972,10 @@ function demarrerTimer() {
 }
 
 // ============================================
-// FIN PARTIE 7A
-// ============================================
-// ============================================
+// FIN PARTIE 7A COMPLETE ✅
+// ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 7/10 — SECTION B — CORRIGÉE
+// PARTIE 7/10 — SECTION B — COMPLETE
 // ============================================
 
 var dernierMouvement = Date.now();
@@ -1862,7 +2174,9 @@ async function soumettreBloque() {
         if (repUser === undefined
             || (Array.isArray(repUser) && repUser.length === 0)) {
             nbF++;
-            repFin[qi] = { user: [], bonnes: bonnesReponses, statut: 'vide' };
+            repFin[qi] = {
+                user: [], bonnes: bonnesReponses, statut: 'vide'
+            };
             return;
         }
 
@@ -1880,29 +2194,45 @@ async function soumettreBloque() {
 
         if (toutessBonnes && aucuneFausse) {
             nbB++;
-            repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'bonne' };
+            repFin[qi] = {
+                user: reponsesChoisies, bonnes: bonnesReponses, statut: 'bonne'
+            };
         } else if (auMoinsUneBonne && aucuneFausse) {
             nbP++;
-            repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'partielle' };
+            repFin[qi] = {
+                user: reponsesChoisies, bonnes: bonnesReponses, statut: 'partielle'
+            };
         } else {
             nbF++;
-            repFin[qi] = { user: reponsesChoisies, bonnes: bonnesReponses, statut: 'fausse' };
+            repFin[qi] = {
+                user: reponsesChoisies, bonnes: bonnesReponses, statut: 'fausse'
+            };
         }
     });
 
     var scoreFinal = Math.round((nbB + nbP * 0.5) * 10) / 10;
-    var xpGagneVal = calcXp(scoreFinal, questionsData.length);
+    var xpGagneVal = calcXp(scoreFinal, questionsData.length || 50);
 
-    await db.ref('resultats/' + user).set({
-        score: scoreFinal, total: questionsData.length,
-        bonnes: nbB, partielles: nbP, fausses: nbF,
-        xp: xpGagneVal, bloque: true, sorties: nbSorties,
-        timestamp: Date.now(), pseudo: userDisplay,
-        prenom: userData.prenom || '', nom: userData.nom || '',
-        reponses: repFin
-    });
-
-    await db.ref('sessions/' + user).update({ termine: true });
+    try {
+        await db.ref('resultats/' + user).set({
+            score: scoreFinal, total: questionsData.length,
+            bonnes: nbB, partielles: nbP, fausses: nbF,
+            xp: xpGagneVal, bloque: true, sorties: nbSorties,
+            timestamp: Date.now(), pseudo: userDisplay,
+            prenom: userData.prenom || '', nom: userData.nom || '',
+            reponses: repFin
+        });
+        await db.ref('sessions/' + user).update({ termine: true });
+    } catch(e) {
+        localStorage.setItem('bb_pending_result_' + user, JSON.stringify({
+            score: scoreFinal, total: questionsData.length,
+            bonnes: nbB, partielles: nbP, fausses: nbF,
+            xp: xpGagneVal, bloque: true, sorties: nbSorties,
+            timestamp: Date.now(), pseudo: userDisplay,
+            prenom: userData.prenom || '', nom: userData.nom || '',
+            reponses: repFin
+        }));
+    }
 
     var histo = userData.historique || [];
     if (!Array.isArray(histo)) histo = Object.values(histo);
@@ -1910,13 +2240,36 @@ async function soumettreBloque() {
         score: scoreFinal, total: questionsData.length,
         bonnes: nbB, partielles: nbP, fausses: nbF,
         xp: xpGagneVal, sorties: nbSorties,
-        type: configActuelle.type || 'Concours Blanc Bonogo',
+        type: configActuelle
+            ? (configActuelle.type || 'Concours Blanc Bonogo')
+            : 'Concours Blanc Bonogo',
         timestamp: Date.now(), date: formatDate(Date.now())
     });
 
-    await db.ref('users/' + user).update({ historique: histo });
+    try {
+        await db.ref('users/' + user).update({ historique: histo });
+    } catch(e) {}
+
     reponsesFinales = repFin;
     afficherResultat(scoreFinal, nbB, nbP, nbF, xpGagneVal);
+}
+
+// ============================================
+// TIMER SÉCURITÉ — Force soumission hors connexion
+// ============================================
+function demarrerTimerSecurite() {
+    var timerSec = setInterval(async function() {
+        if (copieSubmise) {
+            clearInterval(timerSec); return;
+        }
+        if (finTimestamp > 0 && Date.now() >= finTimestamp && enExamen) {
+            clearInterval(timerSec);
+            enExamen = false;
+            clearInterval(timerInt);
+            toast('Temps ecoule !', 'warning');
+            await soumettreEtAttendre();
+        }
+    }, 10000);
 }
 
 // ============================================
