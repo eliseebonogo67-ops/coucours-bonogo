@@ -1562,15 +1562,16 @@ db.ref('resultats').on('child_removed', function(snap) {
 
 // ============================================
 // FIN PARTIE 6/10 COMPLETE ✅
-// ============================================// ============================================
+// ============================================
+// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 7/10 — SECTION A — RETARD CORRIGÉ
+// PARTIE 7/10 — SECTION A — COMPLETE FINALE
 // ============================================
 
 if (btnExam) btnExam.onclick = async function() {
     son('click');
 
-    // Vérification paiement
+    // VÉRIFICATION PAIEMENT
     var userSnap      = await db.ref('users/' + user).once('value');
     var userDataFresh = userSnap.val() || {};
 
@@ -1606,7 +1607,7 @@ if (btnExam) btnExam.onclick = async function() {
         return;
     }
 
-    // Récupérer config
+    // RÉCUPÉRER CONFIG ET SUJET
     var configSnap = await db.ref('configConcours').once('value');
     configActuelle = configSnap.val();
 
@@ -1628,8 +1629,8 @@ if (btnExam) btnExam.onclick = async function() {
     // ============================================
     if (now < configActuelle.debutTimestamp) {
         showPage(pageExam);
-        if (attenteEl)    attenteEl.style.display    = 'none';
-        if (resultatEl)   resultatEl.style.display   = 'none';
+        if (attenteEl)  attenteEl.style.display  = 'none';
+        if (resultatEl) resultatEl.style.display = 'none';
         afficherSalleAttente();
         return;
     }
@@ -1638,22 +1639,32 @@ if (btnExam) btnExam.onclick = async function() {
     // CAS 2 : Concours terminé
     // ============================================
     if (now > configActuelle.finTimestamp) {
-        // Vérifier si résultat existe → afficher
-        var resSnap = await db.ref('resultats/' + user).once('value');
-        if (resSnap.exists()) {
-            var res = resSnap.val();
-            finTimestamp    = configActuelle.finTimestamp;
-            reponsesFinales = res.reponses || {};
-            showPage(pageExam);
-            if (attenteEl) attenteEl.style.display = 'none';
-            questionsEl.style.display = 'none';
-            document.querySelector('.footer').style.display    = 'none';
-            document.querySelector('.header').style.display    = 'flex';
-            document.querySelector('.subheader').style.display = 'none';
-            afficherResultat(
-                res.score, res.bonnes,
-                res.partielles, res.fausses, res.xp
-            );
+        var resSnapFin = await db.ref('resultats/' + user).once('value');
+        if (resSnapFin.exists()) {
+            var resFin      = resSnapFin.val();
+            var resTs       = resFin.timestamp || 0;
+            var estActuelFin = resTs >= configActuelle.debutTimestamp;
+
+            if (estActuelFin) {
+                finTimestamp    = configActuelle.finTimestamp;
+                reponsesFinales = resFin.reponses || {};
+                showPage(pageExam);
+                if (attenteEl) attenteEl.style.display = 'none';
+                questionsEl.style.display = 'none';
+                document.querySelector('.footer').style.display    = 'none';
+                document.querySelector('.header').style.display    = 'flex';
+                document.querySelector('.subheader').style.display = 'none';
+                afficherResultat(
+                    resFin.score,      resFin.bonnes,
+                    resFin.partielles, resFin.fausses,
+                    resFin.xp
+                );
+            } else {
+                // Ancien résultat → nettoyer
+                await db.ref('resultats/' + user).remove();
+                await db.ref('sessions/'  + user).remove();
+                toast('Ce concours est termine', 'error');
+            }
         } else {
             toast('Ce concours est termine', 'error');
         }
@@ -1666,39 +1677,51 @@ if (btnExam) btnExam.onclick = async function() {
     // CAS 3 : Concours en cours — vérifier résultat
     // ============================================
     var resSnap2 = await db.ref('resultats/' + user).once('value');
-    if (resSnap2.exists()) {
-        // Déjà soumis → attente ou résultat
-        var res2 = resSnap2.val();
-        showPage(pageExam);
-        if (attenteEl)  attenteEl.style.display  = 'none';
-        questionsEl.style.display = 'none';
-        document.querySelector('.footer').style.display    = 'none';
-        document.querySelector('.header').style.display    = 'flex';
-        document.querySelector('.subheader').style.display = 'none';
-        reponsesFinales = res2.reponses || {};
 
-        if (now < finTimestamp) {
-            afficherAttenteDepuisResultatExistant(res2);
+    if (resSnap2.exists()) {
+        var res2    = resSnap2.val();
+        var resTs2  = res2.timestamp || 0;
+
+        // Vérifier que le résultat appartient au concours ACTUEL
+        var estResultatActuel = resTs2 >= configActuelle.debutTimestamp
+                             && resTs2 <= (configActuelle.finTimestamp + 3600000);
+
+        if (estResultatActuel) {
+            // Résultat du concours actuel → attente ou résultat
+            showPage(pageExam);
+            if (attenteEl)  attenteEl.style.display  = 'none';
+            questionsEl.style.display = 'none';
+            document.querySelector('.footer').style.display    = 'none';
+            document.querySelector('.header').style.display    = 'flex';
+            document.querySelector('.subheader').style.display = 'none';
+            reponsesFinales = res2.reponses || {};
+
+            if (now < finTimestamp) {
+                afficherAttenteDepuisResultatExistant(res2);
+            } else {
+                afficherResultat(
+                    res2.score,      res2.bonnes,
+                    res2.partielles, res2.fausses,
+                    res2.xp
+                );
+            }
+            return;
         } else {
-            afficherResultat(
-                res2.score, res2.bonnes,
-                res2.partielles, res2.fausses, res2.xp
-            );
+            // ANCIEN résultat → nettoyer silencieusement
+            await db.ref('resultats/' + user).remove();
+            await db.ref('sessions/'  + user).remove();
+            toast('Nouveau concours detecte !', 'success');
+            // Continuer vers CAS 4
         }
-        return;
     }
 
     // ============================================
     // CAS 4 : Concours en cours — arrivée en retard
-    // Pas encore soumis → proposer de commencer
     // ============================================
     var tempsEcoule = now - configActuelle.debutTimestamp;
-    var dureeTotal  = configActuelle.finTimestamp - configActuelle.debutTimestamp;
     var retardMin   = Math.floor(tempsEcoule / 60000);
 
     if (retardMin > 5) {
-        // Arrivée en retard de plus de 5 minutes
-        // Afficher page retard avec temps restant
         showPage(pageExam);
         if (attenteEl)  attenteEl.style.display  = 'none';
         if (resultatEl) resultatEl.style.display = 'none';
@@ -1707,12 +1730,11 @@ if (btnExam) btnExam.onclick = async function() {
         var salleRetardEl = document.getElementById('salle-retard');
         if (salleRetardEl) {
             salleRetardEl.style.display = 'block';
-            questionsEl.style.display  = 'none';
+            questionsEl.style.display   = 'none';
             document.querySelector('.footer').style.display    = 'none';
             document.querySelector('.header').style.display    = 'none';
             document.querySelector('.subheader').style.display = 'none';
 
-            // Timer retard
             var timerRetardEl = document.getElementById('timerRetard');
             var intvRetard = setInterval(function() {
                 var resteRetard = finTimestamp - Date.now();
@@ -1728,13 +1750,11 @@ if (btnExam) btnExam.onclick = async function() {
                 }
             }, 1000);
 
-            // Bouton commencer quand même
             var btnCommencerRetard = document.getElementById('btnCommencerRetard');
             if (btnCommencerRetard) {
                 btnCommencerRetard.onclick = function() {
                     clearInterval(intvRetard);
                     salleRetardEl.style.display = 'none';
-                    // Réinitialiser et lancer
                     nbSorties     = 0; sortieTimeout = null;
                     derniereFocus = Date.now(); devourBloque = false;
                     copieSubmise  = false;     enExamen     = false;
@@ -1755,6 +1775,9 @@ if (btnExam) btnExam.onclick = async function() {
     lancerExamen();
 };
 
+// ============================================
+// ATTENTE DEPUIS RÉSULTAT EXISTANT
+// ============================================
 function afficherAttenteDepuisResultatExistant(res) {
     questionsEl.style.display                          = 'none';
     document.querySelector('.footer').style.display    = 'none';
@@ -1769,8 +1792,9 @@ function afficherAttenteDepuisResultatExistant(res) {
             if (attenteEl) attenteEl.style.display = 'none';
             reponsesFinales = res.reponses || {};
             afficherResultat(
-                res.score, res.bonnes,
-                res.partielles, res.fausses, res.xp
+                res.score,      res.bonnes,
+                res.partielles, res.fausses,
+                res.xp
             );
             return;
         }
@@ -1782,6 +1806,9 @@ function afficherAttenteDepuisResultatExistant(res) {
     }, 1000);
 }
 
+// ============================================
+// SALLE D'ATTENTE AVANT DÉBUT
+// ============================================
 function afficherSalleAttente() {
     salleAttenteEl.style.display                       = 'block';
     questionsEl.style.display                          = 'none';
@@ -1814,10 +1841,13 @@ function afficherSalleAttente() {
     }, 1000);
 }
 
+// ============================================
+// LANCER EXAMEN
+// ============================================
 async function lancerExamen() {
     enExamen = true;
     var salleRetardEl = document.getElementById('salle-retard');
-    if (salleRetardEl) salleRetardEl.style.display = 'none';
+    if (salleRetardEl) salleRetardEl.style.display     = 'none';
     salleAttenteEl.style.display                       = 'none';
     questionsEl.style.display                          = 'block';
     document.querySelector('.footer').style.display    = 'flex';
@@ -1836,7 +1866,7 @@ async function lancerExamen() {
         heureConcoursEl.textContent = 'Duree : ' + dureeMin + ' min';
     }
 
-    // Vérifier session
+    // VÉRIFIER SESSION
     var sessionSnap = await db.ref('sessions/' + user).once('value');
     var session     = sessionSnap.val();
 
@@ -1876,8 +1906,10 @@ async function lancerExamen() {
                 + '<div style="background:rgba(239,68,68,0.1);'
                 + 'border:1.5px solid rgba(239,68,68,0.3);'
                 + 'border-radius:12px;padding:12px;">'
-                + '<span style="color:var(--red);font-weight:800;font-size:14px">'
-                + 'Sorties : ' + nbSorties + ' / ' + MAX_SORTIES + '</span><br>'
+                + '<span style="color:var(--red);font-weight:800;'
+                + 'font-size:14px">'
+                + 'Sorties : ' + nbSorties + ' / ' + MAX_SORTIES
+                + '</span><br>'
                 + '<span style="color:var(--muted);font-size:12px">'
                 + 'A la ' + MAX_SORTIES + 'eme sortie, '
                 + 'ton devoir sera suspendu.</span>'
@@ -1909,6 +1941,9 @@ async function lancerExamen() {
     }
 }
 
+// ============================================
+// CONTINUER EXAMEN
+// ============================================
 function continuerExamen() {
     alertesTimer = { 30: false, 20: false, 10: false, 5: false };
     afficherQuestions();
@@ -1917,6 +1952,9 @@ function continuerExamen() {
     demarrerTimerSecurite();
 }
 
+// ============================================
+// AFFICHER QUESTIONS — toutes cases cochables
+// ============================================
 function afficherQuestions() {
     questionsEl.innerHTML = '';
     questionsData.forEach(function(q, qi) {
@@ -1990,6 +2028,9 @@ function afficherQuestions() {
     majRestant();
 }
 
+// ============================================
+// MAJ RESTANT
+// ============================================
 function majRestant() {
     var rep = 0;
     for (var i = 0; i < questionsData.length; i++) {
@@ -2001,6 +2042,9 @@ function majRestant() {
     if (restantEl) restantEl.textContent = rep + '/' + questionsData.length;
 }
 
+// ============================================
+// SAUVEGARDER SESSION
+// ============================================
 async function sauvegarderSession() {
     if (!copieSubmise && user) {
         try {
@@ -2020,6 +2064,9 @@ async function sauvegarderSession() {
     }
 }
 
+// ============================================
+// TIMER PRINCIPAL
+// ============================================
 function demarrerTimer() {
     if (timerInt) clearInterval(timerInt);
     timerInt = setInterval(async function() {
@@ -2035,7 +2082,7 @@ function demarrerTimer() {
 
         var min = Math.floor(reste / 60000);
         var sec = Math.floor((reste % 60000) / 1000);
-        if (timerEl) timerEl.textContent = min + ':' + pad(sec);
+     if (timerEl) timerEl.textContent = min + ':' + pad(sec);
 
         if (!alertesTimer[30] && min === 30) {
             alertesTimer[30] = true;
