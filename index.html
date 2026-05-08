@@ -74,7 +74,6 @@
 <div id="page-menu" style="display:none;">
     <div class="card">
         <h2 id="nomMenu">Bienvenue !</h2>
-        <!-- Avatar caché mais présent pour le JS -->
         <span id="avatarMenu" style="display:none;"></span>
         <span id="onlineCountMenu" style="display:none;"></span>
         <div class="stats">
@@ -141,19 +140,46 @@
      ============================ -->
 <div id="page-exam" style="display:none;">
 
-    <!-- SALLE D'ATTENTE -->
+    <!-- SALLE D'ATTENTE AVANT DÉBUT -->
     <div id="salle-attente" style="display:none;">
         <div class="card center">
             <div class="logo">⏳</div>
             <h1>Concours pas encore commencé</h1>
-            <p class="sub">Le concours commence à <b id="heureDebutAffich">--:--</b></p>
+            <p class="sub">Le concours commence à
+                <b id="heureDebutAffich">--:--</b></p>
             <div class="timer-big" id="timerDebut">--:--:--</div>
-            <p style="color:var(--muted);margin-top:20px;">Reste connecté. La page se lancera automatiquement.</p>
-            <div class="online">🟢 <span id="onlineAttente">0</span> candidats en salle</div>
+            <p style="color:var(--muted);margin-top:20px;">
+                Reste connecté. La page se lancera automatiquement.</p>
+            <div class="online">🟢
+                <span id="onlineAttente">0</span> candidats en salle</div>
         </div>
     </div>
 
-    <!-- HEADER -->
+    <!-- ARRIVÉE EN RETARD — EN COURS -->
+    <div id="salle-retard" style="display:none;">
+        <div class="card center">
+            <div style="font-size:50px;margin-bottom:16px">⚡</div>
+            <h1 style="color:var(--orange)">Concours en cours !</h1>
+            <p class="sub">Tu arrives en retard mais tu peux encore participer.</p>
+            <div style="background:rgba(249,115,22,0.1);
+                border:1.5px solid rgba(249,115,22,0.3);
+                border-radius:14px;padding:16px;margin:16px 0;">
+                <div style="font-size:12px;color:var(--muted);
+                    margin-bottom:6px;">Temps restant</div>
+                <div class="timer-big" id="timerRetard"
+                    style="color:var(--orange);">--:--</div>
+            </div>
+            <p style="color:var(--muted);font-size:13px;
+                line-height:1.6;margin-bottom:20px;">
+                Tu auras moins de temps que les autres.<br>
+                Tes réponses seront calculées à la fin.</p>
+            <button id="btnCommencerRetard"
+                class="btn-green btn-big">
+                ⚡ Commencer quand même</button>
+        </div>
+    </div>
+
+    <!-- HEADER EXAM -->
     <div class="header">
         <span id="nomConcours">📝 Concours Blanc Bonogo</span>
         <span id="timer" class="timer">--:--</span>
@@ -175,7 +201,7 @@
         <button id="btnFinir" class="btn-red">🏁 Terminer</button>
     </div>
 
-    <!-- ATTENTE RÉSULTAT -->
+    <!-- ATTENTE RÉSULTAT (copie déjà envoyée) -->
     <div id="attente" style="display:none;">
         <div class="card center">
             <div class="loader"></div>
@@ -216,10 +242,18 @@
         <h1>👑 Panel Admin - Concours Blanc Bonogo</h1>
         <div class="status" id="status">🔴 Connexion...</div>
         <div class="stats-grid">
-            <div class="stat-box"><b id="statCandidats">0</b><br><span>Candidats</span></div>
-            <div class="stat-box"><b id="statConcours">0</b><br><span>Concours</span></div>
-            <div class="stat-box"><b id="statMoy">0</b><br><span>Moyenne</span></div>
-            <div class="stat-box"><b id="statOnline">0</b><br><span>En ligne</span></div>
+            <div class="stat-box">
+                <b id="statCandidats">0</b><br><span>Candidats</span>
+            </div>
+            <div class="stat-box">
+                <b id="statConcours">0</b><br><span>Concours</span>
+            </div>
+            <div class="stat-box">
+                <b id="statMoy">0</b><br><span>Moyenne</span>
+            </div>
+            <div class="stat-box">
+                <b id="statOnline">0</b><br><span>En ligne</span>
+            </div>
         </div>
     </div>
 
@@ -245,9 +279,18 @@
 
     <div class="card">
         <h2>⚡ Import 50 Questions D'un Coup</h2>
-        <textarea id="collerJSON" placeholder="COLLE ICI LES 50 QUESTIONS" style="width:100%;height:150px;padding:12px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--text);font-family:monospace;font-size:12px;margin-bottom:10px;"></textarea>
-        <button id="btnCharger50" class="btn-orange btn-big">📥 CHARGER LES 50 QUESTIONS</button>
-        <button id="btnEnvoyer50" class="btn-green btn-big" style="display:none;margin-top:10px;">🚀 BALANCER AUX ÉLÈVES</button>
+        <textarea id="collerJSON"
+            placeholder="COLLE ICI LES 50 QUESTIONS"
+            style="width:100%;height:150px;padding:12px;
+            background:var(--bg);border:2px solid var(--border);
+            border-radius:8px;color:var(--text);
+            font-family:monospace;font-size:12px;
+            margin-bottom:10px;"></textarea>
+        <button id="btnCharger50" class="btn-orange btn-big">
+            📥 CHARGER LES 50 QUESTIONS</button>
+        <button id="btnEnvoyer50" class="btn-green btn-big"
+            style="display:none;margin-top:10px;">
+            🚀 BALANCER AUX ÉLÈVES</button>
     </div>
 
     <div class="card">
@@ -259,7 +302,17 @@
 
     <div class="card">
         <h2>👥 Candidats Inscrits</h2>
-        <div id="listeCandidats"></div>
+        <!-- BOUTON ACTIVER TOUS -->
+        <button id="btnActiverTous" class="btn-green btn-small"
+            style="margin-bottom:12px;">
+            ✅ Activer TOUS les candidats</button>
+        <div id="listeCandidats">
+            <div style="text-align:center;padding:20px;">
+                <div class="loader"></div>
+                <p style="color:var(--muted);margin-top:10px">
+                    Chargement...</p>
+            </div>
+        </div>
     </div>
 
     <div class="card">
@@ -270,15 +323,18 @@
     <div class="card">
         <h2>🌟 Hall of Fame</h2>
         <div id="top10Permanent"></div>
-        <button id="btnResetTop10" class="btn-red btn-small" style="margin-top:10px;">🗑️ Reset Top 10</button>
+        <button id="btnResetTop10" class="btn-red btn-small"
+            style="margin-top:10px;">🗑️ Reset Top 10</button>
     </div>
 
     <div class="card">
         <h2>🔄 Actions</h2>
-        <button id="btnNouveauConcours" class="btn-orange">🔄 Nouveau Concours</button>
+        <button id="btnNouveauConcours" class="btn-orange">
+            🔄 Nouveau Concours</button>
     </div>
 
-    <button id="btnLogoutAdmin" class="btn-red">Déconnexion Admin</button>
+    <button id="btnLogoutAdmin" class="btn-red">
+        Déconnexion Admin</button>
 </div>
 
 </div>
@@ -305,4 +361,4 @@
 <script src="script.js"></script>
 
 </body>
-            </html>
+                </html>
