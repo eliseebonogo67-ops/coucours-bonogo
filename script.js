@@ -944,7 +944,7 @@ if (btnSaveConfig) btnSaveConfig.onclick = async function() {
     var fin   = new Date(today + 'T' + hFinEl.value   + ':00').getTime();
 
     if (fin <= debut) {
-        toast('⚠️ Heure fin doit être après heure début', 'error'); return;
+        toast('Heure fin doit etre apres heure debut', 'error'); return;
     }
 
     await db.ref('configConcours').set({
@@ -956,69 +956,99 @@ if (btnSaveConfig) btnSaveConfig.onclick = async function() {
         dateCreation:   Date.now()
     });
 
-    toast('✅ Config sauvegardée !', 'success');
+    toast('Config sauvegardee !', 'success');
     son('success');
 };
 
-// === CHARGER 50 QUESTIONS JSON ===
+// === CHARGER 50 QUESTIONS JSON — CORRIGÉ ===
 if (btnCharger50) btnCharger50.onclick = function() {
     son('click');
-    var json = collerJSONEl.value.trim();
-    if (!json) { toast('⚠️ Colle d\'abord les questions !', 'error'); return; }
+    var texte = collerJSONEl ? collerJSONEl.value.trim() : '';
+    if (!texte) {
+        toast('Colle les questions JSON d\'abord', 'error'); return;
+    }
 
     try {
-        var data = JSON.parse(json);
-        if (!Array.isArray(data) || data.length !== 50) {
-            toast('⚠️ Il faut exactement 50 questions', 'error'); return;
+        // Nettoyer le texte avant parsing
+        var textePropre = texte
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+            .replace(/,\s*\]/g, ']')
+            .replace(/,\s*\}/g, '}')
+            .trim();
+
+        var data = JSON.parse(textePropre);
+
+        if (!Array.isArray(data) || data.length === 0) {
+            toast('Format invalide. Doit etre un tableau JSON.', 'error');
+            return;
         }
 
-        sujetActuel = data.map(function(q) {
+        // Avertissement si pas 50 mais laisser passer
+        if (data.length !== 50) {
+            toast('Attention : ' + data.length + ' questions (attendu 50)', 'warning');
+        }
+
+        // Normaliser chaque question
+        sujetActuel = data.map(function(q, i) {
             var reps;
             if (q.reponses && Array.isArray(q.reponses)) {
                 reps = q.reponses.map(function(r, ri) {
                     if (typeof r === 'string') {
-                        return { texte: r, correct: q.correct === ri || q.correct === 'ABCD'[ri] };
+                        return {
+                            texte:   r,
+                            correct: q.correct === ri
+                                  || q.correct === 'ABCD'[ri]
+                        };
                     }
-                    return { texte: r.texte || r.text || '', correct: !!r.correct };
+                    return {
+                        texte:   r.texte   || r.reponse || r.text || r.label || '',
+                        correct: r.correct || r.bonne   || r.isCorrect || false
+                    };
                 });
             } else {
                 reps = ['A','B','C','D'].map(function(l, ri) {
                     return {
                         texte:   q[l] || '',
-                        correct: q.correct === l || q.correct === ri || q.reponse === l
+                        correct: q.correct === l
+                              || q.correct === ri
+                              || q.reponse === l
                     };
                 });
             }
             while (reps.length < 4) reps.push({ texte: '', correct: false });
             return {
-                texte:       q.texte || q.question || q.enonce || '',
+                texte:       q.texte       || q.question || q.enonce || ('Question ' + (i+1)),
                 reponses:    reps.slice(0, 4),
-                explication: q.explication || q.explanation || ''
+                explication: q.explication || q.explanation || q.correction || ''
             };
         });
 
         afficherQuestionsAdmin();
-        collerJSONEl.value = '';
+        if (collerJSONEl) collerJSONEl.value = '';
         if (btnEnvoyer50) btnEnvoyer50.style.display = 'block';
-        toast('✅ 50 questions chargées !', 'success');
+        toast(sujetActuel.length + ' questions chargees !', 'success');
         son('success');
+
     } catch(e) {
-        toast('❌ Erreur JSON : ' + e.message, 'error');
+        console.error('Erreur JSON:', e);
+        toast('Erreur JSON : ' + e.message, 'error');
         son('error');
     }
 };
 
-// Envoyer aux candidats
+// === ENVOYER AUX CANDIDATS ===
 if (btnEnvoyer50) btnEnvoyer50.onclick = function() {
     son('click');
     modalTitreEl.textContent = 'Envoyer les questions';
-    modalTexteEl.innerHTML   = '<p>Envoyer les 50 questions aux candidats maintenant ?</p>';
+    modalTexteEl.innerHTML   = '<p>Envoyer les <b>'
+        + sujetActuel.length
+        + '</b> questions aux candidats maintenant ?</p>';
     modalEl.style.display    = 'flex';
     btnConfirmer.onclick = async function() {
         modalEl.style.display = 'none';
         await db.ref('sujetActuel').set(sujetActuel);
         if (btnEnvoyer50) btnEnvoyer50.style.display = 'none';
-        toast('🚀 50 questions envoyées !', 'success');
+        toast(sujetActuel.length + ' questions envoyees !', 'success');
         son('success');
     };
     btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
@@ -1035,11 +1065,11 @@ function afficherQuestionsAdmin() {
 
         var html = '<div style="font-size:12px;font-weight:800;color:var(--blue);'
             + 'text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">'
-            + 'Question ' + (idx + 1) + ' / 50</div>'
-            + '<textarea placeholder="Énoncé de la question" data-idx="' + idx + '">'
+            + 'Question ' + (idx + 1) + ' / ' + sujetActuel.length + '</div>'
+            + '<textarea placeholder="Enonce de la question" data-idx="' + idx + '">'
             + (q.texte || '') + '</textarea>'
-            + '<input type="text" placeholder="💡 Explication (facultatif)" '
-            + 'data-expl="' + idx + '" value="' + (q.explication || '') + '" '
+            + '<input type="text" placeholder="Explication (facultatif)" '
+            + 'data-expl="' + idx + '" value="' + (q.explication || '').replace(/"/g, '&quot;') + '" '
             + 'style="padding:10px 14px;margin:6px 0;">';
 
         for (var ri = 0; ri < 4; ri++) {
@@ -1047,13 +1077,15 @@ function afficherQuestionsAdmin() {
             html += '<div class="reponse-edit">'
                 + '<input type="checkbox" '
                 + (rep.correct ? 'checked' : '')
-                + ' data-q="' + idx + '" data-r="' + ri + '" title="Bonne réponse">'
-                + '<input type="text" placeholder="Réponse ' + 'ABCD'[ri]
-                + '" value="' + (rep.texte || '') + '" data-q="' + idx + '" data-r="' + ri + '">'
+                + ' data-q="' + idx + '" data-r="' + ri + '" title="Bonne reponse">'
+                + '<input type="text" placeholder="Reponse ' + 'ABCD'[ri]
+                + '" value="' + (rep.texte || '').replace(/"/g, '&quot;') + '" '
+                + 'data-q="' + idx + '" data-r="' + ri + '">'
                 + '</div>';
         }
 
-        html += '<button class="btn-del" onclick="supprimerQuestion(' + idx + ')">🗑️ Supprimer</button>';
+        html += '<button class="btn-del" onclick="supprimerQuestion(' + idx + ')">'
+            + 'Supprimer</button>';
         div.innerHTML = html;
         listeQuestionsEl.appendChild(div);
     });
@@ -1074,11 +1106,12 @@ function afficherQuestionsAdmin() {
         };
     });
 
-    // Listeners texte réponse
+    // Listeners texte reponse
     listeQuestionsEl.querySelectorAll('.reponse-edit input[type="text"]').forEach(function(inp) {
         inp.oninput = function() {
             var q = parseInt(this.dataset.q);
             var r = parseInt(this.dataset.r);
+            if (!sujetActuel[q]) return;
             if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r] = {};
             sujetActuel[q].reponses[r].texte = this.value;
         };
@@ -1089,75 +1122,133 @@ function afficherQuestionsAdmin() {
         cb.onchange = function() {
             var q = parseInt(this.dataset.q);
             var r = parseInt(this.dataset.r);
+            if (!sujetActuel[q]) return;
             if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r] = {};
             sujetActuel[q].reponses[r].correct = this.checked;
         };
     });
 }
 
-// Supprimer question
+// === SUPPRIMER QUESTION ===
 window.supprimerQuestion = function(idx) {
     son('click');
     if (confirm('Supprimer cette question ?')) {
         sujetActuel.splice(idx, 1);
         afficherQuestionsAdmin();
+        toast('Question supprimee', 'success');
     }
 };
 
-// Ajouter question
+// === AJOUTER QUESTION ===
 if (btnAjouterQ) btnAjouterQ.onclick = function() {
     son('click');
-    if (sujetActuel.length >= 50) { toast('Maximum 50 questions', 'warning'); return; }
     sujetActuel.push({
         texte: '', explication: '',
         reponses: [
-            { texte: '', correct: false }, { texte: '', correct: false },
-            { texte: '', correct: false }, { texte: '', correct: false }
+            { texte: '', correct: false },
+            { texte: '', correct: false },
+            { texte: '', correct: false },
+            { texte: '', correct: false }
         ]
     });
     afficherQuestionsAdmin();
     setTimeout(function() {
         var divs = listeQuestionsEl.querySelectorAll('.question-edit');
-        if (divs.length) divs[divs.length-1].scrollIntoView({ behavior: 'smooth' });
+        if (divs.length) {
+            divs[divs.length-1].scrollIntoView({ behavior: 'smooth' });
+        }
     }, 100);
+    toast('Question ajoutee', 'success');
 };
 
-// Sauver sujet
+// === SAUVER SUJET ===
 if (btnSaveSujet) btnSaveSujet.onclick = async function() {
     son('click');
+
+    if (sujetActuel.length === 0) {
+        toast('Aucune question a sauvegarder', 'error'); return;
+    }
+
     var invalide = sujetActuel.some(function(q) {
         return !q.texte
             || q.reponses.filter(function(r) { return r.texte; }).length < 2
             || !q.reponses.some(function(r) { return r.correct; });
     });
+
     if (invalide) {
-        toast('⚠️ Chaque question : énoncé + 2 réponses + 1 correcte', 'error'); return;
+        toast('Chaque question : enonce + 2 reponses + 1 correcte', 'error'); return;
     }
+
     await db.ref('sujetActuel').set(sujetActuel);
-    toast('✅ Sujet sauvegardé !', 'success');
+    toast('Sujet sauvegarde ! (' + sujetActuel.length + ' questions)', 'success');
     son('success');
 };
 
-// === NOUVEAU CONCOURS ===
+// === NOUVEAU CONCOURS AVEC GESTION PAIEMENTS ===
 if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
     son('click');
-    modalTitreEl.textContent = '🔄 Nouveau Concours';
-    modalTexteEl.innerHTML   = '<p>Cela va <b style="color:var(--red)">supprimer tous les résultats</b> '
-        + 'du classement actuel.<br><br>Le Hall of Fame permanent sera conservé.<br><br>Continuer ?</p>';
-    modalEl.style.display = 'flex';
-
-    btnConfirmer.onclick = async function() {
-        modalEl.style.display = 'none';
-        await db.ref('resultats').remove();
-        await db.ref('sessions').remove();
-        toast('✅ Nouveau concours prêt !', 'success');
-        son('success');
+    modalTitreEl.textContent = 'Nouveau Concours';
+    modalTexteEl.innerHTML = '<p style="margin-bottom:14px">'
+        + 'Choisir comment reinitialiser :</p>'
+        + '<div style="display:flex;flex-direction:column;gap:10px">'
+        + '<button id="btnNvConservePaiement" '
+        + 'style="background:var(--blue);color:white;padding:14px;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:14px;font-weight:700;cursor:pointer;">'
+        + 'Conserver les paiements</button>'
+        + '<button id="btnNvReinitialisePaiement" '
+        + 'style="background:var(--orange);color:white;padding:14px;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:14px;font-weight:700;cursor:pointer;">'
+        + 'Reinitialiser les paiements</button>'
+        + '</div>';
+    modalEl.style.display      = 'flex';
+    btnConfirmer.style.display = 'none';
+    btnAnnuler.textContent     = 'Annuler';
+    btnAnnuler.onclick = function() {
+        modalEl.style.display      = 'none';
+        btnConfirmer.style.display = '';
+        btnAnnuler.textContent     = 'Annuler';
     };
-    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
+
+    setTimeout(function() {
+        var btnC = document.getElementById('btnNvConservePaiement');
+        var btnR = document.getElementById('btnNvReinitialisePaiement');
+
+        if (btnC) btnC.onclick = async function() {
+            modalEl.style.display      = 'none';
+            btnConfirmer.style.display = '';
+            btnAnnuler.textContent     = 'Annuler';
+            await db.ref('resultats').remove();
+            await db.ref('sessions').remove();
+            copieSubmise = false;
+            toast('Nouveau concours pret ! Paiements conserves.', 'success');
+            son('success');
+        };
+
+        if (btnR) btnR.onclick = async function() {
+            modalEl.style.display      = 'none';
+            btnConfirmer.style.display = '';
+            btnAnnuler.textContent     = 'Annuler';
+            await db.ref('resultats').remove();
+            await db.ref('sessions').remove();
+            var snap    = await db.ref('users').once('value');
+            var updates = {};
+            snap.forEach(function(child) {
+                updates[child.key + '/accesPaye'] = false;
+            });
+            await db.ref('users').update(updates);
+            copieSubmise = false;
+            toast('Nouveau concours pret ! Paiements reinitialises.', 'success');
+            son('success');
+        };
+    }, 100);
 };
 
 // ============================================
-// FIN PARTIE 5/10
+// FIN PARTIE 5/10 COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 6/10 — COMPLETE AVEC PAIEMENT
