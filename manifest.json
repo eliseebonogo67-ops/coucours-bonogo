@@ -1,16 +1,17 @@
 {
   "name": "Concours Blanc Bonogo",
   "short_name": "Bonogo",
-  "description": "Concours blanc préparatoire ENSOA IDS ENAM ENAREF",
+  "description": "Concours blanc preparatoire ENSOA IDS ENAM ENAREF",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0a0f1e",
-  "theme_color": "#0a0f1e",
+  "theme_color": "#eab308",
   "orientation": "portrait-primary",
+  "lang": "fr",
   "icons": [
     {
-      "src": "icone.svg",
+      "src": "./ic%C3%B4ne.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
