@@ -1,9 +1,11 @@
-var CACHE_NAME = 'bonogo-v2';
+var CACHE_NAME = 'bonogo-v3';
 var urlsToCache = [
-  './',
-  './index.html',
-  './style.css',
-  './script.js'
+  '/coucours-bonogo/',
+  '/coucours-bonogo/index.html',
+  '/coucours-bonogo/style.css',
+  '/coucours-bonogo/script.js',
+  '/coucours-bonogo/icon-192.png',
+  '/coucours-bonogo/icon-512.png'
 ];
 
 self.addEventListener('install', function(e) {
@@ -20,7 +22,7 @@ self.addEventListener('activate', function(e) {
     caches.keys().then(function(keys) {
       return Promise.all(
         keys.filter(function(k) { return k !== CACHE_NAME; })
-            .map(function(k)   { return caches.delete(k); })
+            .map(function(k) { return caches.delete(k); })
       );
     })
   );
@@ -31,7 +33,7 @@ self.addEventListener('fetch', function(e) {
   e.respondWith(
     caches.match(e.request).then(function(response) {
       return response || fetch(e.request).catch(function() {
-        return caches.match('./index.html');
+        return caches.match('/coucours-bonogo/index.html');
       });
     })
   );
