@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0a0f1e">
+    <meta name="theme-color" content="#eab308">
     <title>Concours Blanc Bonogo</title>
 
     <!-- PWA -->
@@ -11,8 +11,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Bonogo">
-    <link rel="apple-touch-icon" href="icone.svg">
+    <meta name="apple-mobile-web-app-title" content="CB Bonogo">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
     <!-- SEO & Sécurité -->
     <meta name="robots" content="noindex, nofollow">
@@ -29,7 +29,7 @@
 <!-- SPLASH SCREEN -->
 <div id="splash">
     <div class="splash-logo">
-        <div class="logo-circle">BB</div>
+        <div class="logo-circle">CB</div>
         <h1>Concours Blanc</h1>
         <h2>BONOGO</h2>
         <div class="loader"></div>
@@ -165,7 +165,7 @@
         <button id="btnRetour" class="btn-blue btn-small">← Retour</button>
         <p id="erreurAdmin" class="erreur"></p>
     </div>
-</div><!-- ============================
+                </div><!-- ============================
      PAGE EXAMEN
      ============================ -->
 <div id="page-exam" style="display:none;">
@@ -387,7 +387,7 @@
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./service-worker.js')
+        navigator.serviceWorker.register('/coucours-bonogo/service-worker.js')
             .then(function(reg) {
                 console.log('SW OK:', reg.scope);
             })
@@ -399,4 +399,4 @@ if ('serviceWorker' in navigator) {
 </script>
 
 </body>
-            </html>
+                                                                     </html>
