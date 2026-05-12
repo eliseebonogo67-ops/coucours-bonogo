@@ -2508,7 +2508,7 @@ function demarrerTimer() {
 // FIN 7A SECTION 2/2
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 7/10 — SECTION B — COMPLETE
+// PARTIE 7/10 — SECTION B — PARTIE 1/2
 // ============================================
 
 var dernierMouvement = Date.now();
@@ -2541,18 +2541,15 @@ function demarrerAntiTriche() {
 
 function gererSortie() {
     if (copieSubmise || devourBloque || !enExamen) return;
-
     if (document.hidden) {
         if (!sortieTimeout) {
             sortieTimeout = setTimeout(async function() {
                 sortieTimeout = null;
                 var inactivite = Date.now() - dernierMouvement;
                 if (inactivite > 60000) return;
-
                 nbSorties++;
                 son('sortie');
                 await sauvegarderSession();
-
                 if (nbSorties >= MAX_SORTIES) {
                     afficherBlocageDevourAvecAttente();
                 } else {
@@ -2574,19 +2571,16 @@ function gererRetour() {
 
 function afficherAvertissementSortie() {
     var restantes = MAX_SORTIES - nbSorties;
-
     var ancien = document.getElementById('avertissement-sortie');
     if (ancien && ancien.parentNode) {
         ancien.parentNode.removeChild(ancien);
     }
-
     var div = document.createElement('div');
     div.id  = 'avertissement-sortie';
     div.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;'
         + 'background:rgba(0,0,0,0.92);z-index:5000;'
         + 'display:flex;align-items:center;'
         + 'justify-content:center;padding:20px;';
-
     div.innerHTML = '<div style="background:var(--card);'
         + 'border:2px solid var(--red);border-radius:20px;'
         + 'padding:30px 24px;max-width:400px;width:100%;'
@@ -2594,8 +2588,7 @@ function afficherAvertissementSortie() {
         + 'box-shadow:0 20px 60px rgba(239,68,68,0.3);">'
         + '<div style="font-size:50px;margin-bottom:16px">⚠️</div>'
         + '<h2 style="font-size:20px;font-weight:800;'
-        + 'color:var(--red);margin-bottom:12px">'
-        + 'Sortie detectee</h2>'
+        + 'color:var(--red);margin-bottom:12px">Sortie detectee</h2>'
         + '<p style="color:var(--text);font-size:14px;'
         + 'font-weight:600;margin-bottom:8px">'
         + 'Tu as quitte la page de l\'examen.</p>'
@@ -2620,35 +2613,35 @@ function afficherAvertissementSortie() {
         + 'font-weight:700;cursor:pointer;">'
         + 'Reprendre le concours</button>'
         + '</div>';
-
     document.body.appendChild(div);
     son('error');
-
     document.getElementById('btnReprendreExamen').onclick = function() {
         if (div.parentNode) div.parentNode.removeChild(div);
     };
 }
 
+// ============================================
+// FIN 7B SECTION 1/2
+// ============================================// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
+// PARTIE 7/10 — SECTION B — PARTIE 2/2
+// ============================================
+
 function afficherBlocageDevourAvecAttente() {
     devourBloque = true;
     enExamen     = false;
     clearInterval(timerInt);
-
     var ancien = document.getElementById('avertissement-sortie');
     if (ancien && ancien.parentNode) {
         ancien.parentNode.removeChild(ancien);
     }
-
     questionsEl.style.display                          = 'none';
     document.querySelector('.footer').style.display    = 'none';
     document.querySelector('.header').style.display    = 'none';
     document.querySelector('.subheader').style.display = 'none';
-
     db.ref('sessions/' + user).update({
-        nbSorties: nbSorties,
-        bloque:    true
+        nbSorties: nbSorties, bloque: true
     });
-
     var div = document.createElement('div');
     div.style.cssText = 'padding:40px 20px;text-align:center;margin-top:40px;';
     div.innerHTML = '<div style="font-size:60px;margin-bottom:20px">🚫</div>'
@@ -2671,10 +2664,8 @@ function afficherBlocageDevourAvecAttente() {
         + '</div>'
         + '<p style="color:var(--muted);font-size:12px;">'
         + 'Tu seras classe(e) avec tes reponses actuelles.</p>';
-
     pageExam.appendChild(div);
     son('error');
-
     var intv = setInterval(async function() {
         var reste = finTimestamp - Date.now();
         var tb = document.getElementById('timerBlocage');
@@ -2693,28 +2684,21 @@ function afficherBlocageDevourAvecAttente() {
 async function soumettreBloque() {
     if (copieSubmise) return;
     copieSubmise = true;
-
     var nbB = 0, nbP = 0, nbF = 0;
     var repFin = {};
-
     questionsData.forEach(function(q, qi) {
         var repUser = reponsesUser[qi];
         var bonnesReponses = [];
         (q.reponses || []).forEach(function(r, ri) {
             if (r.correct) bonnesReponses.push(ri);
         });
-
         if (repUser === undefined
             || (Array.isArray(repUser) && repUser.length === 0)) {
             nbF++;
-            repFin[qi] = {
-                user: [], bonnes: bonnesReponses, statut: 'vide'
-            };
+            repFin[qi] = { user:[], bonnes:bonnesReponses, statut:'vide' };
             return;
         }
-
         var reponsesChoisies = Array.isArray(repUser) ? repUser : [repUser];
-
         var toutessBonnes = bonnesReponses.every(function(b) {
             return reponsesChoisies.indexOf(b) !== -1;
         });
@@ -2724,72 +2708,57 @@ async function soumettreBloque() {
         var auMoinsUneBonne = reponsesChoisies.some(function(r) {
             return bonnesReponses.indexOf(r) !== -1;
         });
-
         if (toutessBonnes && aucuneFausse) {
             nbB++;
-            repFin[qi] = {
-                user: reponsesChoisies, bonnes: bonnesReponses, statut: 'bonne'
-            };
+            repFin[qi] = { user:reponsesChoisies, bonnes:bonnesReponses, statut:'bonne' };
         } else if (auMoinsUneBonne && aucuneFausse) {
             nbP++;
-            repFin[qi] = {
-                user: reponsesChoisies, bonnes: bonnesReponses, statut: 'partielle'
-            };
+            repFin[qi] = { user:reponsesChoisies, bonnes:bonnesReponses, statut:'partielle' };
         } else {
             nbF++;
-            repFin[qi] = {
-                user: reponsesChoisies, bonnes: bonnesReponses, statut: 'fausse'
-            };
+            repFin[qi] = { user:reponsesChoisies, bonnes:bonnesReponses, statut:'fausse' };
         }
     });
-
     var scoreFinal = Math.round((nbB + nbP * 0.5) * 10) / 10;
     var xpGagneVal = calcXp(scoreFinal, questionsData.length || 50);
-
     try {
         await db.ref('resultats/' + user).set({
-            score: scoreFinal, total: questionsData.length,
-            bonnes: nbB, partielles: nbP, fausses: nbF,
-            xp: xpGagneVal, bloque: true, sorties: nbSorties,
-            timestamp: Date.now(), pseudo: userDisplay,
-            prenom: userData.prenom || '', nom: userData.nom || '',
-            reponses: repFin
+            score:scoreFinal, total:questionsData.length,
+            bonnes:nbB, partielles:nbP, fausses:nbF,
+            xp:xpGagneVal, bloque:true, sorties:nbSorties,
+            timestamp:Date.now(), pseudo:userDisplay,
+            prenom:userData.prenom||'', nom:userData.nom||'',
+            reponses:repFin
         });
-        await db.ref('sessions/' + user).update({ termine: true });
+        await db.ref('sessions/' + user).update({ termine:true });
     } catch(e) {
         localStorage.setItem('bb_pending_result_' + user, JSON.stringify({
-            score: scoreFinal, total: questionsData.length,
-            bonnes: nbB, partielles: nbP, fausses: nbF,
-            xp: xpGagneVal, bloque: true, sorties: nbSorties,
-            timestamp: Date.now(), pseudo: userDisplay,
-            prenom: userData.prenom || '', nom: userData.nom || '',
-            reponses: repFin
+            score:scoreFinal, total:questionsData.length,
+            bonnes:nbB, partielles:nbP, fausses:nbF,
+            xp:xpGagneVal, bloque:true, sorties:nbSorties,
+            timestamp:Date.now(), pseudo:userDisplay,
+            prenom:userData.prenom||'', nom:userData.nom||'',
+            reponses:repFin
         }));
     }
-
     var histo = userData.historique || [];
     if (!Array.isArray(histo)) histo = Object.values(histo);
     histo.push({
-        score: scoreFinal, total: questionsData.length,
-        bonnes: nbB, partielles: nbP, fausses: nbF,
-        xp: xpGagneVal, sorties: nbSorties,
-        type: configActuelle
-            ? (configActuelle.type || 'Concours Blanc Bonogo')
+        score:scoreFinal, total:questionsData.length,
+        bonnes:nbB, partielles:nbP, fausses:nbF,
+        xp:xpGagneVal, sorties:nbSorties,
+        type:configActuelle
+            ? (configActuelle.type||'Concours Blanc Bonogo')
             : 'Concours Blanc Bonogo',
-        timestamp: Date.now(), date: formatDate(Date.now())
+        timestamp:Date.now(), date:formatDate(Date.now())
     });
-
     try {
-        await db.ref('users/' + user).update({ historique: histo });
+        await db.ref('users/' + user).update({ historique:histo });
     } catch(e) {}
-
     reponsesFinales = repFin;
     afficherResultat(scoreFinal, nbB, nbP, nbF, xpGagneVal);
 }
 
-// ============================================
-// TIMER SÉCURITÉ — Force soumission hors connexion
-// ============================================
 function demarrerTimerSecurite() {
     var timerSec = setInterval(async function() {
         if (copieSubmise) {
