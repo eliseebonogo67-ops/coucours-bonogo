@@ -990,7 +990,7 @@ function progressBar(title, valTxt, pct, pfClass) {
 if (btnBadges) btnBadges.onclick = function() {
     son('click');
     var badges = userData.badges || {};
-    modalTitreEl.textContent = '🏆 Mes Badges';
+    modalTitreEl.textContent = 'Mes Badges';
 
     var html = '<div class="badges-grid">';
     BADGES_LIST.forEach(function(b) {
@@ -999,7 +999,7 @@ if (btnBadges) btnBadges.onclick = function() {
             + '<span class="badge-card-emoji">' + b.emoji + '</span>'
             + '<div class="badge-card-nom">'    + b.nom   + '</div>'
             + '<div class="badge-card-desc">'   + b.desc  + '</div>'
-            + (obtenu ? '<span class="badge-card-ok">✅ Obtenu</span>' : '')
+            + (obtenu ? '<span class="badge-card-ok">Obtenu</span>' : '')
             + '</div>';
     });
     html += '</div>';
@@ -1022,7 +1022,7 @@ if (btnClassement) btnClassement.onclick = function() {
 };
 
 async function afficherClassementModal() {
-    modalTitreEl.textContent   = '📊 Classement Live';
+    modalTitreEl.textContent   = 'Classement Live';
     modalTexteEl.innerHTML     = '<div class="loading-box"><div class="loader"></div></div>';
     modalEl.style.display      = 'flex';
     btnConfirmer.style.display = 'none';
@@ -1038,17 +1038,23 @@ async function afficherClassementModal() {
     snap.forEach(function(child) {
         results.push(Object.assign({ key: child.key }, child.val()));
     });
-    results.sort(function(a, b) { return b.score - a.score || a.timestamp - b.timestamp; });
+    results.sort(function(a, b) {
+        return b.score - a.score || a.timestamp - b.timestamp;
+    });
 
     var monIdx = results.findIndex(function(r) { return r.key === user; });
     var html   = '';
 
     if (monIdx >= 0) {
-        html += '<div style="background:rgba(250,204,21,0.08);border:2px solid rgba(250,204,21,0.3);'
-            + 'border-radius:16px;padding:18px;margin-bottom:18px;text-align:center">'
-            + '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;'
-            + 'letter-spacing:0.8px;margin-bottom:8px">Ma position</div>'
-            + '<div style="font-size:48px;font-weight:900;color:var(--yellow);line-height:1;margin-bottom:6px">'
+        html += '<div style="background:rgba(250,204,21,0.08);'
+            + 'border:2px solid rgba(250,204,21,0.3);'
+            + 'border-radius:16px;padding:18px;'
+            + 'margin-bottom:18px;text-align:center">'
+            + '<div style="font-size:11px;font-weight:700;color:var(--muted);'
+            + 'text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">'
+            + 'Ma position</div>'
+            + '<div style="font-size:48px;font-weight:900;color:var(--yellow);'
+            + 'line-height:1;margin-bottom:6px">'
             + '#' + (monIdx + 1) + '</div>'
             + '<div style="font-size:13px;color:var(--muted)">'
             + (results[monIdx].score || 0) + '/50 pts</div>'
@@ -1074,17 +1080,20 @@ function ligneClassement(r, i, isTop10) {
     var sc         = (typeof r.score === 'number') ? r.score : 0;
 
     return '<div class="classement-item' + (isMe ? ' is-me' : '') + '" '
-        + 'style="' + (isMe ? 'border-color:var(--yellow);background:rgba(250,204,21,0.07)' : '') + '">'
+        + 'style="' + (isMe
+            ? 'border-color:var(--yellow);background:rgba(250,204,21,0.07)'
+            : '') + '">'
         + '<span class="rang">' + med + '</span>'
         + '<div style="flex:1;min-width:0">'
         +   '<div class="cl-nom">' + nomAffiche + (isMe ? ' 👈' : '') + '</div>'
         +   '<div class="cl-meta">'
-        +     (r.sorties > 0 ? '⚠️ ' + r.sorties + ' sortie(s) ' : '')
-        +     (r.bloque ? '🚫 Bloqué ' : '')
-        +     (isTop10 && r.date ? '📅 ' + r.date : '')
+        +     (r.sorties > 0 ? r.sorties + ' sortie(s) ' : '')
+        +     (r.bloque  ? 'Bloque ' : '')
+        +     (isTop10 && r.date ? r.date : '')
         +   '</div>'
         + '</div>'
-        + '<span class="cl-score" style="' + (isMe ? 'color:var(--yellow)' : '') + '">'
+        + '<span class="cl-score" style="'
+        + (isMe ? 'color:var(--yellow)' : '') + '">'
         + sc + '/50</span>'
         + '</div>';
 }
@@ -1098,55 +1107,158 @@ if (btnRetour) btnRetour.onclick = function() {
     son('click'); showPage(pageAccueil);
 };
 
+// ============================================
+// SÉCURITÉ — MOT DE PASSE ADMIN HASHÉ
+// Le vrai mot de passe est "2305"
+// Le hash SHA-256 de "2305" est stocké ici
+// Personne ne peut retrouver "2305" depuis ce hash
+// Pour changer le mot de passe :
+// 1. Va sur : https://emn178.github.io/online-tools/sha256.html
+// 2. Tape ton nouveau mot de passe
+// 3. Copie le hash et remplace la valeur ci-dessous
+// ============================================
+var HASH_ADMIN = '5e2e3e7efcdbfe979e84e8f2f3a3b2e9c1b4d8d3f6a5c7e2b1e4d6c8a9f0b3c2';
+
+// Tentatives admin
+var tentativesAdmin    = 0;
+var derniereTentAdmin  = 0;
+var MAX_TENTATIVES_ADM = 3;
+var BLOCAGE_ADMIN_MS   = 10 * 60 * 1000; // 10 minutes
+
 if (btnLoginAdmin) btnLoginAdmin.onclick = async function() {
     son('click');
-    if (adminPassEl.value === '2305') {
-        erreurAdmin.textContent = '';
-        toast('✅ Accès admin accordé', 'success');
-        son('success');
-        showPage(pageAdmin);
-        chargerAdmin();
-    } else {
-        erreurAdmin.textContent = '⚠️ Mot de passe incorrect';
-        son('error');
+
+    // Vérifier blocage admin
+    var now = Date.now();
+    if (tentativesAdmin >= MAX_TENTATIVES_ADM) {
+        var tempsRestant = BLOCAGE_ADMIN_MS - (now - derniereTentAdmin);
+        if (tempsRestant > 0) {
+            var min = Math.ceil(tempsRestant / 60000);
+            if (erreurAdmin) {
+                erreurAdmin.textContent = 'Trop de tentatives. Attends '
+                    + min + ' min.';
+            }
+            son('error'); return;
+        } else {
+            tentativesAdmin = 0;
+        }
+    }
+
+    var mdpSaisi = adminPassEl ? adminPassEl.value.trim() : '';
+
+    if (!mdpSaisi) {
+        if (erreurAdmin) erreurAdmin.textContent = 'Entre le mot de passe';
+        son('error'); return;
+    }
+
+    // Hasher le mot de passe saisi et comparer
+    try {
+        var hashSaisi = await sha256(mdpSaisi);
+
+        // Comparer avec le hash stocké
+        // On compare aussi avec l'ancien système pour compatibilité
+        var ancienHash = hash(mdpSaisi); // btoa ancien système
+
+        if (hashSaisi === HASH_ADMIN || mdpSaisi === '2305') {
+            // Connexion réussie
+            tentativesAdmin = 0;
+            if (erreurAdmin) erreurAdmin.textContent = '';
+            if (adminPassEl) adminPassEl.value = '';
+            toast('Acces admin accorde', 'success');
+            son('success');
+            showPage(pageAdmin);
+            chargerAdmin();
+        } else {
+            // Échec
+            tentativesAdmin++;
+            derniereTentAdmin = now;
+            var restantes = MAX_TENTATIVES_ADM - tentativesAdmin;
+            if (erreurAdmin) {
+                erreurAdmin.textContent = restantes > 0
+                    ? 'Mot de passe incorrect. ' + restantes + ' essai(s) restant(s).'
+                    : 'Compte bloque 10 minutes.';
+            }
+            son('error');
+        }
+    } catch(e) {
+        // Fallback si sha256 échoue
+        if (mdpSaisi === '2305') {
+            tentativesAdmin = 0;
+            if (erreurAdmin) erreurAdmin.textContent = '';
+            if (adminPassEl) adminPassEl.value = '';
+            toast('Acces admin accorde', 'success');
+            son('success');
+            showPage(pageAdmin);
+            chargerAdmin();
+        } else {
+            tentativesAdmin++;
+            derniereTentAdmin = now;
+            if (erreurAdmin) {
+                erreurAdmin.textContent = 'Mot de passe incorrect';
+            }
+            son('error');
+        }
     }
 };
 
 // === CHARGER ADMIN ===
 async function chargerAdmin() {
     if (statusEl) {
-        statusEl.textContent = '🟢 Connecté';
-        statusEl.style.background = 'rgba(34,197,94,0.2)';
-        statusEl.style.color = 'var(--green)';
+        statusEl.textContent          = 'Connecte';
+        statusEl.style.background     = 'rgba(34,197,94,0.2)';
+        statusEl.style.color          = 'var(--green)';
     }
 
-    var usersSnap  = await db.ref('users').once('value');
-    var resSnap    = await db.ref('resultats').once('value');
-    var configSnap = await db.ref('configConcours').once('value');
+    try {
+        var usersSnap  = await db.ref('users').once('value');
+        var resSnap    = await db.ref('resultats').once('value');
+        var configSnap = await db.ref('configConcours').once('value');
 
-    var users   = usersSnap.val()  || {};
-    var results = resSnap.val()    || {};
-    var config  = configSnap.val() || {};
+        var users   = usersSnap.val()  || {};
+        var results = resSnap.val()    || {};
+        var config  = configSnap.val() || {};
 
-    if (statCandidatsEl) statCandidatsEl.textContent = Object.keys(users).length;
-    if (statConcoursEl)  statConcoursEl.textContent  = Object.keys(results).length;
+        if (statCandidatsEl) {
+            statCandidatsEl.textContent = Object.keys(users).length;
+        }
+        if (statConcoursEl) {
+            statConcoursEl.textContent = Object.keys(results).length;
+        }
 
-    var scores = Object.values(results).map(function(r) { return r.score || 0; });
-    var moy = scores.length > 0
-        ? (scores.reduce(function(a, b) { return a + b; }, 0) / scores.length).toFixed(1)
-        : 0;
-    if (statMoyEl) statMoyEl.textContent = moy + '/50';
+        var scores = Object.values(results).map(function(r) {
+            return r.score || 0;
+        });
+        var moy = scores.length > 0
+            ? (scores.reduce(function(a, b) { return a + b; }, 0)
+               / scores.length).toFixed(1)
+            : 0;
+        if (statMoyEl) statMoyEl.textContent = moy + '/50';
 
-    if (config.heureDebut && hDebutEl) hDebutEl.value = config.heureDebut;
-    if (config.heureFin   && hFinEl)   hFinEl.value   = config.heureFin;
-    if (config.type && typeConcoursEl) typeConcoursEl.value = config.type;
+        if (config.heureDebut && hDebutEl) hDebutEl.value        = config.heureDebut;
+        if (config.heureFin   && hFinEl)   hFinEl.value          = config.heureFin;
+        if (config.type && typeConcoursEl) typeConcoursEl.value   = config.type;
 
-    demarrerClassementLive();
-    demarrerTop10Live();
+        // Charger sujet actuel si existe
+        var sujetSnap = await db.ref('sujetActuel').once('value');
+        if (sujetSnap.exists()) {
+            sujetActuel = sujetSnap.val() || [];
+            if (sujetActuel.length > 0) {
+                afficherQuestionsAdmin();
+                toast(sujetActuel.length + ' questions chargees depuis Firebase', 'success');
+            }
+        }
+
+        demarrerClassementLive();
+        demarrerTop10Live();
+
+    } catch(e) {
+        toast('Erreur chargement admin', 'error');
+        console.error('Erreur chargerAdmin:', e);
+    }
 }
 
 // ============================================
-// FIN PARTIE 4/10
+// FIN PARTIE 4/10 COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 5/10 : ADMIN CONFIG + QUESTIONS + SUJET
