@@ -5,11 +5,146 @@
 
 // === FIREBASE ===
 var firebaseConfig = {
-    apiKey: "AIzaSyDQWFqTKRmEZtuBhRHWMDrGtwboOwLleI4",
+    apiKey:      "AIzaSyDQWFqTKRmEZtuBhRHWMDrGtwboOwLleI4",
     databaseURL: "https://quiz-pro-max-default-rtdb.firebaseio.com"
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
+
+// ============================================
+// SÉCURITÉ 1 — BLOQUER DEVTOOLS
+// ============================================
+(function() {
+    // Désactiver clic droit
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+    // Bloquer F12, Ctrl+Shift+I, Ctrl+U, Ctrl+Shift+J
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12'
+            || (e.ctrlKey && e.shiftKey && e.key === 'I')
+            || (e.ctrlKey && e.shiftKey && e.key === 'J')
+            || (e.ctrlKey && e.shiftKey && e.key === 'C')
+            || (e.ctrlKey && e.key === 'u')
+            || (e.ctrlKey && e.key === 'U')
+            || (e.ctrlKey && e.key === 's')
+            || (e.ctrlKey && e.key === 'S')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Détecter ouverture DevTools via taille fenêtre
+    var devToolsOuvert = false;
+    setInterval(function() {
+        var threshold = 160;
+        if ((window.outerWidth  - window.innerWidth  > threshold)
+         || (window.outerHeight - window.innerHeight > threshold)) {
+            if (!devToolsOuvert) {
+                devToolsOuvert = true;
+                document.body.innerHTML = '<div style="display:flex;'
+                    + 'align-items:center;justify-content:center;'
+                    + 'height:100vh;background:#0a0f1e;color:white;'
+                    + 'font-family:Poppins,sans-serif;text-align:center;'
+                    + 'padding:20px">'
+                    + '<div>'
+                    + '<div style="font-size:60px;margin-bottom:20px">🚫</div>'
+                    + '<h1 style="margin-bottom:12px">Acces interdit</h1>'
+                    + '<p style="color:#94a3b8">Les outils de developpement '
+                    + 'sont desactives.</p>'
+                    + '</div></div>';
+            }
+        } else {
+            devToolsOuvert = false;
+        }
+    }, 1000);
+})();
+
+// ============================================
+// SÉCURITÉ 2 — HASH SHA-256
+// ============================================
+async function sha256(message) {
+    try {
+        var msgBuffer  = new TextEncoder().encode(message);
+        var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        var hashArray  = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(function(b) {
+            return b.toString(16).padStart(2, '0');
+        }).join('');
+    } catch(e) {
+        // Fallback simple si crypto.subtle non disponible
+        return btoa(message);
+    }
+}
+
+// ============================================
+// SÉCURITÉ 3 — LIMITER TENTATIVES CONNEXION
+// ============================================
+var tentativesConnexion = 0;
+var derniereTentative   = 0;
+var BLOCAGE_APRES       = 5;
+var DUREE_BLOCAGE_MS    = 5 * 60 * 1000; // 5 minutes
+
+function verifierTentatives() {
+    var now = Date.now();
+    if (tentativesConnexion >= BLOCAGE_APRES) {
+        var tempsRestant = DUREE_BLOCAGE_MS - (now - derniereTentative);
+        if (tempsRestant > 0) {
+            var min = Math.ceil(tempsRestant / 60000);
+            toast('Trop de tentatives. Attends '
+                + min + ' minute(s).', 'error');
+            return false;
+        } else {
+            tentativesConnexion = 0;
+        }
+    }
+    return true;
+}
+
+function enregistrerTentativeEchouee() {
+    tentativesConnexion++;
+    derniereTentative = Date.now();
+    var restantes = BLOCAGE_APRES - tentativesConnexion;
+    if (restantes > 0) {
+        toast('Mot de passe incorrect. '
+            + restantes + ' tentative(s) restante(s).', 'error');
+    }
+}
+
+function reinitialiserTentatives() {
+    tentativesConnexion = 0;
+    derniereTentative   = 0;
+}
+
+// ============================================
+// SÉCURITÉ 4 — VALIDATION EMAIL RENFORCÉE
+// ============================================
+function validerEmail(email) {
+    if (!email || !email.includes('@') || !email.includes('.')) {
+        return 'Email invalide';
+    }
+    var emailsBlacklist = [
+        'tempmail', 'guerrillamail', 'mailinator',
+        'throwaway', 'fakeinbox', 'trashmail', 'yopmail'
+    ];
+    var emailLower = email.toLowerCase();
+    for (var i = 0; i < emailsBlacklist.length; i++) {
+        if (emailLower.includes(emailsBlacklist[i])) {
+            return 'Email temporaire non autorise';
+        }
+    }
+    return null;
+}
+
+function validerInscription(nom, prenom, email, mdp) {
+    if (!nom   || nom.trim().length   < 2) return 'Nom trop court (2 car. min)';
+    if (!prenom|| prenom.trim().length< 2) return 'Prenom trop court (2 car. min)';
+    var errEmail = validerEmail(email);
+    if (errEmail) return errEmail;
+    if (!mdp || mdp.length < 4) return 'Mot de passe : 4 caracteres minimum';
+    return null;
+}
 
 // === SPLASH ===
 window.addEventListener('load', function() {
@@ -171,22 +306,23 @@ var enExamen      = false;
 // === LISTE BADGES ===
 var BADGES_LIST = [
     { id: 'premier',   emoji: '🎯', nom: 'Premier Concours',  desc: 'Passe ton 1er concours' },
-    { id: 'streak7',   emoji: '🔥', nom: 'Série 7 jours',     desc: 'Connecte-toi 7 jours d\'affilée' },
+    { id: 'streak7',   emoji: '🔥', nom: 'Serie 7 jours',     desc: 'Connecte-toi 7 jours' },
     { id: 'niveau10',  emoji: '⭐', nom: 'Niveau 10',          desc: 'Atteins le niveau 10' },
     { id: 'perfect',   emoji: '💯', nom: 'Sans Faute',         desc: 'Obtiens 50/50' },
-    { id: 'rapide',    emoji: '⚡', nom: 'Éclair',             desc: 'Finis 1h avant la fin' },
+    { id: 'rapide',    emoji: '⚡', nom: 'Eclair',             desc: 'Finis 1h avant la fin' },
     { id: 'assidu',    emoji: '📅', nom: 'Assidu',             desc: 'Passe 5 concours' },
-    { id: 'elite',     emoji: '👑', nom: 'Élite',              desc: 'Moyenne supérieure à 40/50' },
-    { id: 'resistant', emoji: '🛡️', nom: 'Résistant',         desc: 'Aucune sortie détectée' },
+    { id: 'elite',     emoji: '👑', nom: 'Elite',              desc: 'Moyenne > 40/50' },
+    { id: 'resistant', emoji: '🛡️', nom: 'Resistant',         desc: 'Aucune sortie detectee' },
     { id: 'top3',      emoji: '🏅', nom: 'Top 3',             desc: 'Termine dans le top 3' },
-    { id: 'top10all',  emoji: '🌟', nom: 'Légende Top 10',    desc: 'Entre au Hall of Fame permanent' }
+    { id: 'top10all',  emoji: '🌟', nom: 'Legende Top 10',    desc: 'Entre au Hall of Fame' }
 ];
 
 // === AUDIO ===
 function initAudio() {
     if (!audioCtx) {
-        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-        catch(e) { audioCtx = null; }
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) { audioCtx = null; }
     }
 }
 
@@ -263,7 +399,7 @@ function showPage(p) {
 
 function toast(msg, type) {
     var t = document.createElement('div');
-    t.className = 'toast ' + (type || '');
+    t.className  = 'toast ' + (type || '');
     t.textContent = msg;
     if (toastsEl) toastsEl.appendChild(t);
     setTimeout(function() {
@@ -306,12 +442,12 @@ function getPct(sc, tot) {
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
 function getMention(score) {
-    if (score >= 45) return '🏆 Excellent !';
-    if (score >= 40) return '🌟 Très bien !';
-    if (score >= 35) return '👍 Bien !';
-    if (score >= 25) return '📚 Passable';
-    if (score >= 15) return '💪 Continue tes efforts !';
-    return '📖 Révise davantage !';
+    if (score >= 45) return 'Excellent !';
+    if (score >= 40) return 'Tres bien !';
+    if (score >= 35) return 'Bien !';
+    if (score >= 25) return 'Passable';
+    if (score >= 15) return 'Continue tes efforts !';
+    return 'Revise davantage !';
 }
 
 function getMentionClass(score) {
@@ -331,7 +467,8 @@ function getMentionTagClass(score) {
 function afficherBadgeAnimation(emoji, nom) {
     var div = document.createElement('div');
     div.className = 'badge-popup';
-    div.innerHTML = '<div style="font-size:50px;margin-bottom:12px">' + emoji + '</div>'
+    div.innerHTML = '<div style="font-size:50px;margin-bottom:12px">'
+        + emoji + '</div>'
         + '<div style="font-size:16px;margin-bottom:6px">Badge obtenu !</div>'
         + '<div style="font-size:13px;opacity:0.85">' + nom + '</div>';
     document.body.appendChild(div);
@@ -346,7 +483,7 @@ function afficherBadgeAnimation(emoji, nom) {
 }
 
 // ============================================
-// FIN PARTIE 1/10
+// FIN PARTIE 1/10 COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 2/10 : CONNEXION + INSCRIPTION + RESET + AUTO-LOGIN
