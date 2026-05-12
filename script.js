@@ -1894,13 +1894,117 @@ db.ref('resultats').on('child_removed', function(snap) {
 // ============================================
 // ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 7/10 — SECTION A — COMPLETE FINALE
+// PARTIE 7/10 — SECTION A — PARTIE 1/2
 // ============================================
+
+// ============================================
+// CONVERSION NOTATION MATHÉMATIQUE
+// ============================================
+function convertirMath(texte) {
+    if (!texte) return '';
+
+    var exposants = {
+        '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴',
+        '5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹',
+        '+':'⁺','-':'⁻','=':'⁼','(':'⁽',')':'⁾',
+        'a':'ᵃ','b':'ᵇ','c':'ᶜ','d':'ᵈ','e':'ᵉ',
+        'f':'ᶠ','g':'ᵍ','h':'ʰ','i':'ⁱ','j':'ʲ',
+        'k':'ᵏ','l':'ˡ','m':'ᵐ','n':'ⁿ','o':'ᵒ',
+        'p':'ᵖ','r':'ʳ','s':'ˢ','t':'ᵗ','u':'ᵘ',
+        'v':'ᵛ','w':'ʷ','x':'ˣ','y':'ʸ','z':'ᶻ',
+        'A':'ᴬ','B':'ᴮ','C':'ᶜ','D':'ᴰ','E':'ᴱ',
+        'F':'ᶠ','G':'ᴳ','H':'ᴴ','I':'ᴵ','J':'ᴶ',
+        'K':'ᴷ','L':'ᴸ','M':'ᴹ','N':'ᴺ','O':'ᴼ',
+        'P':'ᴾ','R':'ᴿ','T':'ᵀ','U':'ᵁ','V':'ⱽ',
+        'W':'ᵂ'
+    };
+
+    var indices = {
+        '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄',
+        '5':'₅','6':'₆','7':'₇','8':'₈','9':'₉',
+        '+':'₊','-':'₋','=':'₌','(':'₍',')':'₎',
+        'a':'ₐ','e':'ₑ','o':'ₒ','x':'ₓ','n':'ₙ',
+        'i':'ᵢ','j':'ⱼ','r':'ᵣ','u':'ᵤ','v':'ᵥ'
+    };
+
+    function toExposant(str) {
+        return str.split('').map(function(c) {
+            return exposants[c] || c;
+        }).join('');
+    }
+
+    function toIndice(str) {
+        return str.split('').map(function(c) {
+            return indices[c] || c;
+        }).join('');
+    }
+
+    var result = texte;
+
+    // Fractions courantes
+    result = result.replace(/\b1\/2\b/g, '½');
+    result = result.replace(/\b1\/3\b/g, '⅓');
+    result = result.replace(/\b1\/4\b/g, '¼');
+    result = result.replace(/\b3\/4\b/g, '¾');
+    result = result.replace(/\b2\/3\b/g, '⅔');
+
+    // Exposants avec parenthèses : x^(abc) → xᵃᵇᶜ
+    result = result.replace(/\^\(([^)]+)\)/g, function(match, inner) {
+        return toExposant(inner);
+    });
+
+    // Exposants simples : x^2 → x²
+    result = result.replace(/\^(-?[a-zA-Z0-9]+)/g, function(match, exp) {
+        return toExposant(exp);
+    });
+
+    // Indices avec underscore : x_1 → x₁
+    result = result.replace(/_\(([^)]+)\)/g, function(match, inner) {
+        return toIndice(inner);
+    });
+    result = result.replace(/_([a-zA-Z0-9]+)/g, function(match, idx) {
+        return toIndice(idx);
+    });
+
+    // Racine carrée
+    result = result.replace(/sqrt\(([^)]+)\)/g, '√($1)');
+    result = result.replace(/√\(([^)]+)\)/g, '√$1');
+
+    // Symboles grecs et spéciaux
+    result = result.replace(/\bpi\b/gi, 'π');
+    result = result.replace(/\binfini\b/gi, '∞');
+    result = result.replace(/\binfinity\b/gi, '∞');
+    result = result.replace(/\+-/g, '±');
+    result = result.replace(/\bdelta\b/gi, 'Δ');
+    result = result.replace(/\balpha\b/gi, 'α');
+    result = result.replace(/\bbeta\b/gi, 'β');
+    result = result.replace(/\bgamma\b/gi, 'γ');
+    result = result.replace(/\blambda\b/gi, 'λ');
+    result = result.replace(/\btheta\b/gi, 'θ');
+    result = result.replace(/\bsigma\b/gi, 'σ');
+    result = result.replace(/\bomega\b/gi, 'ω');
+    result = result.replace(/\bmu\b/gi, 'μ');
+
+    // Comparaisons
+    result = result.replace(/!=/g, '≠');
+    result = result.replace(/\bapprox\b/gi, '≈');
+
+    // Flèches
+    result = result.replace(/->/g, '→');
+    result = result.replace(/<-/g, '←');
+
+    // Molécules chimiques H2O, CO2, etc.
+    result = result.replace(/([A-Z][a-z]?)(\d+)/g, function(match, elem, num) {
+        return elem + toIndice(num);
+    });
+
+    return result;
+}
 
 if (btnExam) btnExam.onclick = async function() {
     son('click');
 
-    // VÉRIFICATION PAIEMENT
+    // Vérification paiement
     var userSnap      = await db.ref('users/' + user).once('value');
     var userDataFresh = userSnap.val() || {};
 
@@ -1936,7 +2040,6 @@ if (btnExam) btnExam.onclick = async function() {
         return;
     }
 
-    // RÉCUPÉRER CONFIG ET SUJET
     var configSnap = await db.ref('configConcours').once('value');
     configActuelle = configSnap.val();
 
@@ -1953,9 +2056,7 @@ if (btnExam) btnExam.onclick = async function() {
 
     var now = Date.now();
 
-    // ============================================
-    // CAS 1 : Concours pas encore commencé
-    // ============================================
+    // CAS 1 : Pas encore commencé
     if (now < configActuelle.debutTimestamp) {
         showPage(pageExam);
         if (attenteEl)  attenteEl.style.display  = 'none';
@@ -1964,17 +2065,14 @@ if (btnExam) btnExam.onclick = async function() {
         return;
     }
 
-    // ============================================
     // CAS 2 : Concours terminé
-    // ============================================
     if (now > configActuelle.finTimestamp) {
         var resSnapFin = await db.ref('resultats/' + user).once('value');
         if (resSnapFin.exists()) {
-            var resFin      = resSnapFin.val();
-            var resTs       = resFin.timestamp || 0;
-            var estActuelFin = resTs >= configActuelle.debutTimestamp;
-
-            if (estActuelFin) {
+            var resFin    = resSnapFin.val();
+            var resTs     = resFin.timestamp || 0;
+            var estActuel = resTs >= configActuelle.debutTimestamp;
+            if (estActuel) {
                 finTimestamp    = configActuelle.finTimestamp;
                 reponsesFinales = resFin.reponses || {};
                 showPage(pageExam);
@@ -1984,12 +2082,10 @@ if (btnExam) btnExam.onclick = async function() {
                 document.querySelector('.header').style.display    = 'flex';
                 document.querySelector('.subheader').style.display = 'none';
                 afficherResultat(
-                    resFin.score,      resFin.bonnes,
-                    resFin.partielles, resFin.fausses,
-                    resFin.xp
+                    resFin.score, resFin.bonnes,
+                    resFin.partielles, resFin.fausses, resFin.xp
                 );
             } else {
-                // Ancien résultat → nettoyer
                 await db.ref('resultats/' + user).remove();
                 await db.ref('sessions/'  + user).remove();
                 toast('Ce concours est termine', 'error');
@@ -2002,21 +2098,16 @@ if (btnExam) btnExam.onclick = async function() {
 
     finTimestamp = configActuelle.finTimestamp;
 
-    // ============================================
-    // CAS 3 : Concours en cours — vérifier résultat
-    // ============================================
+    // CAS 3 : En cours — résultat existant
     var resSnap2 = await db.ref('resultats/' + user).once('value');
-
     if (resSnap2.exists()) {
-        var res2    = resSnap2.val();
-        var resTs2  = res2.timestamp || 0;
-
-        // Vérifier que le résultat appartient au concours ACTUEL
-        var estResultatActuel = resTs2 >= configActuelle.debutTimestamp
-                             && resTs2 <= (configActuelle.finTimestamp + 3600000);
+        var res2   = resSnap2.val();
+        var resTs2 = res2.timestamp || 0;
+        var estResultatActuel =
+            resTs2 >= configActuelle.debutTimestamp &&
+            resTs2 <= (configActuelle.finTimestamp + 3600000);
 
         if (estResultatActuel) {
-            // Résultat du concours actuel → attente ou résultat
             showPage(pageExam);
             if (attenteEl)  attenteEl.style.display  = 'none';
             questionsEl.style.display = 'none';
@@ -2024,29 +2115,23 @@ if (btnExam) btnExam.onclick = async function() {
             document.querySelector('.header').style.display    = 'flex';
             document.querySelector('.subheader').style.display = 'none';
             reponsesFinales = res2.reponses || {};
-
             if (now < finTimestamp) {
                 afficherAttenteDepuisResultatExistant(res2);
             } else {
                 afficherResultat(
-                    res2.score,      res2.bonnes,
-                    res2.partielles, res2.fausses,
-                    res2.xp
+                    res2.score, res2.bonnes,
+                    res2.partielles, res2.fausses, res2.xp
                 );
             }
             return;
         } else {
-            // ANCIEN résultat → nettoyer silencieusement
             await db.ref('resultats/' + user).remove();
             await db.ref('sessions/'  + user).remove();
             toast('Nouveau concours detecte !', 'success');
-            // Continuer vers CAS 4
         }
     }
 
-    // ============================================
-    // CAS 4 : Concours en cours — arrivée en retard
-    // ============================================
+    // CAS 4 : En cours — arrivée en retard
     var tempsEcoule = now - configActuelle.debutTimestamp;
     var retardMin   = Math.floor(tempsEcoule / 60000);
 
@@ -2094,7 +2179,7 @@ if (btnExam) btnExam.onclick = async function() {
         return;
     }
 
-    // Arrivée dans les 5 premières minutes → lancer directement
+    // Moins de 5 min de retard → lancer directement
     nbSorties     = 0; sortieTimeout = null;
     derniereFocus = Date.now(); devourBloque = false;
     copieSubmise  = false;     enExamen     = false;
@@ -2105,8 +2190,12 @@ if (btnExam) btnExam.onclick = async function() {
 };
 
 // ============================================
-// ATTENTE DEPUIS RÉSULTAT EXISTANT
+// FIN 7A SECTION 1/2
+// ============================================// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
+// PARTIE 7/10 — SECTION A — PARTIE 2/2
 // ============================================
+
 function afficherAttenteDepuisResultatExistant(res) {
     questionsEl.style.display                          = 'none';
     document.querySelector('.footer').style.display    = 'none';
@@ -2121,9 +2210,8 @@ function afficherAttenteDepuisResultatExistant(res) {
             if (attenteEl) attenteEl.style.display = 'none';
             reponsesFinales = res.reponses || {};
             afficherResultat(
-                res.score,      res.bonnes,
-                res.partielles, res.fausses,
-                res.xp
+                res.score, res.bonnes,
+                res.partielles, res.fausses, res.xp
             );
             return;
         }
@@ -2135,9 +2223,6 @@ function afficherAttenteDepuisResultatExistant(res) {
     }, 1000);
 }
 
-// ============================================
-// SALLE D'ATTENTE AVANT DÉBUT
-// ============================================
 function afficherSalleAttente() {
     salleAttenteEl.style.display                       = 'block';
     questionsEl.style.display                          = 'none';
@@ -2170,9 +2255,6 @@ function afficherSalleAttente() {
     }, 1000);
 }
 
-// ============================================
-// LANCER EXAMEN
-// ============================================
 async function lancerExamen() {
     enExamen = true;
     var salleRetardEl = document.getElementById('salle-retard');
@@ -2195,7 +2277,6 @@ async function lancerExamen() {
         heureConcoursEl.textContent = 'Duree : ' + dureeMin + ' min';
     }
 
-    // VÉRIFIER SESSION
     var sessionSnap = await db.ref('sessions/' + user).once('value');
     var session     = sessionSnap.val();
 
@@ -2203,7 +2284,6 @@ async function lancerExamen() {
         reponsesUser = session.reponses || {};
         nbSorties    = session.nbSorties || 0;
 
-        // Reconvertir tableaux Firebase
         var repConverti = {};
         Object.keys(reponsesUser).forEach(function(qi) {
             var val = reponsesUser[qi];
@@ -2235,10 +2315,8 @@ async function lancerExamen() {
                 + '<div style="background:rgba(239,68,68,0.1);'
                 + 'border:1.5px solid rgba(239,68,68,0.3);'
                 + 'border-radius:12px;padding:12px;">'
-                + '<span style="color:var(--red);font-weight:800;'
-                + 'font-size:14px">'
-                + 'Sorties : ' + nbSorties + ' / ' + MAX_SORTIES
-                + '</span><br>'
+                + '<span style="color:var(--red);font-weight:800;font-size:14px">'
+                + 'Sorties : ' + nbSorties + ' / ' + MAX_SORTIES + '</span><br>'
                 + '<span style="color:var(--muted);font-size:12px">'
                 + 'A la ' + MAX_SORTIES + 'eme sortie, '
                 + 'ton devoir sera suspendu.</span>'
@@ -2270,9 +2348,6 @@ async function lancerExamen() {
     }
 }
 
-// ============================================
-// CONTINUER EXAMEN
-// ============================================
 function continuerExamen() {
     alertesTimer = { 30: false, 20: false, 10: false, 5: false };
     afficherQuestions();
@@ -2281,9 +2356,6 @@ function continuerExamen() {
     demarrerTimerSecurite();
 }
 
-// ============================================
-// AFFICHER QUESTIONS — toutes cases cochables
-// ============================================
 function afficherQuestions() {
     questionsEl.innerHTML = '';
     questionsData.forEach(function(q, qi) {
@@ -2291,10 +2363,12 @@ function afficherQuestions() {
         block.className = 'question-block';
         block.id = 'q-' + qi;
 
+        var texteConverti = convertirMath(q.texte || '');
+
         var html = '<div class="question-numero">Question '
             + (qi+1) + ' / ' + questionsData.length
             + '</div>'
-            + '<div class="question-texte">' + (q.texte || '') + '</div>'
+            + '<div class="question-texte">' + texteConverti + '</div>'
             + '<div class="reponses-liste">';
 
         (q.reponses || []).forEach(function(r, ri) {
@@ -2302,11 +2376,12 @@ function afficherQuestions() {
             var reponsesChoisies = repUser === undefined ? []
                 : (Array.isArray(repUser) ? repUser : [repUser]);
             var sel = reponsesChoisies.indexOf(ri) !== -1;
+            var repTexte = convertirMath(r.texte || '');
 
             html += '<label class="' + (sel ? 'selected' : '')
                 + '" data-q="' + qi + '" data-r="' + ri + '">'
                 + '<input type="checkbox" ' + (sel ? 'checked' : '') + '>'
-                + '<span>' + 'ABCD'[ri] + '. ' + (r.texte || '') + '</span>'
+                + '<span>' + 'ABCD'[ri] + '. ' + repTexte + '</span>'
                 + '</label>';
         });
 
@@ -2357,9 +2432,6 @@ function afficherQuestions() {
     majRestant();
 }
 
-// ============================================
-// MAJ RESTANT
-// ============================================
 function majRestant() {
     var rep = 0;
     for (var i = 0; i < questionsData.length; i++) {
@@ -2371,9 +2443,6 @@ function majRestant() {
     if (restantEl) restantEl.textContent = rep + '/' + questionsData.length;
 }
 
-// ============================================
-// SAUVEGARDER SESSION
-// ============================================
 async function sauvegarderSession() {
     if (!copieSubmise && user) {
         try {
@@ -2393,9 +2462,6 @@ async function sauvegarderSession() {
     }
 }
 
-// ============================================
-// TIMER PRINCIPAL
-// ============================================
 function demarrerTimer() {
     if (timerInt) clearInterval(timerInt);
     timerInt = setInterval(async function() {
@@ -2411,7 +2477,7 @@ function demarrerTimer() {
 
         var min = Math.floor(reste / 60000);
         var sec = Math.floor((reste % 60000) / 1000);
-     if (timerEl) timerEl.textContent = min + ':' + pad(sec);
+        if (timerEl) timerEl.textContent = min + ':' + pad(sec);
 
         if (!alertesTimer[30] && min === 30) {
             alertesTimer[30] = true;
@@ -2439,7 +2505,7 @@ function demarrerTimer() {
 }
 
 // ============================================
-// FIN PARTIE 7A COMPLETE ✅
+// FIN 7A SECTION 2/2
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 7/10 — SECTION B — COMPLETE
