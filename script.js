@@ -517,146 +517,221 @@ if (btnRetourConnexion) btnRetourConnexion.onclick = function() {
     formConnexion.style.display = 'block';
 };
 
-// === INSCRIPTION ===
+// === INSCRIPTION AVEC VALIDATION RENFORCÉE ===
 if (btnInscription) btnInscription.onclick = async function() {
     son('click');
-    var n = nomInput.value.trim();
-    var p = prenomInput.value.trim();
-    var e = emailInscription.value.trim().toLowerCase();
-    var m = mdpInscription.value.trim();
+    var n = nomInput           ? nomInput.value.trim()           : '';
+    var p = prenomInput        ? prenomInput.value.trim()        : '';
+    var e = emailInscription   ? emailInscription.value.trim().toLowerCase() : '';
+    var m = mdpInscription     ? mdpInscription.value.trim()     : '';
 
-    if (n.length < 2 || p.length < 2) {
-        erreurInscription.textContent = '⚠️ Nom et Prénom requis (2 car. min)';
-        son('error'); return;
-    }
-    if (!e.includes('@') || !e.includes('.')) {
-        erreurInscription.textContent = '⚠️ Gmail invalide';
-        son('error'); return;
-    }
-    if (m.length < 4) {
-        erreurInscription.textContent = '⚠️ Mot de passe 4 caractères minimum';
+    // Validation renforcée depuis partie 1
+    var errValidation = validerInscription(n, p, e, m);
+    if (errValidation) {
+        if (erreurInscription) erreurInscription.textContent = errValidation;
         son('error'); return;
     }
 
-    erreurInscription.textContent = '⏳ Création du compte...';
-    var userKey = cleanEmail(e);
-    var snap = await db.ref('users/' + userKey).once('value');
+    if (erreurInscription) erreurInscription.textContent = 'Creation du compte...';
 
-    if (snap.exists()) {
-        erreurInscription.textContent = '⚠️ Ce Gmail a déjà un compte';
-        son('error'); return;
+    try {
+        var userKey = cleanEmail(e);
+        var snap    = await db.ref('users/' + userKey).once('value');
+
+        if (snap.exists()) {
+            if (erreurInscription) {
+                erreurInscription.textContent = 'Ce Gmail a deja un compte';
+            }
+            son('error'); return;
+        }
+
+        // Hash du mot de passe avant stockage
+        var mdpHash = await sha256(m + userKey);
+
+        await db.ref('users/' + userKey).set({
+            nom:             n,
+            prenom:          p,
+            email:           e,
+            mdp:             mdpHash,
+            xp:              0,
+            niveau:          1,
+            streak:          0,
+            dernierJour:     Date.now(),
+            badges:          {},
+            concoursFaits:   0,
+            totalScore:      0,
+            moyenne:         0,
+            historique:      [],
+            dateInscription: Date.now(),
+            top10All:        false,
+            accesPaye:       false
+        });
+
+        if (erreurInscription) erreurInscription.textContent = '';
+        toast('Compte cree ! Connecte-toi maintenant', 'success');
+        son('success');
+
+        if (nomInput)          nomInput.value           = '';
+        if (prenomInput)       prenomInput.value        = '';
+        if (emailInscription)  emailInscription.value   = '';
+        if (mdpInscription)    mdpInscription.value     = '';
+
+        formInscription.style.display = 'none';
+        formConnexion.style.display   = 'block';
+
+    } catch(e2) {
+        if (erreurInscription) {
+            erreurInscription.textContent = 'Erreur reseau. Reessaie.';
+        }
+        son('error');
     }
-
-    await db.ref('users/' + userKey).set({
-        nom: n, prenom: p, email: e,
-        mdp: hash(m),
-        xp: 0, niveau: 1, streak: 0,
-        dernierJour: Date.now(),
-        badges: {},
-        concoursFaits: 0,
-        totalScore: 0,
-        moyenne: 0,
-        historique: [],
-        dateInscription: Date.now(),
-        top10All: false
-    });
-
-    erreurInscription.textContent = '';
-    toast('✅ Compte créé ! Connecte-toi maintenant', 'success');
-    son('success');
-    nomInput.value = ''; prenomInput.value = '';
-    emailInscription.value = ''; mdpInscription.value = '';
-    formInscription.style.display = 'none';
-    formConnexion.style.display   = 'block';
 };
 
 // === RESET MOT DE PASSE ===
 if (btnReset) btnReset.onclick = async function() {
     son('click');
-    var e = emailReset.value.trim().toLowerCase();
-    var m = nouveauMdp.value.trim();
+    var e = emailReset  ? emailReset.value.trim().toLowerCase() : '';
+    var m = nouveauMdp  ? nouveauMdp.value.trim()               : '';
 
-    if (!e.includes('@') || !e.includes('.')) {
-        erreurReset.textContent = '⚠️ Gmail invalide';
+    var errEmail = validerEmail(e);
+    if (errEmail) {
+        if (erreurReset) erreurReset.textContent = errEmail;
         son('error'); return;
     }
     if (m.length < 4) {
-        erreurReset.textContent = '⚠️ Mot de passe 4 caractères minimum';
+        if (erreurReset) erreurReset.textContent = 'Mot de passe : 4 car. minimum';
         son('error'); return;
     }
 
-    erreurReset.textContent = '⏳ Vérification...';
-    var userKey = cleanEmail(e);
-    var snap = await db.ref('users/' + userKey).once('value');
+    if (erreurReset) erreurReset.textContent = 'Verification...';
 
-    if (!snap.exists()) {
-        erreurReset.textContent = "⚠️ Ce Gmail n'existe pas";
-        son('error'); return;
+    try {
+        var userKey = cleanEmail(e);
+        var snap    = await db.ref('users/' + userKey).once('value');
+
+        if (!snap.exists()) {
+            if (erreurReset) erreurReset.textContent = 'Ce Gmail n\'existe pas';
+            son('error'); return;
+        }
+
+        var mdpHash = await sha256(m + userKey);
+        await db.ref('users/' + userKey).update({ mdp: mdpHash });
+
+        if (erreurReset) erreurReset.textContent = '';
+        toast('Mot de passe change ! Connecte-toi', 'success');
+        son('success');
+
+        if (emailReset) emailReset.value   = '';
+        if (nouveauMdp) nouveauMdp.value   = '';
+
+        formReset.style.display     = 'none';
+        formConnexion.style.display = 'block';
+
+    } catch(e2) {
+        if (erreurReset) erreurReset.textContent = 'Erreur reseau. Reessaie.';
+        son('error');
     }
-
-    await db.ref('users/' + userKey).update({ mdp: hash(m) });
-    erreurReset.textContent = '';
-    toast('✅ Mot de passe changé ! Connecte-toi', 'success');
-    son('success');
-    emailReset.value = ''; nouveauMdp.value = '';
-    formReset.style.display     = 'none';
-    formConnexion.style.display = 'block';
 };
 
-// === CONNEXION ===
+// === CONNEXION AVEC SÉCURITÉ TENTATIVES ===
 if (btnLogin) btnLogin.onclick = async function() {
     son('click');
-    var e = emailInput.value.trim().toLowerCase();
-    var m = mdpInput.value.trim();
 
-    if (!e.includes('@') || m.length < 4) {
-        erreurEl.textContent = '⚠️ Gmail valide + mot de passe requis';
+    // Vérifier si pas bloqué
+    if (!verifierTentatives()) return;
+
+    var e = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    var m = mdpInput   ? mdpInput.value.trim()                 : '';
+
+    var errEmail = validerEmail(e);
+    if (errEmail || m.length < 4) {
+        if (erreurEl) erreurEl.textContent = 'Gmail valide + mot de passe requis';
         son('error'); return;
     }
 
-    erreurEl.textContent = '⏳ Connexion...';
-    var userKey = cleanEmail(e);
-    var snap = await db.ref('users/' + userKey).once('value');
+    if (erreurEl) erreurEl.textContent = 'Connexion...';
 
-    if (!snap.exists() || snap.val().mdp !== hash(m)) {
-        erreurEl.textContent = '⚠️ Gmail ou mot de passe incorrect';
-        son('error'); return;
+    try {
+        var userKey = cleanEmail(e);
+        var snap    = await db.ref('users/' + userKey).once('value');
+
+        if (!snap.exists()) {
+            if (erreurEl) erreurEl.textContent = 'Gmail ou mot de passe incorrect';
+            enregistrerTentativeEchouee();
+            son('error'); return;
+        }
+
+        var d = snap.val();
+
+        // Vérifier mot de passe avec SHA-256
+        var mdpHash        = await sha256(m + userKey);
+        var mdpHashAncien  = hash(m); // Compatibilité anciens comptes
+
+        var mdpOk = (d.mdp === mdpHash) || (d.mdp === mdpHashAncien);
+
+        if (!mdpOk) {
+            if (erreurEl) erreurEl.textContent = 'Gmail ou mot de passe incorrect';
+            enregistrerTentativeEchouee();
+            son('error'); return;
+        }
+
+        // Connexion réussie → réinitialiser compteur
+        reinitialiserTentatives();
+
+        // Si ancien hash → migrer vers nouveau
+        if (d.mdp === mdpHashAncien && d.mdp !== mdpHash) {
+            await db.ref('users/' + userKey).update({ mdp: mdpHash });
+        }
+
+        // Gérer streak
+        var now     = Date.now();
+        var dernier = new Date(d.dernierJour || now).setHours(0,0,0,0);
+        var auj     = new Date(now).setHours(0,0,0,0);
+        var diff    = (auj - dernier) / 86400000;
+        if (diff === 1)    d.streak = (d.streak || 0) + 1;
+        else if (diff > 1) d.streak = 1;
+
+        await db.ref('users/' + userKey).update({
+            dernierJour: now,
+            streak:      d.streak
+        });
+
+        user        = userKey;
+        userDisplay = (d.prenom || '') + ' ' + (d.nom || '');
+        userData    = d;
+
+        if (erreurEl) erreurEl.textContent = '';
+        son('success');
+        localStorage.setItem('bb_user', user);
+        startPresence();
+        chargerMenu(d);
+
+        // Vérifier état au démarrage
+        setTimeout(verifierEtatAuDemarrage, 1000);
+
+    } catch(e2) {
+        if (erreurEl) erreurEl.textContent = 'Erreur reseau. Reessaie.';
+        son('error');
     }
-
-    var d   = snap.val();
-    var now = Date.now();
-    var dernier = new Date(d.dernierJour || now).setHours(0,0,0,0);
-    var auj     = new Date(now).setHours(0,0,0,0);
-    var diff    = (auj - dernier) / 86400000;
-    if (diff === 1)   d.streak = (d.streak || 0) + 1;
-    else if (diff > 1) d.streak = 1;
-
-    await db.ref('users/' + userKey).update({
-        dernierJour: now,
-        streak: d.streak
-    });
-
-    user        = userKey;
-    userDisplay = (d.prenom || '') + ' ' + (d.nom || '');
-    userData    = d;
-    erreurEl.textContent = '';
-    son('success');
-    localStorage.setItem('bb_user', user);
-    startPresence();
-    chargerMenu(d);
 };
 
 // === AUTO LOGIN ===
 async function autoLogin(savedKey) {
     try {
         var snap = await db.ref('users/' + savedKey).once('value');
-        if (!snap.exists()) { localStorage.removeItem('bb_user'); return; }
+        if (!snap.exists()) {
+            localStorage.removeItem('bb_user'); return;
+        }
         var d       = snap.val();
         user        = savedKey;
         userDisplay = (d.prenom || '') + ' ' + (d.nom || '');
         userData    = d;
         startPresence();
         chargerMenu(d);
+
+        // Vérifier état au démarrage après 1s
+        setTimeout(verifierEtatAuDemarrage, 1000);
+
     } catch(e) {
         localStorage.removeItem('bb_user');
     }
@@ -674,13 +749,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter' && btnLoginAdmin) btnLoginAdmin.click();
         });
     }
+    if (emailInput) {
+        emailInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && mdpInput) mdpInput.focus();
+        });
+    }
     if (formInscription) formInscription.style.display = 'none';
     if (formReset)       formReset.style.display       = 'none';
     if (formConnexion)   formConnexion.style.display   = 'block';
 });
 
 // ============================================
-// FIN PARTIE 2/10
+// FIN PARTIE 2/10 COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 3/10 : PRÉSENCE + MENU + DÉCONNEXION + HISTORIQUE + STATS
