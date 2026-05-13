@@ -1261,7 +1261,7 @@ async function chargerAdmin() {
 // FIN PARTIE 4/10 COMPLETE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 5/10 : ADMIN CONFIG + QUESTIONS + SUJET
+// PARTIE 5/10 — SECTION 1/2
 // ============================================
 
 // === SAUVEGARDER CONFIG ===
@@ -1289,7 +1289,7 @@ if (btnSaveConfig) btnSaveConfig.onclick = async function() {
     son('success');
 };
 
-// === CHARGER 50 QUESTIONS JSON — CORRIGÉ ===
+// === CHARGER QUESTIONS JSON — RÉPARATION AUTO SI TRONQUÉ ===
 if (btnCharger50) btnCharger50.onclick = function() {
     son('click');
     var texte = collerJSONEl ? collerJSONEl.value.trim() : '';
@@ -1298,12 +1298,32 @@ if (btnCharger50) btnCharger50.onclick = function() {
     }
 
     try {
-        // Nettoyer le texte avant parsing
+        // Nettoyer caractères spéciaux
         var textePropre = texte
-            .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
             .replace(/,\s*\]/g, ']')
             .replace(/,\s*\}/g, '}')
             .trim();
+
+        // ============================================
+        // RÉPARATION AUTO SI JSON TRONQUÉ
+        // Si le texte ne finit pas par ] → le réparer
+        // ============================================
+        if (!textePropre.endsWith(']')) {
+            // Chercher la dernière accolade fermante complète
+            var dernierAccolade = textePropre.lastIndexOf('}');
+            if (dernierAccolade !== -1) {
+                textePropre = textePropre.substring(0, dernierAccolade + 1) + ']';
+                toast('JSON repare automatiquement !', 'warning');
+            } else {
+                toast('Format JSON invalide', 'error'); return;
+            }
+        }
+
+        // S'assurer que ça commence par [
+        if (!textePropre.startsWith('[')) {
+            textePropre = '[' + textePropre;
+        }
 
         var data = JSON.parse(textePropre);
 
@@ -1312,7 +1332,6 @@ if (btnCharger50) btnCharger50.onclick = function() {
             return;
         }
 
-        // Avertissement si pas 50 mais laisser passer
         if (data.length !== 50) {
             toast('Attention : ' + data.length + ' questions (attendu 50)', 'warning');
         }
@@ -1346,7 +1365,8 @@ if (btnCharger50) btnCharger50.onclick = function() {
             }
             while (reps.length < 4) reps.push({ texte: '', correct: false });
             return {
-                texte:       q.texte       || q.question || q.enonce || ('Question ' + (i+1)),
+                texte:       q.texte       || q.question
+                          || q.enonce      || ('Question ' + (i+1)),
                 reponses:    reps.slice(0, 4),
                 explication: q.explication || q.explanation || q.correction || ''
             };
@@ -1360,8 +1380,70 @@ if (btnCharger50) btnCharger50.onclick = function() {
 
     } catch(e) {
         console.error('Erreur JSON:', e);
-        toast('Erreur JSON : ' + e.message, 'error');
-        son('error');
+
+        // Deuxième tentative : couper encore plus court
+        try {
+            var texte2 = texte
+                .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
+                .trim();
+
+            // Trouver toutes les positions des objets complets
+            var objets = [];
+            var depth  = 0;
+            var debut2 = -1;
+
+            for (var ci = 0; ci < texte2.length; ci++) {
+                var ch = texte2[ci];
+                if (ch === '{') {
+                    if (depth === 0) debut2 = ci;
+                    depth++;
+                } else if (ch === '}') {
+                    depth--;
+                    if (depth === 0 && debut2 !== -1) {
+                        try {
+                            var obj = JSON.parse(texte2.substring(debut2, ci + 1));
+                            objets.push(obj);
+                        } catch(e2) {}
+                        debut2 = -1;
+                    }
+                }
+            }
+
+            if (objets.length === 0) {
+                toast('Erreur JSON : ' + e.message, 'error');
+                son('error');
+                return;
+            }
+
+            sujetActuel = objets.map(function(q, i) {
+                var reps = [];
+                if (q.reponses && Array.isArray(q.reponses)) {
+                    reps = q.reponses.map(function(r) {
+                        if (typeof r === 'string') return { texte: r, correct: false };
+                        return {
+                            texte:   r.texte   || r.text || '',
+                            correct: r.correct || false
+                        };
+                    });
+                }
+                while (reps.length < 4) reps.push({ texte: '', correct: false });
+                return {
+                    texte:       q.texte || q.question || ('Question ' + (i+1)),
+                    reponses:    reps.slice(0, 4),
+                    explication: q.explication || ''
+                };
+            });
+
+            afficherQuestionsAdmin();
+            if (collerJSONEl) collerJSONEl.value = '';
+            if (btnEnvoyer50) btnEnvoyer50.style.display = 'block';
+            toast(sujetActuel.length + ' questions recuperees !', 'warning');
+            son('success');
+
+        } catch(e3) {
+            toast('Erreur JSON : ' + e.message, 'error');
+            son('error');
+        }
     }
 };
 
@@ -1383,6 +1465,13 @@ if (btnEnvoyer50) btnEnvoyer50.onclick = function() {
     btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
 };
 
+// ============================================
+// FIN PARTIE 5 SECTION 1/2
+// ============================================// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
+// PARTIE 5/10 — SECTION 2/2
+// ============================================
+
 // === AFFICHER QUESTIONS ADMIN ===
 function afficherQuestionsAdmin() {
     if (!listeQuestionsEl) return;
@@ -1398,7 +1487,8 @@ function afficherQuestionsAdmin() {
             + '<textarea placeholder="Enonce de la question" data-idx="' + idx + '">'
             + (q.texte || '') + '</textarea>'
             + '<input type="text" placeholder="Explication (facultatif)" '
-            + 'data-expl="' + idx + '" value="' + (q.explication || '').replace(/"/g, '&quot;') + '" '
+            + 'data-expl="' + idx + '" '
+            + 'value="' + (q.explication || '').replace(/"/g, '&quot;') + '" '
             + 'style="padding:10px 14px;margin:6px 0;">';
 
         for (var ri = 0; ri < 4; ri++) {
@@ -1406,14 +1496,17 @@ function afficherQuestionsAdmin() {
             html += '<div class="reponse-edit">'
                 + '<input type="checkbox" '
                 + (rep.correct ? 'checked' : '')
-                + ' data-q="' + idx + '" data-r="' + ri + '" title="Bonne reponse">'
-                + '<input type="text" placeholder="Reponse ' + 'ABCD'[ri]
-                + '" value="' + (rep.texte || '').replace(/"/g, '&quot;') + '" '
+                + ' data-q="' + idx + '" data-r="' + ri
+                + '" title="Bonne reponse">'
+                + '<input type="text" placeholder="Reponse '
+                + 'ABCD'[ri] + '" '
+                + 'value="' + (rep.texte || '').replace(/"/g, '&quot;') + '" '
                 + 'data-q="' + idx + '" data-r="' + ri + '">'
                 + '</div>';
         }
 
-        html += '<button class="btn-del" onclick="supprimerQuestion(' + idx + ')">'
+        html += '<button class="btn-del" '
+            + 'onclick="supprimerQuestion(' + idx + ')">'
             + 'Supprimer</button>';
         div.innerHTML = html;
         listeQuestionsEl.appendChild(div);
@@ -1435,8 +1528,9 @@ function afficherQuestionsAdmin() {
         };
     });
 
-    // Listeners texte reponse
-    listeQuestionsEl.querySelectorAll('.reponse-edit input[type="text"]').forEach(function(inp) {
+    // Listeners texte réponse
+    listeQuestionsEl.querySelectorAll(
+        '.reponse-edit input[type="text"]').forEach(function(inp) {
         inp.oninput = function() {
             var q = parseInt(this.dataset.q);
             var r = parseInt(this.dataset.r);
@@ -1447,7 +1541,8 @@ function afficherQuestionsAdmin() {
     });
 
     // Listeners checkbox
-    listeQuestionsEl.querySelectorAll('.reponse-edit input[type="checkbox"]').forEach(function(cb) {
+    listeQuestionsEl.querySelectorAll(
+        '.reponse-edit input[type="checkbox"]').forEach(function(cb) {
         cb.onchange = function() {
             var q = parseInt(this.dataset.q);
             var r = parseInt(this.dataset.r);
@@ -1505,7 +1600,8 @@ if (btnSaveSujet) btnSaveSujet.onclick = async function() {
     });
 
     if (invalide) {
-        toast('Chaque question : enonce + 2 reponses + 1 correcte', 'error'); return;
+        toast('Chaque question : enonce + 2 reponses + 1 correcte', 'error');
+        return;
     }
 
     await db.ref('sujetActuel').set(sujetActuel);
