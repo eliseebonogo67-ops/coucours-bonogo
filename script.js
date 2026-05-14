@@ -3660,13 +3660,13 @@ async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
     }
     if (nomConcoursEl) nomConcoursEl.textContent = 'Resultats';
 
-    // Notification résultat
     notifResultatDisponible(score, total);
 
     if (monRangResEl) {
         monRangResEl.textContent = '';
         try {
-            var snap    = await db.ref('resultats').orderByChild('score').once('value');
+            var snap    = await db.ref('resultats')
+                .orderByChild('score').once('value');
             var results = [];
             snap.forEach(function(child) {
                 results.push(Object.assign({ key: child.key }, child.val()));
@@ -3674,9 +3674,12 @@ async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
             results.sort(function(a, b) {
                 return b.score - a.score || a.timestamp - b.timestamp;
             });
-            var monRang = results.findIndex(function(r) { return r.key === user; });
+            var monRang = results.findIndex(function(r) {
+                return r.key === user;
+            });
             if (monRang >= 0) {
-                monRangResEl.textContent = 'Rang : #' + (monRang+1) + ' / ' + results.length;
+                monRangResEl.textContent = 'Rang : #'
+                    + (monRang+1) + ' / ' + results.length;
                 if (monRang < 3) {
                     await db.ref('users/' + user + '/badges/top3').set(true);
                     userData.badges      = userData.badges || {};
@@ -3731,7 +3734,8 @@ if (btnCorrection) btnCorrection.onclick = function() {
             + '<span class="corr-ico">' + ico + '</span>'
             + (nbBonnesAttendues > 1
                 ? '<span style="font-size:10px;background:var(--orange);'
-                + 'color:white;padding:2px 8px;border-radius:10px;margin-left:8px">'
+                + 'color:white;padding:2px 8px;border-radius:10px;'
+                + 'margin-left:8px">'
                 + nbBonnesAttendues + ' rep. attendues</span>'
                 : '')
             + '</div>'
@@ -3742,9 +3746,13 @@ if (btnCorrection) btnCorrection.onclick = function() {
             var estChoisie = userRep.indexOf(ri)   !== -1;
             var repCls = '', prefix = '';
 
-            if (estBonne && estChoisie)       { repCls = 'cr-user-bon';   prefix = '✅ '; }
-            else if (estBonne && !estChoisie) { repCls = 'cr-bonne';      prefix = '✅ '; }
-            else if (!estBonne && estChoisie) { repCls = 'cr-user-faux';  prefix = '❌ '; }
+            if (estBonne && estChoisie) {
+                repCls = 'cr-user-bon';  prefix = '✅ ';
+            } else if (estBonne && !estChoisie) {
+                repCls = 'cr-bonne';     prefix = '✅ ';
+            } else if (!estBonne && estChoisie) {
+                repCls = 'cr-user-faux'; prefix = '❌ ';
+            }
 
             html += '<div class="corr-rep-ligne ' + repCls + '">'
                 + '<div class="corr-bulle-sm">' + 'ABCD'[ri] + '</div>'
@@ -3766,9 +3774,9 @@ if (btnCorrection) btnCorrection.onclick = function() {
 
     // Bouton PDF
     var btnPdf = document.createElement('button');
-    btnPdf.className = 'btn-green';
+    btnPdf.className     = 'btn-green';
     btnPdf.style.cssText = 'margin:16px 0 30px;';
-    btnPdf.innerHTML = '📄 Telecharger la correction en PDF';
+    btnPdf.innerHTML     = '📄 Telecharger la correction en PDF';
     btnPdf.onclick = function() { telechargerCorrectionPDF(); };
     correctionEl.appendChild(btnPdf);
 
@@ -3779,7 +3787,7 @@ if (btnCorrection) btnCorrection.onclick = function() {
 // FIN PARTIE 9A
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 9/10 — SECTION B
+// PARTIE 9/10 — SECTION B — PDF DIRECT
 // ============================================
 
 function telechargerCorrectionPDF() {
@@ -3796,34 +3804,63 @@ function telechargerCorrectionPDF() {
     var nbP = partiellesEl ? partiellesEl.textContent : '0';
     var nbF = faussesEl    ? faussesEl.textContent    : '0';
 
+    // ============================================
+    // CONSTRUIRE LE CONTENU HTML DE LA CORRECTION
+    // ============================================
     var contenu = '<!DOCTYPE html><html lang="fr"><head>'
         + '<meta charset="UTF-8">'
         + '<title>Correction - ' + nomCandidat + '</title>'
         + '<style>'
-        + 'body{font-family:Arial,sans-serif;color:#1e293b;padding:30px;font-size:13px;max-width:800px;margin:0 auto;}'
-        + 'h1{color:#0a0f1e;font-size:22px;text-align:center;margin-bottom:4px;}'
-        + 'h2{color:#334155;font-size:14px;text-align:center;margin-bottom:6px;font-weight:normal;}'
-        + '.info{text-align:center;margin-bottom:20px;color:#64748b;font-size:12px;border-bottom:2px solid #e2e8f0;padding-bottom:14px;}'
-        + '.score-box{text-align:center;background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:24px;}'
+        + 'body{font-family:Arial,sans-serif;color:#1e293b;'
+        + 'padding:30px;font-size:13px;max-width:800px;margin:0 auto;}'
+        + 'h1{color:#0a0f1e;font-size:22px;text-align:center;'
+        + 'margin-bottom:4px;}'
+        + 'h2{color:#334155;font-size:14px;text-align:center;'
+        + 'margin-bottom:6px;font-weight:normal;}'
+        + '.info{text-align:center;margin-bottom:20px;color:#64748b;'
+        + 'font-size:12px;border-bottom:2px solid #e2e8f0;'
+        + 'padding-bottom:14px;}'
+        + '.score-box{text-align:center;background:#f8fafc;'
+        + 'border:2px solid #e2e8f0;border-radius:12px;'
+        + 'padding:16px;margin-bottom:24px;}'
         + '.score-num{font-size:36px;font-weight:900;color:#eab308;}'
-        + '.stats-row{display:flex;justify-content:center;gap:20px;margin-top:8px;font-size:13px;}'
-        + '.q-block{margin-bottom:16px;border-radius:10px;padding:14px;border-left:5px solid #94a3b8;background:#f8fafc;page-break-inside:avoid;}'
+        + '.stats-row{display:flex;justify-content:center;gap:20px;'
+        + 'margin-top:8px;font-size:13px;}'
+        + '.q-block{margin-bottom:16px;border-radius:10px;padding:14px;'
+        + 'border-left:5px solid #94a3b8;background:#f8fafc;'
+        + 'page-break-inside:avoid;}'
         + '.q-block.correct  {border-left-color:#22c55e;background:#f0fdf4;}'
         + '.q-block.incorrect{border-left-color:#ef4444;background:#fef2f2;}'
         + '.q-block.partiel  {border-left-color:#f97316;background:#fff7ed;}'
         + '.q-block.vide     {border-left-color:#94a3b8;background:#f8fafc;}'
-        + '.q-num{font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}'
-        + '.q-texte{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;line-height:1.5;}'
-        + '.rep{font-size:12px;padding:5px 8px;border-radius:6px;margin-bottom:4px;display:flex;align-items:flex-start;gap:6px;}'
+        + '.q-num{font-size:11px;font-weight:800;color:#64748b;'
+        + 'text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}'
+        + '.q-texte{font-size:13px;font-weight:700;color:#1e293b;'
+        + 'margin-bottom:10px;line-height:1.5;}'
+        + '.rep{font-size:12px;padding:5px 8px;border-radius:6px;'
+        + 'margin-bottom:4px;display:flex;align-items:flex-start;gap:6px;}'
         + '.rep.bon           {background:#dcfce7;color:#166534;font-weight:700;}'
         + '.rep.faux          {background:#fee2e2;color:#991b1b;font-weight:700;}'
         + '.rep.bonne-manquee {background:#dcfce7;color:#166534;}'
         + '.rep.neutre        {color:#64748b;}'
-        + '.rep-bulle{width:20px;min-width:20px;height:20px;border-radius:50%;background:#e2e8f0;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}'
-        + '.explication{margin-top:10px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;line-height:1.6;}'
-        + '.expl-titre{font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;display:block;}'
-        + '.footer{text-align:center;margin-top:30px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;}'
-        + '@media print{body{padding:15px;}.q-block{page-break-inside:avoid;}}'
+        + '.rep-bulle{width:20px;min-width:20px;height:20px;'
+        + 'border-radius:50%;background:#e2e8f0;display:inline-flex;'
+        + 'align-items:center;justify-content:center;'
+        + 'font-size:10px;font-weight:800;}'
+        + '.explication{margin-top:10px;padding:10px 12px;'
+        + 'background:#eff6ff;border:1px solid #bfdbfe;'
+        + 'border-radius:8px;font-size:12px;color:#1e40af;line-height:1.6;}'
+        + '.expl-titre{font-weight:800;font-size:10px;'
+        + 'text-transform:uppercase;letter-spacing:0.8px;'
+        + 'margin-bottom:4px;display:block;}'
+        + '.footer{text-align:center;margin-top:30px;'
+        + 'padding-top:14px;border-top:1px solid #e2e8f0;'
+        + 'font-size:11px;color:#94a3b8;}'
+        + '@media print{'
+        + 'body{padding:15px;}'
+        + '.q-block{page-break-inside:avoid;}'
+        + 'button{display:none !important;}'
+        + '}'
         + '</style></head><body>';
 
     contenu += '<h1>Concours Blanc Bonogo</h1>'
@@ -3832,7 +3869,8 @@ function telechargerCorrectionPDF() {
         + ' &nbsp;|&nbsp; Date : <b>' + dateAuj + '</b></div>';
 
     contenu += '<div class="score-box">'
-        + '<div style="font-size:13px;color:#64748b;margin-bottom:6px">Score final</div>'
+        + '<div style="font-size:13px;color:#64748b;margin-bottom:6px">'
+        + 'Score final</div>'
         + '<div class="score-num">' + scoreFinal + '</div>'
         + '<div class="stats-row">'
         + '<span style="color:#22c55e">✅ ' + nbB + ' bonne(s)</span>'
@@ -3844,8 +3882,8 @@ function telechargerCorrectionPDF() {
             + nbSorties + ' sortie(s) detectee(s)</div>' : '')
         + '</div>';
 
-    contenu += '<div style="font-weight:800;font-size:15px;margin-bottom:14px">'
-        + 'Correction detaillee</div>';
+    contenu += '<div style="font-weight:800;font-size:15px;'
+        + 'margin-bottom:14px">Correction detaillee</div>';
 
     questionsData.forEach(function(q, qi) {
         var info        = reponsesFinales[qi] || {};
@@ -3869,7 +3907,8 @@ function telechargerCorrectionPDF() {
         var nbBonnesAttendues = bonnesRep.length;
 
         contenu += '<div class="q-block ' + cls + '">'
-            + '<div class="q-num">Question ' + (qi+1) + ' / ' + questionsData.length
+            + '<div class="q-num">Question '
+            + (qi+1) + ' / ' + questionsData.length
             + ' — ' + ico
             + (nbBonnesAttendues > 1
                 ? ' (' + nbBonnesAttendues + ' reponses attendues)' : '')
@@ -3881,9 +3920,13 @@ function telechargerCorrectionPDF() {
             var estChoisie = userRep.indexOf(ri)   !== -1;
             var repClass = 'neutre', prefix = '';
 
-            if (estBonne && estChoisie)       { repClass = 'bon';           prefix = '✅ '; }
-            else if (estBonne && !estChoisie) { repClass = 'bonne-manquee'; prefix = '✅ '; }
-            else if (!estBonne && estChoisie) { repClass = 'faux';          prefix = '❌ '; }
+            if (estBonne && estChoisie) {
+                repClass = 'bon';           prefix = '✅ ';
+            } else if (estBonne && !estChoisie) {
+                repClass = 'bonne-manquee'; prefix = '✅ ';
+            } else if (!estBonne && estChoisie) {
+                repClass = 'faux';          prefix = '❌ ';
+            }
 
             contenu += '<div class="rep ' + repClass + '">'
                 + '<span class="rep-bulle">' + 'ABCD'[ri] + '</span>'
@@ -3905,38 +3948,92 @@ function telechargerCorrectionPDF() {
         + 'Contact : 55 24 04 31 / 69 04 19 02'
         + '</div></body></html>';
 
-    // Téléchargement mobile via Blob
+    // ============================================
+    // TÉLÉCHARGEMENT — OUVRE DIRECTEMENT DANS PDF
+    // ============================================
+    var nomFichier = 'correction_'
+        + nomCandidat.replace(/\s+/g, '_')
+        + '_' + Date.now() + '.html';
+
     try {
+        // Méthode 1 : Blob URL → déclenche le gestionnaire de fichiers
         var blob = new Blob([contenu], { type: 'text/html;charset=utf-8' });
         var url  = URL.createObjectURL(blob);
-        var a    = document.createElement('a');
-        var nom  = 'correction_'
-            + nomCandidat.replace(/ /g, '_')
-            + '_' + Date.now() + '.html';
 
-        a.href           = url;
-        a.download       = nom;
-        a.style.display  = 'none';
+        // Sur Android, ce lien s'ouvre dans le navigateur
+        // puis l'utilisateur peut imprimer → Enregistrer en PDF
+        var a           = document.createElement('a');
+        a.href          = url;
+        a.download      = nomFichier;
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
 
         setTimeout(function() {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }, 1000);
+        }, 2000);
 
-        toast('Fichier telecharge ! Ouvre-le puis imprime en PDF', 'success');
+        // Afficher instructions claires
+        toast('Fichier telecharge ! Voir etapes ci-dessous.', 'success');
+
+        // Message d'instruction détaillé
+        setTimeout(function() {
+            modalTitreEl.textContent = 'Comment obtenir le PDF';
+            modalTexteEl.innerHTML =
+                '<div style="text-align:left;font-size:14px;line-height:1.8">'
+                + '<p style="font-weight:700;margin-bottom:12px;'
+                + 'color:var(--green)">Fichier telecharge ✅</p>'
+                + '<p style="font-weight:700;margin-bottom:8px">'
+                + 'Pour avoir le PDF :</p>'
+                + '<ol style="padding-left:20px;color:var(--muted);'
+                + 'font-size:13px;">'
+                + '<li style="margin-bottom:8px">Ouvre tes '
+                + '<b>Telechargements</b> dans ton telephone</li>'
+                + '<li style="margin-bottom:8px">Appuie sur le fichier '
+                + '<b>' + nomFichier + '</b></li>'
+                + '<li style="margin-bottom:8px">Il s\'ouvre dans Chrome</li>'
+                + '<li style="margin-bottom:8px">Appuie sur les <b>3 points</b>'
+                + ' en haut a droite</li>'
+                + '<li style="margin-bottom:8px">Choisis <b>Partager</b> ou '
+                + '<b>Imprimer</b></li>'
+                + '<li style="margin-bottom:8px">Dans Imprimer : selectionne '
+                + '<b>Enregistrer en PDF</b></li>'
+                + '</ol>'
+                + '<div style="background:rgba(34,197,94,0.1);'
+                + 'border:1px solid rgba(34,197,94,0.3);'
+                + 'border-radius:10px;padding:12px;margin-top:12px;'
+                + 'font-size:12px;color:var(--muted)">'
+                + '💡 Si tu as déjà une app PDF installée (Adobe, WPS, '
+                + 'Xodo...), le fichier peut s\'ouvrir directement dedans !'
+                + '</div>'
+                + '</div>';
+            modalEl.style.display      = 'flex';
+            btnConfirmer.style.display = 'none';
+            btnAnnuler.textContent     = 'OK compris !';
+            btnAnnuler.onclick = function() {
+                modalEl.style.display      = 'none';
+                btnConfirmer.style.display = '';
+                btnAnnuler.textContent     = 'Annuler';
+            };
+        }, 500);
+
         son('success');
 
     } catch(e) {
-        var fenetre = window.open('', '_blank');
-        if (fenetre) {
-            fenetre.document.write(contenu);
-            fenetre.document.close();
-            setTimeout(function() { fenetre.print(); }, 600);
-            toast('Choisis Enregistrer en PDF dans l\'impression', 'success');
-        } else {
-            toast('Autorise les telechargements dans ton navigateur', 'error');
+        // Fallback : ouvrir dans nouvelle fenêtre
+        try {
+            var fenetre = window.open('', '_blank');
+            if (fenetre) {
+                fenetre.document.write(contenu);
+                fenetre.document.close();
+                setTimeout(function() { fenetre.print(); }, 800);
+                toast('Choisis Enregistrer en PDF', 'success');
+            } else {
+                toast('Autorise les popups dans Chrome', 'error');
+            }
+        } catch(e2) {
+            toast('Erreur telechargement : ' + e2.message, 'error');
         }
     }
 }
