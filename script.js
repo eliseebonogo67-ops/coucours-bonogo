@@ -1542,27 +1542,36 @@ function afficherQuestionsAdmin() {
         var div = document.createElement('div');
         div.className = 'question-edit';
 
-        var html = '<div style="font-size:12px;font-weight:800;color:var(--blue);'
-            + 'text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">'
-            + 'Question ' + (idx + 1) + ' / ' + sujetActuel.length + '</div>'
-            + '<textarea placeholder="Enonce de la question" data-idx="' + idx + '">'
+        var html = '<div style="font-size:12px;font-weight:800;'
+            + 'color:var(--blue);text-transform:uppercase;'
+            + 'letter-spacing:1px;margin-bottom:10px">'
+            + 'Question ' + (idx + 1) + ' / '
+            + sujetActuel.length + '</div>'
+            + '<textarea placeholder="Enonce de la question" '
+            + 'data-idx="' + idx + '">'
             + (q.texte || '') + '</textarea>'
-            + '<input type="text" placeholder="Explication (facultatif)" '
+            + '<input type="text" '
+            + 'placeholder="Explication (facultatif)" '
             + 'data-expl="' + idx + '" '
-            + 'value="' + (q.explication || '').replace(/"/g, '&quot;') + '" '
-            + 'style="padding:10px 14px;margin:6px 0;">';
+            + 'value="'
+            + (q.explication || '').replace(/"/g, '&quot;')
+            + '" style="padding:10px 14px;margin:6px 0;">';
 
         for (var ri = 0; ri < 4; ri++) {
-            var rep = (q.reponses && q.reponses[ri]) ? q.reponses[ri] : {};
+            var rep = (q.reponses && q.reponses[ri])
+                ? q.reponses[ri] : {};
             html += '<div class="reponse-edit">'
                 + '<input type="checkbox" '
                 + (rep.correct ? 'checked' : '')
-                + ' data-q="' + idx + '" data-r="' + ri
+                + ' data-q="' + idx
+                + '" data-r="' + ri
                 + '" title="Bonne reponse">'
                 + '<input type="text" placeholder="Reponse '
                 + 'ABCD'[ri] + '" '
-                + 'value="' + (rep.texte || '').replace(/"/g, '&quot;') + '" '
-                + 'data-q="' + idx + '" data-r="' + ri + '">'
+                + 'value="'
+                + (rep.texte || '').replace(/"/g, '&quot;')
+                + '" data-q="' + idx
+                + '" data-r="' + ri + '">'
                 + '</div>';
         }
 
@@ -1574,7 +1583,8 @@ function afficherQuestionsAdmin() {
     });
 
     // Listeners textarea
-    listeQuestionsEl.querySelectorAll('textarea').forEach(function(ta) {
+    listeQuestionsEl.querySelectorAll('textarea').forEach(
+        function(ta) {
         ta.oninput = function() {
             var i = parseInt(this.dataset.idx);
             if (sujetActuel[i]) sujetActuel[i].texte = this.value;
@@ -1582,7 +1592,8 @@ function afficherQuestionsAdmin() {
     });
 
     // Listeners explication
-    listeQuestionsEl.querySelectorAll('input[data-expl]').forEach(function(inp) {
+    listeQuestionsEl.querySelectorAll('input[data-expl]').forEach(
+        function(inp) {
         inp.oninput = function() {
             var i = parseInt(this.dataset.expl);
             if (sujetActuel[i]) sujetActuel[i].explication = this.value;
@@ -1596,7 +1607,8 @@ function afficherQuestionsAdmin() {
             var q = parseInt(this.dataset.q);
             var r = parseInt(this.dataset.r);
             if (!sujetActuel[q]) return;
-            if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r] = {};
+            if (!sujetActuel[q].reponses[r])
+                sujetActuel[q].reponses[r] = {};
             sujetActuel[q].reponses[r].texte = this.value;
         };
     });
@@ -1608,7 +1620,8 @@ function afficherQuestionsAdmin() {
             var q = parseInt(this.dataset.q);
             var r = parseInt(this.dataset.r);
             if (!sujetActuel[q]) return;
-            if (!sujetActuel[q].reponses[r]) sujetActuel[q].reponses[r] = {};
+            if (!sujetActuel[q].reponses[r])
+                sujetActuel[q].reponses[r] = {};
             sujetActuel[q].reponses[r].correct = this.checked;
         };
     });
@@ -1638,9 +1651,11 @@ if (btnAjouterQ) btnAjouterQ.onclick = function() {
     });
     afficherQuestionsAdmin();
     setTimeout(function() {
-        var divs = listeQuestionsEl.querySelectorAll('.question-edit');
+        var divs = listeQuestionsEl
+            .querySelectorAll('.question-edit');
         if (divs.length) {
-            divs[divs.length-1].scrollIntoView({ behavior: 'smooth' });
+            divs[divs.length-1]
+                .scrollIntoView({ behavior: 'smooth' });
         }
     }, 100);
     toast('Question ajoutee', 'success');
@@ -1656,17 +1671,25 @@ if (btnSaveSujet) btnSaveSujet.onclick = async function() {
 
     var invalide = sujetActuel.some(function(q) {
         return !q.texte
-            || q.reponses.filter(function(r) { return r.texte; }).length < 2
+            || q.reponses.filter(function(r) {
+                return r.texte;
+            }).length < 2
             || !q.reponses.some(function(r) { return r.correct; });
     });
 
     if (invalide) {
-        toast('Chaque question : enonce + 2 reponses + 1 correcte', 'error');
+        toast(
+            'Chaque question : enonce + 2 reponses + 1 correcte',
+            'error'
+        );
         return;
     }
 
     await db.ref('sujetActuel').set(sujetActuel);
-    toast('Sujet sauvegarde ! (' + sujetActuel.length + ' questions)', 'success');
+    toast(
+        'Sujet sauvegarde ! (' + sujetActuel.length + ' questions)',
+        'success'
+    );
     son('success');
 };
 
@@ -1710,7 +1733,10 @@ if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
             await db.ref('resultats').remove();
             await db.ref('sessions').remove();
             copieSubmise = false;
-            toast('Nouveau concours pret ! Paiements conserves.', 'success');
+            toast(
+                'Nouveau concours pret ! Paiements conserves.',
+                'success'
+            );
             son('success');
         };
 
@@ -1727,7 +1753,10 @@ if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
             });
             await db.ref('users').update(updates);
             copieSubmise = false;
-            toast('Nouveau concours pret ! Paiements reinitialises.', 'success');
+            toast(
+                'Nouveau concours pret ! Paiements reinitialises.',
+                'success'
+            );
             son('success');
         };
     }, 100);
