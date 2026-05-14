@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#eab308">
+    <meta name="theme-color" content="#0a0f1e">
     <title>Concours Blanc Bonogo</title>
 
     <!-- PWA -->
@@ -11,8 +11,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CB Bonogo">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-title" content="Bonogo">
+    <link rel="apple-touch-icon" href="icone.svg">
 
     <!-- SEO & Sécurité -->
     <meta name="robots" content="noindex, nofollow">
@@ -29,7 +29,7 @@
 <!-- SPLASH SCREEN -->
 <div id="splash">
     <div class="splash-logo">
-        <div class="logo-circle">CB</div>
+        <div class="logo-circle">BB</div>
         <h1>Concours Blanc</h1>
         <h2>BONOGO</h2>
         <div class="loader"></div>
@@ -165,7 +165,9 @@
         <button id="btnRetour" class="btn-blue btn-small">← Retour</button>
         <p id="erreurAdmin" class="erreur"></p>
     </div>
-                </div><!-- ============================
+</div>
+
+<!-- ============================
      PAGE EXAMEN
      ============================ -->
 <div id="page-exam" style="display:none;">
@@ -261,9 +263,7 @@
         <div id="correction"></div>
     </div>
 
-</div>
-
-<!-- ============================
+        </div><!-- ============================
      PAGE ADMIN PANEL
      ============================ -->
 <div id="page-admin" style="display:none;">
@@ -302,17 +302,39 @@
         <button id="btnSaveConfig" class="btn-green">💾 Sauver Config</button>
     </div>
 
+    <!-- ============================
+         IMPORT JSON — SYSTÈME MULTI-PARTIES
+         ============================ -->
     <div class="card">
-        <h2>⚡ Import 50 Questions D'un Coup</h2>
+        <h2>⚡ Import Questions</h2>
         <textarea id="collerJSON"
-            placeholder="COLLE ICI LES 50 QUESTIONS"
-            style="width:100%;height:150px;padding:12px;
+            placeholder="COLLE ICI UNE PARTIE DES QUESTIONS JSON"
+            style="width:100%;height:160px;padding:12px;
             background:var(--bg);border:2px solid var(--border);
             border-radius:8px;color:var(--text);
-            font-family:monospace;font-size:12px;
-            margin-bottom:10px;"></textarea>
+            font-family:monospace;font-size:11px;
+            margin-bottom:10px;box-sizing:border-box;
+            resize:vertical;"></textarea>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button id="btnAjouterPartie" class="btn-blue btn-small"
+                style="flex:1;padding:12px;">
+                ➕ Ajouter partie</button>
+            <button id="btnViderZone" class="btn-red btn-small"
+                style="flex:1;padding:12px;">
+                🗑️ Vider</button>
+        </div>
+        <div id="infoCumul"
+            style="display:none;
+            background:rgba(59,130,246,0.1);
+            border:1px solid rgba(59,130,246,0.3);
+            border-radius:8px;padding:10px;
+            margin-bottom:10px;font-size:12px;
+            color:var(--muted);text-align:center;">
+            📦 <span id="nbCaracteres">0</span> caractères accumulés
+            — colle la suite ou charge
+        </div>
         <button id="btnCharger50" class="btn-orange btn-big">
-            📥 CHARGER LES 50 QUESTIONS</button>
+            📥 CHARGER LES QUESTIONS</button>
         <button id="btnEnvoyer50" class="btn-green btn-big"
             style="display:none;margin-top:10px;">
             🚀 BALANCER AUX ÉLÈVES</button>
@@ -387,7 +409,7 @@
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/coucours-bonogo/service-worker.js')
+        navigator.serviceWorker.register('./service-worker.js')
             .then(function(reg) {
                 console.log('SW OK:', reg.scope);
             })
@@ -399,4 +421,4 @@ if ('serviceWorker' in navigator) {
 </script>
 
 </body>
-                                                                     </html>
+    </html>
