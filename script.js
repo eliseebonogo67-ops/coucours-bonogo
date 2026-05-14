@@ -1289,88 +1289,163 @@ if (btnSaveConfig) btnSaveConfig.onclick = async function() {
     son('success');
 };
 
-// === CHARGER QUESTIONS JSON — RÉPARATION AUTO SI TRONQUÉ ===
+// ============================================
+// SYSTÈME IMPORT JSON EN PLUSIEURS PARTIES
+// Permet de coller le JSON en 2 ou 3 fois
+// ============================================
+var jsonCumule = '';
+
+// Bouton Ajouter une partie
+var btnAjouterPartie = document.getElementById('btnAjouterPartie');
+if (btnAjouterPartie) {
+    btnAjouterPartie.onclick = function() {
+        son('click');
+        var partie = collerJSONEl ? collerJSONEl.value.trim() : '';
+        if (!partie) {
+            toast('Colle une partie du JSON d\'abord', 'error'); return;
+        }
+
+        // Nettoyer
+        partie = partie
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
+            .trim();
+
+        // Enlever [ au début et ] à la fin si présents
+        if (partie.startsWith('[')) partie = partie.substring(1).trim();
+        if (partie.endsWith(']'))   partie = partie.slice(0, -1).trim();
+
+        // Enlever virgule finale
+        partie = partie.replace(/,\s*$/, '').trim();
+
+        if (partie === '') {
+            toast('Partie vide, rien ajoute', 'error'); return;
+        }
+
+        if (jsonCumule === '') {
+            jsonCumule = partie;
+        } else {
+            jsonCumule = jsonCumule + ',' + partie;
+        }
+
+        // Vider textarea
+        if (collerJSONEl) collerJSONEl.value = '';
+
+        // Afficher info cumul
+        var infoEl = document.getElementById('infoCumul');
+        var nbEl   = document.getElementById('nbCaracteres');
+        if (infoEl) infoEl.style.display = 'block';
+        if (nbEl)   nbEl.textContent     = jsonCumule.length;
+
+        toast('Partie ajoutee ! Colle la suite ou charge.', 'success');
+        son('success');
+    };
+}
+
+// Bouton Vider
+var btnViderZone = document.getElementById('btnViderZone');
+if (btnViderZone) {
+    btnViderZone.onclick = function() {
+        son('click');
+        jsonCumule = '';
+        if (collerJSONEl) collerJSONEl.value = '';
+        var infoEl = document.getElementById('infoCumul');
+        if (infoEl) infoEl.style.display = 'none';
+        toast('Zone videe', 'success');
+    };
+}
+
+// === CHARGER QUESTIONS JSON ===
 if (btnCharger50) btnCharger50.onclick = function() {
     son('click');
-    var texte = collerJSONEl ? collerJSONEl.value.trim() : '';
-    if (!texte) {
+
+    // Prendre le cumulé OU ce qui est dans le textarea
+    var texte = '';
+    if (jsonCumule !== '') {
+        texte = '[' + jsonCumule + ']';
+    } else {
+        texte = collerJSONEl ? collerJSONEl.value.trim() : '';
+    }
+
+    if (!texte || texte === '[]') {
         toast('Colle les questions JSON d\'abord', 'error'); return;
     }
 
+    // Réinitialiser après lecture
+    jsonCumule = '';
+    var infoEl2 = document.getElementById('infoCumul');
+    if (infoEl2) infoEl2.style.display = 'none';
+
+    // ============================================
+    // FONCTION NORMALISER UNE QUESTION
+    // ============================================
+    function normaliserQuestion(q, i) {
+        var reps;
+        if (q.reponses && Array.isArray(q.reponses)) {
+            reps = q.reponses.map(function(r, ri) {
+                if (typeof r === 'string') {
+                    return {
+                        texte:   r,
+                        correct: q.correct === ri
+                              || q.correct === 'ABCD'[ri]
+                    };
+                }
+                return {
+                    texte:   r.texte   || r.reponse
+                          || r.text    || r.label || '',
+                    correct: r.correct || r.bonne
+                          || r.isCorrect || false
+                };
+            });
+        } else {
+            reps = ['A','B','C','D'].map(function(l, ri) {
+                return {
+                    texte:   q[l] || '',
+                    correct: q.correct === l
+                          || q.correct === ri
+                          || q.reponse === l
+                };
+            });
+        }
+        while (reps.length < 4) reps.push({ texte: '', correct: false });
+        return {
+            texte:       q.texte       || q.question
+                      || q.enonce      || ('Question ' + (i+1)),
+            reponses:    reps.slice(0, 4),
+            explication: q.explication || q.explanation
+                      || q.correction  || ''
+        };
+    }
+
+    // ============================================
+    // TENTATIVE 1 : Parse direct
+    // ============================================
     try {
-        // Nettoyer caractères spéciaux
         var textePropre = texte
             .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
             .replace(/,\s*\]/g, ']')
             .replace(/,\s*\}/g, '}')
             .trim();
 
-        // ============================================
-        // RÉPARATION AUTO SI JSON TRONQUÉ
-        // Si le texte ne finit pas par ] → le réparer
-        // ============================================
-        if (!textePropre.endsWith(']')) {
-            // Chercher la dernière accolade fermante complète
-            var dernierAccolade = textePropre.lastIndexOf('}');
-            if (dernierAccolade !== -1) {
-                textePropre = textePropre.substring(0, dernierAccolade + 1) + ']';
-                toast('JSON repare automatiquement !', 'warning');
-            } else {
-                toast('Format JSON invalide', 'error'); return;
-            }
-        }
-
-        // S'assurer que ça commence par [
         if (!textePropre.startsWith('[')) {
             textePropre = '[' + textePropre;
+        }
+        if (!textePropre.endsWith(']')) {
+            var dernierAcc = textePropre.lastIndexOf('}');
+            if (dernierAcc !== -1) {
+                textePropre = textePropre.substring(0, dernierAcc + 1) + ']';
+                toast('JSON repare automatiquement !', 'warning');
+            } else {
+                throw new Error('JSON invalide');
+            }
         }
 
         var data = JSON.parse(textePropre);
 
         if (!Array.isArray(data) || data.length === 0) {
-            toast('Format invalide. Doit etre un tableau JSON.', 'error');
-            return;
+            toast('Format invalide.', 'error'); return;
         }
 
-        if (data.length !== 50) {
-            toast('Attention : ' + data.length + ' questions (attendu 50)', 'warning');
-        }
-
-        // Normaliser chaque question
-        sujetActuel = data.map(function(q, i) {
-            var reps;
-            if (q.reponses && Array.isArray(q.reponses)) {
-                reps = q.reponses.map(function(r, ri) {
-                    if (typeof r === 'string') {
-                        return {
-                            texte:   r,
-                            correct: q.correct === ri
-                                  || q.correct === 'ABCD'[ri]
-                        };
-                    }
-                    return {
-                        texte:   r.texte   || r.reponse || r.text || r.label || '',
-                        correct: r.correct || r.bonne   || r.isCorrect || false
-                    };
-                });
-            } else {
-                reps = ['A','B','C','D'].map(function(l, ri) {
-                    return {
-                        texte:   q[l] || '',
-                        correct: q.correct === l
-                              || q.correct === ri
-                              || q.reponse === l
-                    };
-                });
-            }
-            while (reps.length < 4) reps.push({ texte: '', correct: false });
-            return {
-                texte:       q.texte       || q.question
-                          || q.enonce      || ('Question ' + (i+1)),
-                reponses:    reps.slice(0, 4),
-                explication: q.explication || q.explanation || q.correction || ''
-            };
-        });
+        sujetActuel = data.map(normaliserQuestion);
 
         afficherQuestionsAdmin();
         if (collerJSONEl) collerJSONEl.value = '';
@@ -1379,15 +1454,16 @@ if (btnCharger50) btnCharger50.onclick = function() {
         son('success');
 
     } catch(e) {
-        console.error('Erreur JSON:', e);
+        console.error('Tentative 1 echouee:', e);
 
-        // Deuxième tentative : couper encore plus court
+        // ============================================
+        // TENTATIVE 2 : Extraire objet par objet
+        // ============================================
         try {
             var texte2 = texte
                 .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
                 .trim();
 
-            // Trouver toutes les positions des objets complets
             var objets = [];
             var depth  = 0;
             var debut2 = -1;
@@ -1401,7 +1477,9 @@ if (btnCharger50) btnCharger50.onclick = function() {
                     depth--;
                     if (depth === 0 && debut2 !== -1) {
                         try {
-                            var obj = JSON.parse(texte2.substring(debut2, ci + 1));
+                            var obj = JSON.parse(
+                                texte2.substring(debut2, ci + 1)
+                            );
                             objets.push(obj);
                         } catch(e2) {}
                         debut2 = -1;
@@ -1415,24 +1493,7 @@ if (btnCharger50) btnCharger50.onclick = function() {
                 return;
             }
 
-            sujetActuel = objets.map(function(q, i) {
-                var reps = [];
-                if (q.reponses && Array.isArray(q.reponses)) {
-                    reps = q.reponses.map(function(r) {
-                        if (typeof r === 'string') return { texte: r, correct: false };
-                        return {
-                            texte:   r.texte   || r.text || '',
-                            correct: r.correct || false
-                        };
-                    });
-                }
-                while (reps.length < 4) reps.push({ texte: '', correct: false });
-                return {
-                    texte:       q.texte || q.question || ('Question ' + (i+1)),
-                    reponses:    reps.slice(0, 4),
-                    explication: q.explication || ''
-                };
-            });
+            sujetActuel = objets.map(normaliserQuestion);
 
             afficherQuestionsAdmin();
             if (collerJSONEl) collerJSONEl.value = '';
