@@ -1,150 +1,16 @@
 // ============================================
-// CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 1/10 : FIREBASE + VARIABLES + UTILS + AUDIO + SPLASH
+// CONCOURS BLANC BONOGO - SCRIPT
+// PARTIE 1/10 — SECTION 1/2
+// FIREBASE + VARIABLES + PAGES + AUTH DOM
 // ============================================
 
 // === FIREBASE ===
 var firebaseConfig = {
-    apiKey:      "AIzaSyDQWFqTKRmEZtuBhRHWMDrGtwboOwLleI4",
+    apiKey: "AIzaSyDQWFqTKRmEZtuBhRHWMDrGtwboOwLleI4",
     databaseURL: "https://quiz-pro-max-default-rtdb.firebaseio.com"
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
-
-// ============================================
-// SÉCURITÉ 1 — BLOQUER DEVTOOLS
-// ============================================
-(function() {
-    // Désactiver clic droit
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-    });
-
-    // Bloquer F12, Ctrl+Shift+I, Ctrl+U, Ctrl+Shift+J
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12'
-            || (e.ctrlKey && e.shiftKey && e.key === 'I')
-            || (e.ctrlKey && e.shiftKey && e.key === 'J')
-            || (e.ctrlKey && e.shiftKey && e.key === 'C')
-            || (e.ctrlKey && e.key === 'u')
-            || (e.ctrlKey && e.key === 'U')
-            || (e.ctrlKey && e.key === 's')
-            || (e.ctrlKey && e.key === 'S')) {
-            e.preventDefault();
-            return false;
-        }
-    });
-
-    // Détecter ouverture DevTools via taille fenêtre
-    var devToolsOuvert = false;
-    setInterval(function() {
-        var threshold = 160;
-        if ((window.outerWidth  - window.innerWidth  > threshold)
-         || (window.outerHeight - window.innerHeight > threshold)) {
-            if (!devToolsOuvert) {
-                devToolsOuvert = true;
-                document.body.innerHTML = '<div style="display:flex;'
-                    + 'align-items:center;justify-content:center;'
-                    + 'height:100vh;background:#0a0f1e;color:white;'
-                    + 'font-family:Poppins,sans-serif;text-align:center;'
-                    + 'padding:20px">'
-                    + '<div>'
-                    + '<div style="font-size:60px;margin-bottom:20px">🚫</div>'
-                    + '<h1 style="margin-bottom:12px">Acces interdit</h1>'
-                    + '<p style="color:#94a3b8">Les outils de developpement '
-                    + 'sont desactives.</p>'
-                    + '</div></div>';
-            }
-        } else {
-            devToolsOuvert = false;
-        }
-    }, 1000);
-})();
-
-// ============================================
-// SÉCURITÉ 2 — HASH SHA-256
-// ============================================
-async function sha256(message) {
-    try {
-        var msgBuffer  = new TextEncoder().encode(message);
-        var hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        var hashArray  = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(function(b) {
-            return b.toString(16).padStart(2, '0');
-        }).join('');
-    } catch(e) {
-        // Fallback simple si crypto.subtle non disponible
-        return btoa(message);
-    }
-}
-
-// ============================================
-// SÉCURITÉ 3 — LIMITER TENTATIVES CONNEXION
-// ============================================
-var tentativesConnexion = 0;
-var derniereTentative   = 0;
-var BLOCAGE_APRES       = 5;
-var DUREE_BLOCAGE_MS    = 5 * 60 * 1000; // 5 minutes
-
-function verifierTentatives() {
-    var now = Date.now();
-    if (tentativesConnexion >= BLOCAGE_APRES) {
-        var tempsRestant = DUREE_BLOCAGE_MS - (now - derniereTentative);
-        if (tempsRestant > 0) {
-            var min = Math.ceil(tempsRestant / 60000);
-            toast('Trop de tentatives. Attends '
-                + min + ' minute(s).', 'error');
-            return false;
-        } else {
-            tentativesConnexion = 0;
-        }
-    }
-    return true;
-}
-
-function enregistrerTentativeEchouee() {
-    tentativesConnexion++;
-    derniereTentative = Date.now();
-    var restantes = BLOCAGE_APRES - tentativesConnexion;
-    if (restantes > 0) {
-        toast('Mot de passe incorrect. '
-            + restantes + ' tentative(s) restante(s).', 'error');
-    }
-}
-
-function reinitialiserTentatives() {
-    tentativesConnexion = 0;
-    derniereTentative   = 0;
-}
-
-// ============================================
-// SÉCURITÉ 4 — VALIDATION EMAIL RENFORCÉE
-// ============================================
-function validerEmail(email) {
-    if (!email || !email.includes('@') || !email.includes('.')) {
-        return 'Email invalide';
-    }
-    var emailsBlacklist = [
-        'tempmail', 'guerrillamail', 'mailinator',
-        'throwaway', 'fakeinbox', 'trashmail', 'yopmail'
-    ];
-    var emailLower = email.toLowerCase();
-    for (var i = 0; i < emailsBlacklist.length; i++) {
-        if (emailLower.includes(emailsBlacklist[i])) {
-            return 'Email temporaire non autorise';
-        }
-    }
-    return null;
-}
-
-function validerInscription(nom, prenom, email, mdp) {
-    if (!nom   || nom.trim().length   < 2) return 'Nom trop court (2 car. min)';
-    if (!prenom|| prenom.trim().length< 2) return 'Prenom trop court (2 car. min)';
-    var errEmail = validerEmail(email);
-    if (errEmail) return errEmail;
-    if (!mdp || mdp.length < 4) return 'Mot de passe : 4 caracteres minimum';
-    return null;
-}
 
 // === SPLASH ===
 window.addEventListener('load', function() {
@@ -153,7 +19,8 @@ window.addEventListener('load', function() {
         if (splash) {
             splash.classList.add('hide');
             setTimeout(function() {
-                if (splash.parentNode) splash.parentNode.removeChild(splash);
+                if (splash.parentNode)
+                    splash.parentNode.removeChild(splash);
             }, 500);
         }
         var saved = localStorage.getItem('bb_user');
@@ -162,13 +29,16 @@ window.addEventListener('load', function() {
 });
 
 // === RÉFÉRENCES DOM — PAGES ===
-var pageAccueil    = document.getElementById('page-accueil');
-var pageMenu       = document.getElementById('page-menu');
-var pageAdminLogin = document.getElementById('page-admin-login');
-var pageExam       = document.getElementById('page-exam');
-var pageAdmin      = document.getElementById('page-admin');
-var pageHistorique = document.getElementById('page-historique');
-var pageStats      = document.getElementById('page-stats');
+var pageAccueil      = document.getElementById('page-accueil');
+var pageMenu         = document.getElementById('page-menu');
+var pageAdminLogin   = document.getElementById('page-admin-login');
+var pageExam         = document.getElementById('page-exam');
+var pageAdmin        = document.getElementById('page-admin');
+var pageHistorique   = document.getElementById('page-historique');
+var pageStats        = document.getElementById('page-stats');
+var pageEntrainement = document.getElementById('page-entrainement');
+var pageQuizEntr     = document.getElementById('page-quiz-entr');
+var pageResultatEntr = document.getElementById('page-resultat-entr');
 
 // === RÉFÉRENCES DOM — AUTH ===
 var formConnexion      = document.getElementById('formConnexion');
@@ -279,6 +149,14 @@ var btnAnnuler   = document.getElementById('btnAnnuler');
 var btnConfirmer = document.getElementById('btnConfirmer');
 var toastsEl     = document.getElementById('toasts');
 
+// ============================================
+// FIN SECTION 1/2
+// ============================================// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT
+// PARTIE 1/10 — SECTION 2/2
+// VARIABLES + BADGES + AUDIO + UTILS + SHOWPAGE
+// ============================================
+
 // === VARIABLES GLOBALES ===
 var user            = null;
 var userDisplay     = '';
@@ -305,23 +183,34 @@ var enExamen      = false;
 
 // === LISTE BADGES ===
 var BADGES_LIST = [
-    { id: 'premier',   emoji: '🎯', nom: 'Premier Concours',  desc: 'Passe ton 1er concours' },
-    { id: 'streak7',   emoji: '🔥', nom: 'Serie 7 jours',     desc: 'Connecte-toi 7 jours' },
-    { id: 'niveau10',  emoji: '⭐', nom: 'Niveau 10',          desc: 'Atteins le niveau 10' },
-    { id: 'perfect',   emoji: '💯', nom: 'Sans Faute',         desc: 'Obtiens 50/50' },
-    { id: 'rapide',    emoji: '⚡', nom: 'Eclair',             desc: 'Finis 1h avant la fin' },
-    { id: 'assidu',    emoji: '📅', nom: 'Assidu',             desc: 'Passe 5 concours' },
-    { id: 'elite',     emoji: '👑', nom: 'Elite',              desc: 'Moyenne > 40/50' },
-    { id: 'resistant', emoji: '🛡️', nom: 'Resistant',         desc: 'Aucune sortie detectee' },
-    { id: 'top3',      emoji: '🏅', nom: 'Top 3',             desc: 'Termine dans le top 3' },
-    { id: 'top10all',  emoji: '🌟', nom: 'Legende Top 10',    desc: 'Entre au Hall of Fame' }
+    { id: 'premier',   emoji: '🎯', nom: 'Premier Concours',
+        desc: 'Passe ton 1er concours' },
+    { id: 'streak7',   emoji: '🔥', nom: 'Série 7 jours',
+        desc: 'Connecte-toi 7 jours d\'affilée' },
+    { id: 'niveau10',  emoji: '⭐', nom: 'Niveau 10',
+        desc: 'Atteins le niveau 10' },
+    { id: 'perfect',   emoji: '💯', nom: 'Sans Faute',
+        desc: 'Obtiens 50/50' },
+    { id: 'rapide',    emoji: '⚡', nom: 'Éclair',
+        desc: 'Finis 1h avant la fin' },
+    { id: 'assidu',    emoji: '📅', nom: 'Assidu',
+        desc: 'Passe 5 concours' },
+    { id: 'elite',     emoji: '👑', nom: 'Élite',
+        desc: 'Moyenne supérieure à 40/50' },
+    { id: 'resistant', emoji: '🛡️', nom: 'Résistant',
+        desc: 'Aucune sortie détectée' },
+    { id: 'top3',      emoji: '🏅', nom: 'Top 3',
+        desc: 'Termine dans le top 3' },
+    { id: 'top10all',  emoji: '🌟', nom: 'Légende Top 10',
+        desc: 'Entre au Hall of Fame permanent' }
 ];
 
 // === AUDIO ===
 function initAudio() {
     if (!audioCtx) {
         try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx = new (window.AudioContext
+                || window.webkitAudioContext)();
         } catch(e) { audioCtx = null; }
     }
 }
@@ -332,65 +221,143 @@ function son(type) {
         if (!audioCtx) return;
         var o = audioCtx.createOscillator();
         var g = audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
+        o.connect(g);
+        g.connect(audioCtx.destination);
         switch(type) {
+
+            // === SONS CONCOURS ===
             case 'click':
                 o.frequency.value = 800; g.gain.value = 0.06;
-                o.start(); o.stop(audioCtx.currentTime + 0.07); break;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.07); break;
+
             case 'success':
-                o.frequency.setValueAtTime(400, audioCtx.currentTime);
-                o.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
+                o.frequency.setValueAtTime(
+                    400, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(
+                    1200, audioCtx.currentTime + 0.3);
                 g.gain.value = 0.12;
-                o.start(); o.stop(audioCtx.currentTime + 0.4); break;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.4); break;
+
             case 'error':
                 o.frequency.value = 220; g.gain.value = 0.15;
-                o.start(); o.stop(audioCtx.currentTime + 0.3); break;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.3); break;
+
             case 'alerte':
                 [0, 0.22, 0.44].forEach(function(t) {
                     var o2 = audioCtx.createOscillator();
                     var g2 = audioCtx.createGain();
-                    o2.connect(g2); g2.connect(audioCtx.destination);
-                    o2.frequency.value = 1000; g2.gain.value = 0.18;
+                    o2.connect(g2);
+                    g2.connect(audioCtx.destination);
+                    o2.frequency.value = 1000;
+                    g2.gain.value = 0.18;
                     o2.start(audioCtx.currentTime + t);
                     o2.stop(audioCtx.currentTime + t + 0.1);
                 }); return;
+
             case 'sortie':
-                o.frequency.setValueAtTime(500, audioCtx.currentTime);
-                o.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.5);
+                o.frequency.setValueAtTime(
+                    500, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(
+                    150, audioCtx.currentTime + 0.5);
                 g.gain.value = 0.2;
-                o.start(); o.stop(audioCtx.currentTime + 0.5); break;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.5); break;
+
             case 'niveau':
                 [523, 659, 784, 1047].forEach(function(f, i) {
                     var on = audioCtx.createOscillator();
                     var gn = audioCtx.createGain();
-                    on.connect(gn); gn.connect(audioCtx.destination);
-                    on.frequency.value = f; gn.gain.value = 0.12;
+                    on.connect(gn);
+                    gn.connect(audioCtx.destination);
+                    on.frequency.value = f;
+                    gn.gain.value = 0.12;
                     on.start(audioCtx.currentTime + i * 0.12);
                     on.stop(audioCtx.currentTime + i * 0.12 + 0.1);
                 }); return;
+
             case 'top1':
-                [523, 784, 1047, 1319, 1047, 1319].forEach(function(f, i) {
+                [523, 784, 1047, 1319, 1047, 1319]
+                    .forEach(function(f, i) {
                     var ot = audioCtx.createOscillator();
                     var gt = audioCtx.createGain();
-                    ot.connect(gt); gt.connect(audioCtx.destination);
-                    ot.frequency.value = f; gt.gain.value = 0.14;
+                    ot.connect(gt);
+                    gt.connect(audioCtx.destination);
+                    ot.frequency.value = f;
+                    gt.gain.value = 0.14;
                     ot.start(audioCtx.currentTime + i * 0.14);
                     ot.stop(audioCtx.currentTime + i * 0.14 + 0.12);
                 }); return;
+
             case 'countdown':
                 o.frequency.value = 1200; g.gain.value = 0.18;
-                o.start(); o.stop(audioCtx.currentTime + 0.05); break;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.05); break;
+
+            // === SONS ENTRAÎNEMENT — DIFFÉRENTS ET PLUS DOUX ===
+            case 'entr_success':
+                // Mélodie douce ascendante
+                [523, 659, 784].forEach(function(f, i) {
+                    var oe = audioCtx.createOscillator();
+                    var ge = audioCtx.createGain();
+                    oe.connect(ge);
+                    ge.connect(audioCtx.destination);
+                    oe.type = 'sine';
+                    oe.frequency.value = f;
+                    ge.gain.value = 0.07;
+                    oe.start(audioCtx.currentTime + i * 0.12);
+                    oe.stop(audioCtx.currentTime + i * 0.12 + 0.15);
+                }); return;
+
+            case 'entr_error':
+                // Son court et discret
+                o.type = 'sine';
+                o.frequency.setValueAtTime(
+                    380, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(
+                    220, audioCtx.currentTime + 0.18);
+                g.gain.value = 0.07;
+                o.start();
+                o.stop(audioCtx.currentTime + 0.18); break;
+
+            case 'entr_fin':
+                // Fanfare courte pour fin de matière
+                [523, 659, 784, 1047].forEach(function(f, i) {
+                    var of2 = audioCtx.createOscillator();
+                    var gf2 = audioCtx.createGain();
+                    of2.connect(gf2);
+                    gf2.connect(audioCtx.destination);
+                    of2.type = 'sine';
+                    of2.frequency.value = f;
+                    gf2.gain.value = 0.09;
+                    of2.start(audioCtx.currentTime + i * 0.1);
+                    of2.stop(audioCtx.currentTime + i * 0.1 + 0.12);
+                }); return;
+
             default:
                 o.frequency.value = 500; g.gain.value = 0.06;
-                o.start(); o.stop(audioCtx.currentTime + 0.1);
+                o.start();
+                o.stop(audioCtx.currentTime + 0.1);
         }
     } catch(e) {}
 }
 
 // === UTILITAIRES ===
 function showPage(p) {
-    [pageAccueil, pageMenu, pageAdminLogin, pageExam,
-     pageAdmin, pageHistorique, pageStats].forEach(function(el) {
+    [
+        pageAccueil,
+        pageMenu,
+        pageAdminLogin,
+        pageExam,
+        pageAdmin,
+        pageHistorique,
+        pageStats,
+        pageEntrainement,
+        pageQuizEntr,
+        pageResultatEntr
+    ].forEach(function(el) {
         if (el) el.style.display = 'none';
     });
     if (p) p.style.display = 'block';
@@ -399,7 +366,7 @@ function showPage(p) {
 
 function toast(msg, type) {
     var t = document.createElement('div');
-    t.className  = 'toast ' + (type || '');
+    t.className = 'toast ' + (type || '');
     t.textContent = msg;
     if (toastsEl) toastsEl.appendChild(t);
     setTimeout(function() {
@@ -428,7 +395,7 @@ function formatDate(ts) {
         day: '2-digit', month: 'short', year: 'numeric'
     }) + ' ' + d.toLocaleTimeString('fr-FR', {
         hour: '2-digit', minute: '2-digit'
-    });
+        });
 }
 
 function initiales(p, n) {
@@ -436,18 +403,19 @@ function initiales(p, n) {
 }
 
 function getPct(sc, tot) {
-    return (!tot || isNaN(sc)) ? 0 : Math.round((sc / tot) * 100);
+    return (!tot || isNaN(sc))
+        ? 0 : Math.round((sc / tot) * 100);
 }
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
 function getMention(score) {
-    if (score >= 45) return 'Excellent !';
-    if (score >= 40) return 'Tres bien !';
-    if (score >= 35) return 'Bien !';
-    if (score >= 25) return 'Passable';
-    if (score >= 15) return 'Continue tes efforts !';
-    return 'Revise davantage !';
+    if (score >= 45) return '🏆 Excellent !';
+    if (score >= 40) return '🌟 Très bien !';
+    if (score >= 35) return '👍 Bien !';
+    if (score >= 25) return '📚 Passable';
+    if (score >= 15) return '💪 Continue tes efforts !';
+    return '📖 Révise davantage !';
 }
 
 function getMentionClass(score) {
@@ -464,26 +432,47 @@ function getMentionTagClass(score) {
     return 'm-faible';
 }
 
+function getTitreRang(xp) {
+    if (xp >= 2000) return {
+        titre: 'Général', emoji: '⭐⭐⭐', couleur: '#facc15' };
+    if (xp >= 1500) return {
+        titre: 'Colonel', emoji: '⭐⭐', couleur: '#f97316' };
+    if (xp >= 1000) return {
+        titre: 'Capitaine', emoji: '🎖️', couleur: '#8b5cf6' };
+    if (xp >=  600) return {
+        titre: 'Lieutenant', emoji: '🏅', couleur: '#3b82f6' };
+    if (xp >=  300) return {
+        titre: 'Sergent', emoji: '💪', couleur: '#22c55e' };
+    if (xp >=  100) return {
+        titre: 'Caporal', emoji: '🎯', couleur: '#94a3b8' };
+    return {
+        titre: 'Recrue', emoji: '🪖', couleur: '#64748b' };
+}
+
 function afficherBadgeAnimation(emoji, nom) {
     var div = document.createElement('div');
     div.className = 'badge-popup';
-    div.innerHTML = '<div style="font-size:50px;margin-bottom:12px">'
+    div.innerHTML =
+        '<div style="font-size:50px;margin-bottom:12px">'
         + emoji + '</div>'
-        + '<div style="font-size:16px;margin-bottom:6px">Badge obtenu !</div>'
-        + '<div style="font-size:13px;opacity:0.85">' + nom + '</div>';
+        + '<div style="font-size:16px;margin-bottom:6px">'
+        + 'Badge obtenu !</div>'
+        + '<div style="font-size:13px;opacity:0.85">'
+        + nom + '</div>';
     document.body.appendChild(div);
     son('niveau');
     setTimeout(function() { div.classList.add('show'); }, 30);
     setTimeout(function() {
         div.classList.remove('show');
         setTimeout(function() {
-            if (div.parentNode) div.parentNode.removeChild(div);
+            if (div.parentNode)
+                div.parentNode.removeChild(div);
         }, 420);
     }, 2800);
 }
 
 // ============================================
-// FIN PARTIE 1/10 COMPLETE ✅
+// FIN PARTIE 1/10 COMPLÈTE ✅
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 2/10 : CONNEXION + INSCRIPTION + RESET + AUTO-LOGIN
@@ -517,221 +506,146 @@ if (btnRetourConnexion) btnRetourConnexion.onclick = function() {
     formConnexion.style.display = 'block';
 };
 
-// === INSCRIPTION AVEC VALIDATION RENFORCÉE ===
+// === INSCRIPTION ===
 if (btnInscription) btnInscription.onclick = async function() {
     son('click');
-    var n = nomInput           ? nomInput.value.trim()           : '';
-    var p = prenomInput        ? prenomInput.value.trim()        : '';
-    var e = emailInscription   ? emailInscription.value.trim().toLowerCase() : '';
-    var m = mdpInscription     ? mdpInscription.value.trim()     : '';
+    var n = nomInput.value.trim();
+    var p = prenomInput.value.trim();
+    var e = emailInscription.value.trim().toLowerCase();
+    var m = mdpInscription.value.trim();
 
-    // Validation renforcée depuis partie 1
-    var errValidation = validerInscription(n, p, e, m);
-    if (errValidation) {
-        if (erreurInscription) erreurInscription.textContent = errValidation;
+    if (n.length < 2 || p.length < 2) {
+        erreurInscription.textContent = '⚠️ Nom et Prénom requis (2 car. min)';
+        son('error'); return;
+    }
+    if (!e.includes('@') || !e.includes('.')) {
+        erreurInscription.textContent = '⚠️ Gmail invalide';
+        son('error'); return;
+    }
+    if (m.length < 4) {
+        erreurInscription.textContent = '⚠️ Mot de passe 4 caractères minimum';
         son('error'); return;
     }
 
-    if (erreurInscription) erreurInscription.textContent = 'Creation du compte...';
+    erreurInscription.textContent = '⏳ Création du compte...';
+    var userKey = cleanEmail(e);
+    var snap = await db.ref('users/' + userKey).once('value');
 
-    try {
-        var userKey = cleanEmail(e);
-        var snap    = await db.ref('users/' + userKey).once('value');
-
-        if (snap.exists()) {
-            if (erreurInscription) {
-                erreurInscription.textContent = 'Ce Gmail a deja un compte';
-            }
-            son('error'); return;
-        }
-
-        // Hash du mot de passe avant stockage
-        var mdpHash = await sha256(m + userKey);
-
-        await db.ref('users/' + userKey).set({
-            nom:             n,
-            prenom:          p,
-            email:           e,
-            mdp:             mdpHash,
-            xp:              0,
-            niveau:          1,
-            streak:          0,
-            dernierJour:     Date.now(),
-            badges:          {},
-            concoursFaits:   0,
-            totalScore:      0,
-            moyenne:         0,
-            historique:      [],
-            dateInscription: Date.now(),
-            top10All:        false,
-            accesPaye:       false
-        });
-
-        if (erreurInscription) erreurInscription.textContent = '';
-        toast('Compte cree ! Connecte-toi maintenant', 'success');
-        son('success');
-
-        if (nomInput)          nomInput.value           = '';
-        if (prenomInput)       prenomInput.value        = '';
-        if (emailInscription)  emailInscription.value   = '';
-        if (mdpInscription)    mdpInscription.value     = '';
-
-        formInscription.style.display = 'none';
-        formConnexion.style.display   = 'block';
-
-    } catch(e2) {
-        if (erreurInscription) {
-            erreurInscription.textContent = 'Erreur reseau. Reessaie.';
-        }
-        son('error');
+    if (snap.exists()) {
+        erreurInscription.textContent = '⚠️ Ce Gmail a déjà un compte';
+        son('error'); return;
     }
+
+    await db.ref('users/' + userKey).set({
+        nom: n, prenom: p, email: e,
+        mdp: hash(m),
+        xp: 0, niveau: 1, streak: 0,
+        dernierJour: Date.now(),
+        badges: {},
+        concoursFaits: 0,
+        totalScore: 0,
+        moyenne: 0,
+        historique: [],
+        dateInscription: Date.now(),
+        top10All: false
+    });
+
+    erreurInscription.textContent = '';
+    toast('✅ Compte créé ! Connecte-toi maintenant', 'success');
+    son('success');
+    nomInput.value = ''; prenomInput.value = '';
+    emailInscription.value = ''; mdpInscription.value = '';
+    formInscription.style.display = 'none';
+    formConnexion.style.display   = 'block';
 };
 
 // === RESET MOT DE PASSE ===
 if (btnReset) btnReset.onclick = async function() {
     son('click');
-    var e = emailReset  ? emailReset.value.trim().toLowerCase() : '';
-    var m = nouveauMdp  ? nouveauMdp.value.trim()               : '';
+    var e = emailReset.value.trim().toLowerCase();
+    var m = nouveauMdp.value.trim();
 
-    var errEmail = validerEmail(e);
-    if (errEmail) {
-        if (erreurReset) erreurReset.textContent = errEmail;
+    if (!e.includes('@') || !e.includes('.')) {
+        erreurReset.textContent = '⚠️ Gmail invalide';
         son('error'); return;
     }
     if (m.length < 4) {
-        if (erreurReset) erreurReset.textContent = 'Mot de passe : 4 car. minimum';
+        erreurReset.textContent = '⚠️ Mot de passe 4 caractères minimum';
         son('error'); return;
     }
 
-    if (erreurReset) erreurReset.textContent = 'Verification...';
+    erreurReset.textContent = '⏳ Vérification...';
+    var userKey = cleanEmail(e);
+    var snap = await db.ref('users/' + userKey).once('value');
 
-    try {
-        var userKey = cleanEmail(e);
-        var snap    = await db.ref('users/' + userKey).once('value');
-
-        if (!snap.exists()) {
-            if (erreurReset) erreurReset.textContent = 'Ce Gmail n\'existe pas';
-            son('error'); return;
-        }
-
-        var mdpHash = await sha256(m + userKey);
-        await db.ref('users/' + userKey).update({ mdp: mdpHash });
-
-        if (erreurReset) erreurReset.textContent = '';
-        toast('Mot de passe change ! Connecte-toi', 'success');
-        son('success');
-
-        if (emailReset) emailReset.value   = '';
-        if (nouveauMdp) nouveauMdp.value   = '';
-
-        formReset.style.display     = 'none';
-        formConnexion.style.display = 'block';
-
-    } catch(e2) {
-        if (erreurReset) erreurReset.textContent = 'Erreur reseau. Reessaie.';
-        son('error');
+    if (!snap.exists()) {
+        erreurReset.textContent = "⚠️ Ce Gmail n'existe pas";
+        son('error'); return;
     }
+
+    await db.ref('users/' + userKey).update({ mdp: hash(m) });
+    erreurReset.textContent = '';
+    toast('✅ Mot de passe changé ! Connecte-toi', 'success');
+    son('success');
+    emailReset.value = ''; nouveauMdp.value = '';
+    formReset.style.display     = 'none';
+    formConnexion.style.display = 'block';
 };
 
-// === CONNEXION AVEC SÉCURITÉ TENTATIVES ===
+// === CONNEXION ===
 if (btnLogin) btnLogin.onclick = async function() {
     son('click');
+    var e = emailInput.value.trim().toLowerCase();
+    var m = mdpInput.value.trim();
 
-    // Vérifier si pas bloqué
-    if (!verifierTentatives()) return;
-
-    var e = emailInput ? emailInput.value.trim().toLowerCase() : '';
-    var m = mdpInput   ? mdpInput.value.trim()                 : '';
-
-    var errEmail = validerEmail(e);
-    if (errEmail || m.length < 4) {
-        if (erreurEl) erreurEl.textContent = 'Gmail valide + mot de passe requis';
+    if (!e.includes('@') || m.length < 4) {
+        erreurEl.textContent = '⚠️ Gmail valide + mot de passe requis';
         son('error'); return;
     }
 
-    if (erreurEl) erreurEl.textContent = 'Connexion...';
+    erreurEl.textContent = '⏳ Connexion...';
+    var userKey = cleanEmail(e);
+    var snap = await db.ref('users/' + userKey).once('value');
 
-    try {
-        var userKey = cleanEmail(e);
-        var snap    = await db.ref('users/' + userKey).once('value');
-
-        if (!snap.exists()) {
-            if (erreurEl) erreurEl.textContent = 'Gmail ou mot de passe incorrect';
-            enregistrerTentativeEchouee();
-            son('error'); return;
-        }
-
-        var d = snap.val();
-
-        // Vérifier mot de passe avec SHA-256
-        var mdpHash        = await sha256(m + userKey);
-        var mdpHashAncien  = hash(m); // Compatibilité anciens comptes
-
-        var mdpOk = (d.mdp === mdpHash) || (d.mdp === mdpHashAncien);
-
-        if (!mdpOk) {
-            if (erreurEl) erreurEl.textContent = 'Gmail ou mot de passe incorrect';
-            enregistrerTentativeEchouee();
-            son('error'); return;
-        }
-
-        // Connexion réussie → réinitialiser compteur
-        reinitialiserTentatives();
-
-        // Si ancien hash → migrer vers nouveau
-        if (d.mdp === mdpHashAncien && d.mdp !== mdpHash) {
-            await db.ref('users/' + userKey).update({ mdp: mdpHash });
-        }
-
-        // Gérer streak
-        var now     = Date.now();
-        var dernier = new Date(d.dernierJour || now).setHours(0,0,0,0);
-        var auj     = new Date(now).setHours(0,0,0,0);
-        var diff    = (auj - dernier) / 86400000;
-        if (diff === 1)    d.streak = (d.streak || 0) + 1;
-        else if (diff > 1) d.streak = 1;
-
-        await db.ref('users/' + userKey).update({
-            dernierJour: now,
-            streak:      d.streak
-        });
-
-        user        = userKey;
-        userDisplay = (d.prenom || '') + ' ' + (d.nom || '');
-        userData    = d;
-
-        if (erreurEl) erreurEl.textContent = '';
-        son('success');
-        localStorage.setItem('bb_user', user);
-        startPresence();
-        chargerMenu(d);
-
-        // Vérifier état au démarrage
-        setTimeout(verifierEtatAuDemarrage, 1000);
-
-    } catch(e2) {
-        if (erreurEl) erreurEl.textContent = 'Erreur reseau. Reessaie.';
-        son('error');
+    if (!snap.exists() || snap.val().mdp !== hash(m)) {
+        erreurEl.textContent = '⚠️ Gmail ou mot de passe incorrect';
+        son('error'); return;
     }
+
+    var d   = snap.val();
+    var now = Date.now();
+    var dernier = new Date(d.dernierJour || now).setHours(0,0,0,0);
+    var auj     = new Date(now).setHours(0,0,0,0);
+    var diff    = (auj - dernier) / 86400000;
+    if (diff === 1)   d.streak = (d.streak || 0) + 1;
+    else if (diff > 1) d.streak = 1;
+
+    await db.ref('users/' + userKey).update({
+        dernierJour: now,
+        streak: d.streak
+    });
+
+    user        = userKey;
+    userDisplay = (d.prenom || '') + ' ' + (d.nom || '');
+    userData    = d;
+    erreurEl.textContent = '';
+    son('success');
+    localStorage.setItem('bb_user', user);
+    startPresence();
+    chargerMenu(d);
 };
 
 // === AUTO LOGIN ===
 async function autoLogin(savedKey) {
     try {
         var snap = await db.ref('users/' + savedKey).once('value');
-        if (!snap.exists()) {
-            localStorage.removeItem('bb_user'); return;
-        }
+        if (!snap.exists()) { localStorage.removeItem('bb_user'); return; }
         var d       = snap.val();
         user        = savedKey;
         userDisplay = (d.prenom || '') + ' ' + (d.nom || '');
         userData    = d;
         startPresence();
         chargerMenu(d);
-
-        // Vérifier état au démarrage après 1s
-        setTimeout(verifierEtatAuDemarrage, 1000);
-
     } catch(e) {
         localStorage.removeItem('bb_user');
     }
@@ -749,18 +663,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter' && btnLoginAdmin) btnLoginAdmin.click();
         });
     }
-    if (emailInput) {
-        emailInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && mdpInput) mdpInput.focus();
-        });
-    }
     if (formInscription) formInscription.style.display = 'none';
     if (formReset)       formReset.style.display       = 'none';
     if (formConnexion)   formConnexion.style.display   = 'block';
 });
 
 // ============================================
-// FIN PARTIE 2/10 COMPLETE ✅
+// FIN PARTIE 2/10
 // ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 3/10 : PRÉSENCE + MENU + DÉCONNEXION + HISTORIQUE + STATS
@@ -797,6 +706,8 @@ function chargerMenu(d) {
     if (xpEl)         xpEl.textContent         = d.xp || 0;
     if (streakEl)     streakEl.textContent     = (d.streak || 0) + 'j';
     showPage(pageMenu);
+    demanderPermissionNotif();
+    surveillerDebutConcours();
 }
 
 // === DÉCONNEXION ===
@@ -816,8 +727,19 @@ if (btnLogout) btnLogout.onclick = function() {
         showPage(pageAccueil);
         toast('Déconnecté', 'success');
     };
-    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
+    btnAnnuler.onclick = function() {
+        modalEl.style.display = 'none';
+    };
 };
+
+// === NAVIGATION ENTRAÎNEMENT ===
+var btnEntrainement = document.getElementById('btnEntrainement');
+if (btnEntrainement) {
+    btnEntrainement.onclick = function() {
+        son('click');
+        afficherPageEntrainement();
+    };
+}
 
 // === NAVIGATION HISTORIQUE ===
 if (btnHistorique) btnHistorique.onclick = function() {
@@ -834,7 +756,9 @@ if (btnRetourMenuHist) btnRetourMenuHist.onclick = function() {
 async function afficherHistorique() {
     var box = document.getElementById('contenuHistorique');
     if (!box) return;
-    box.innerHTML = '<div class="loading-box"><div class="loader"></div><p>Chargement...</p></div>';
+    box.innerHTML = '<div class="loading-box">'
+        + '<div class="loader"></div>'
+        + '<p>Chargement...</p></div>';
 
     var snap  = await db.ref('users/' + user).once('value');
     var d     = snap.val() || {};
@@ -844,51 +768,67 @@ async function afficherHistorique() {
     if (histo.length === 0) {
         box.innerHTML = '<div style="text-align:center;padding:60px 20px;">'
             + '<div style="font-size:50px;margin-bottom:15px">📋</div>'
-            + '<p style="font-size:16px;font-weight:700;color:var(--text)">Aucun concours passé</p>'
-            + '<p style="font-size:13px;margin-top:8px;color:var(--muted)">Lance ton premier concours !</p>'
+            + '<p style="font-size:16px;font-weight:700;color:var(--text)">'
+            + 'Aucun concours passé</p>'
+            + '<p style="font-size:13px;margin-top:8px;color:var(--muted)">'
+            + 'Lance ton premier concours !</p>'
             + '</div>';
         return;
     }
 
     histo = histo.slice().reverse();
 
-    var html = '<div class="histo-resume">' + histo.length + ' concours passé(s)</div>';
+    var html = '<div class="histo-resume">'
+        + histo.length + ' concours passé(s)</div>';
 
     histo.forEach(function(h, i) {
-        // Correction bug undefined
         var scoreVal = (typeof h.score  === 'number') ? h.score  : 0;
-        var totalVal = (typeof h.total  === 'number' && h.total > 0) ? h.total : 50;
+        var totalVal = (typeof h.total  === 'number'
+            && h.total > 0) ? h.total : 50;
         var bonnesV  = (typeof h.bonnes === 'number') ? h.bonnes : scoreVal;
         var partV    = (typeof h.partielles === 'number') ? h.partielles : 0;
-        var faussesV = (typeof h.fausses === 'number') ? h.fausses : (totalVal - bonnesV - partV);
+        var faussesV = (typeof h.fausses === 'number')
+            ? h.fausses : (totalVal - bonnesV - partV);
         var xpV      = (typeof h.xp === 'number') ? h.xp : 0;
         var sortiesV = (typeof h.sorties === 'number') ? h.sorties : 0;
         var typeV    = h.type || h.typeConcours || 'Concours Blanc Bonogo';
-        var dateV    = h.date || (h.timestamp ? formatDate(h.timestamp) : 'Date inconnue');
+        var dateV    = h.date
+            || (h.timestamp ? formatDate(h.timestamp) : 'Date inconnue');
         var pct      = getPct(scoreVal, totalVal);
         var mentCls  = getMentionClass(scoreVal);
         var tagCls   = getMentionTagClass(scoreVal);
         var mention  = getMention(scoreVal);
 
-        html += '<div class="histo-card ' + mentCls + '" style="animation-delay:' + (i * 0.04) + 's">'
+        html += '<div class="histo-card ' + mentCls + '" '
+            + 'style="animation-delay:' + (i * 0.04) + 's">'
             + '<div class="histo-top">'
             +   '<div>'
             +     '<div class="histo-type-label">' + typeV + '</div>'
             +     '<div class="histo-date-label">'  + dateV + '</div>'
             +   '</div>'
             +   '<div class="histo-score-big">'
-            +     '<span class="score-num">' + scoreVal + '/' + totalVal + '</span>'
+            +     '<span class="score-num">'
+            +       scoreVal + '/' + totalVal
+            +     '</span>'
             +     '<span class="score-pct">' + pct + '%</span>'
             +   '</div>'
             + '</div>'
             + '<div class="histo-details-row">'
-            +   '<span class="histo-badge b-bon">✅ '  + bonnesV  + '</span>'
-            +   '<span class="histo-badge b-part">⚠️ ' + partV    + '</span>'
-            +   '<span class="histo-badge b-faux">❌ '  + faussesV + '</span>'
-            +   '<span class="histo-badge b-xp">💰 +'  + xpV      + ' XP</span>'
-            +   (sortiesV > 0 ? '<span class="histo-badge b-sortie">⚠️ ' + sortiesV + ' sortie(s)</span>' : '')
+            +   '<span class="histo-badge b-bon">✅ '
+            +     bonnesV  + '</span>'
+            +   '<span class="histo-badge b-part">⚠️ '
+            +     partV    + '</span>'
+            +   '<span class="histo-badge b-faux">❌ '
+            +     faussesV + '</span>'
+            +   '<span class="histo-badge b-xp">💰 +'
+            +     xpV      + ' XP</span>'
+            +   (sortiesV > 0
+                ? '<span class="histo-badge b-sortie">⚠️ '
+                + sortiesV + ' sortie(s)</span>' : '')
             + '</div>'
-            + '<span class="mention-tag ' + tagCls + '">' + mention + '</span>'
+            + '<span class="mention-tag ' + tagCls + '">'
+            +   mention
+            + '</span>'
             + '</div>';
     });
 
@@ -910,7 +850,9 @@ if (btnRetourMenuStats) btnRetourMenuStats.onclick = function() {
 async function afficherStats() {
     var box = document.getElementById('contenuStats');
     if (!box) return;
-    box.innerHTML = '<div class="loading-box"><div class="loader"></div><p>Chargement...</p></div>';
+    box.innerHTML = '<div class="loading-box">'
+        + '<div class="loader"></div>'
+        + '<p>Chargement...</p></div>';
 
     var snap  = await db.ref('users/' + user).once('value');
     var d     = snap.val() || {};
@@ -924,20 +866,42 @@ async function afficherStats() {
 
     histo.forEach(function(h) {
         var s   = (typeof h.score === 'number') ? h.score : 0;
-        var tot = (typeof h.total === 'number' && h.total > 0) ? h.total : 50;
+        var tot = (typeof h.total === 'number'
+            && h.total > 0) ? h.total : 50;
         totalScore += s;
         if (s > meilleur) meilleur = s;
         if (s < pire)     pire     = s;
     });
 
-    var moyenne      = totalConcours > 0 ? (totalScore / totalConcours).toFixed(1) : 0;
+    var moyenne      = totalConcours > 0
+        ? (totalScore / totalConcours).toFixed(1) : 0;
     var moyPct       = getPct(parseFloat(moyenne), 50);
     var badgeCount   = Object.keys(d.badges || {}).length;
     var xpTotal      = d.xp     || 0;
     var niveauVal    = d.niveau || 1;
     var xpDansNiveau = xpTotal % 100;
     var streakVal    = d.streak || 0;
-    var pfMoy        = moyPct >= 70 ? '' : moyPct >= 40 ? 'pf-yellow' : 'pf-red';
+    var pfMoy        = moyPct >= 70 ? ''
+                     : moyPct >= 40 ? 'pf-yellow' : 'pf-red';
+
+    // Stats entraînement
+    var entrSnap = null;
+    var entrData = {};
+    try {
+        entrSnap = await db.ref('entrainement/' + user).once('value');
+        entrData = entrSnap.val() || {};
+    } catch(e) {}
+
+    var entrTotal = 0, entrBon = 0;
+    Object.keys(entrData).forEach(function(k) {
+        var s = entrData[k];
+        if (s && s.total > 0) {
+            entrTotal += s.total;
+            entrBon   += s.bon;
+        }
+    });
+    var entrPct = entrTotal > 0
+        ? Math.round((entrBon / entrTotal) * 100) : 0;
 
     var html = '<div class="stats-grid-2">'
         + statCard('🎯', totalConcours,    'Concours passés')
@@ -945,14 +909,32 @@ async function afficherStats() {
         + statCard('💰', xpTotal,          'XP total')
         + statCard('🏆', badgeCount,       'Badges obtenus')
         + statCard('📈', meilleur + '/50', 'Meilleur score')
-        + statCard('📉', totalConcours > 0 ? pire + '/50' : '--', 'Plus bas score')
+        + statCard('📉', totalConcours > 0
+            ? pire + '/50' : '--',         'Plus bas score')
         + '</div>'
-        + progressBar('Niveau ' + niveauVal + ' — XP', xpDansNiveau + '/100 XP', xpDansNiveau, '')
-        + progressBar('Moyenne générale', moyenne + '/50 (' + moyPct + '%)', moyPct, pfMoy)
+        + progressBar(
+            'Niveau ' + niveauVal + ' — XP',
+            xpDansNiveau + '/100 XP',
+            xpDansNiveau, '')
+        + progressBar(
+            'Moyenne concours',
+            moyenne + '/50 (' + moyPct + '%)',
+            moyPct, pfMoy)
+        + progressBar(
+            '🎯 Taux entraînement',
+            entrBon + '/' + entrTotal
+            + ' (' + entrPct + '%)',
+            entrPct,
+            entrPct >= 70 ? ''
+            : entrPct >= 40 ? 'pf-yellow' : 'pf-red')
         + '<div class="progress-wrap" style="text-align:center">'
-        +   '<div class="progress-title" style="margin-bottom:10px">🔥 Série actuelle</div>'
-        +   '<div style="font-size:44px;font-weight:900;color:var(--orange)">'
-        +     streakVal + '<span style="font-size:16px"> jours</span>'
+        +   '<div class="progress-title" style="margin-bottom:10px">'
+        +     '🔥 Série actuelle'
+        +   '</div>'
+        +   '<div style="font-size:44px;font-weight:900;'
+        +     'color:var(--orange)">'
+        +     streakVal
+        +     '<span style="font-size:16px"> jours</span>'
         +   '</div>'
         + '</div>';
 
@@ -974,7 +956,8 @@ function progressBar(title, valTxt, pct, pfClass) {
         +   '<span class="progress-val">'   + valTxt + '</span>'
         + '</div>'
         + '<div class="progress-track">'
-        +   '<div class="progress-fill ' + pfClass + '" style="width:' + pct + '%"></div>'
+        +   '<div class="progress-fill ' + pfClass
+        +     '" style="width:' + pct + '%"></div>'
         + '</div>'
         + '</div>';
 }
@@ -1290,12 +1273,145 @@ if (btnSaveConfig) btnSaveConfig.onclick = async function() {
 };
 
 // ============================================
-// SYSTÈME IMPORT JSON EN PLUSIEURS PARTIES
-// Permet de coller le JSON en 2 ou 3 fois
+// SYSTÈME IMPORT JSON
+// Méthode 1 : Fichier JSON (SPCK Editor)
+// Méthode 2 : Coller en plusieurs parties
 // ============================================
 var jsonCumule = '';
 
-// Bouton Ajouter une partie
+// Fonction normaliser commune
+function normaliserQuestion(q, i) {
+    var reps;
+    if (q.reponses && Array.isArray(q.reponses)) {
+        reps = q.reponses.map(function(r, ri) {
+            if (typeof r === 'string') {
+                return {
+                    texte:   r,
+                    correct: q.correct === ri
+                          || q.correct === 'ABCD'[ri]
+                };
+            }
+            return {
+                texte:   r.texte   || r.reponse
+                      || r.text    || r.label || '',
+                correct: r.correct || r.bonne
+                      || r.isCorrect || false
+            };
+        });
+    } else {
+        reps = ['A','B','C','D'].map(function(l, ri) {
+            return {
+                texte:   q[l] || '',
+                correct: q.correct === l
+                      || q.correct === ri
+                      || q.reponse === l
+            };
+        });
+    }
+    while (reps.length < 4) reps.push({ texte: '', correct: false });
+    return {
+        texte:       q.texte       || q.question
+                  || q.enonce      || ('Question ' + (i+1)),
+        reponses:    reps.slice(0, 4),
+        explication: q.explication || q.explanation
+                  || q.correction  || ''
+    };
+}
+
+// Fonction parser JSON robuste
+function parserJSON(texte) {
+    var textePropre = texte
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
+        .replace(/,\s*\]/g, ']')
+        .replace(/,\s*\}/g, '}')
+        .trim();
+
+    if (!textePropre.startsWith('[')) {
+        textePropre = '[' + textePropre;
+    }
+    if (!textePropre.endsWith(']')) {
+        var dernierAcc = textePropre.lastIndexOf('}');
+        if (dernierAcc !== -1) {
+            textePropre = textePropre.substring(0, dernierAcc + 1) + ']';
+        } else {
+            throw new Error('JSON invalide');
+        }
+    }
+    return JSON.parse(textePropre);
+}
+
+// Fonction extraire objets un par un (fallback)
+function extraireObjets(texte) {
+    var objets = [];
+    var depth  = 0;
+    var debut  = -1;
+    for (var ci = 0; ci < texte.length; ci++) {
+        var ch = texte[ci];
+        if (ch === '{') {
+            if (depth === 0) debut = ci;
+            depth++;
+        } else if (ch === '}') {
+            depth--;
+            if (depth === 0 && debut !== -1) {
+                try {
+                    var obj = JSON.parse(texte.substring(debut, ci + 1));
+                    objets.push(obj);
+                } catch(e) {}
+                debut = -1;
+            }
+        }
+    }
+    return objets;
+}
+
+// === MÉTHODE 1 : IMPORT FICHIER JSON ===
+var fichierJSONEl = document.getElementById('fichierJSON');
+if (fichierJSONEl) {
+    fichierJSONEl.onchange = function(e) {
+        var fichier = e.target.files[0];
+        if (!fichier) return;
+
+        toast('Lecture du fichier...', 'success');
+
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                var contenuFichier = ev.target.result;
+                var data;
+
+                try {
+                    data = parserJSON(contenuFichier);
+                } catch(e1) {
+                    // Fallback : extraire objet par objet
+                    data = extraireObjets(contenuFichier);
+                }
+
+                if (!data || data.length === 0) {
+                    toast('Fichier vide ou invalide', 'error'); return;
+                }
+
+                sujetActuel = data.map(normaliserQuestion);
+
+                afficherQuestionsAdmin();
+                if (fichierJSONEl) fichierJSONEl.value = '';
+                if (btnEnvoyer50) btnEnvoyer50.style.display = 'block';
+                toast(sujetActuel.length
+                    + ' questions chargees depuis le fichier !', 'success');
+                son('success');
+
+            } catch(e) {
+                toast('Erreur fichier : ' + e.message, 'error');
+                son('error');
+            }
+        };
+        reader.onerror = function() {
+            toast('Impossible de lire le fichier', 'error');
+        };
+        reader.readAsText(fichier, 'UTF-8');
+    };
+}
+
+// === MÉTHODE 2 : AJOUTER UNE PARTIE ===
 var btnAjouterPartie = document.getElementById('btnAjouterPartie');
 if (btnAjouterPartie) {
     btnAjouterPartie.onclick = function() {
@@ -1305,32 +1421,24 @@ if (btnAjouterPartie) {
             toast('Colle une partie du JSON d\'abord', 'error'); return;
         }
 
-        // Nettoyer
         partie = partie
             .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
             .trim();
 
-        // Enlever [ au début et ] à la fin si présents
         if (partie.startsWith('[')) partie = partie.substring(1).trim();
         if (partie.endsWith(']'))   partie = partie.slice(0, -1).trim();
-
-        // Enlever virgule finale
         partie = partie.replace(/,\s*$/, '').trim();
 
         if (partie === '') {
             toast('Partie vide, rien ajoute', 'error'); return;
         }
 
-        if (jsonCumule === '') {
-            jsonCumule = partie;
-        } else {
-            jsonCumule = jsonCumule + ',' + partie;
-        }
+        jsonCumule = jsonCumule === ''
+            ? partie
+            : jsonCumule + ',' + partie;
 
-        // Vider textarea
         if (collerJSONEl) collerJSONEl.value = '';
 
-        // Afficher info cumul
         var infoEl = document.getElementById('infoCumul');
         var nbEl   = document.getElementById('nbCaracteres');
         if (infoEl) infoEl.style.display = 'block';
@@ -1341,24 +1449,24 @@ if (btnAjouterPartie) {
     };
 }
 
-// Bouton Vider
+// === VIDER ZONE ===
 var btnViderZone = document.getElementById('btnViderZone');
 if (btnViderZone) {
     btnViderZone.onclick = function() {
         son('click');
         jsonCumule = '';
         if (collerJSONEl) collerJSONEl.value = '';
+        if (fichierJSONEl) fichierJSONEl.value = '';
         var infoEl = document.getElementById('infoCumul');
         if (infoEl) infoEl.style.display = 'none';
         toast('Zone videe', 'success');
     };
 }
 
-// === CHARGER QUESTIONS JSON ===
+// === CHARGER LES QUESTIONS ===
 if (btnCharger50) btnCharger50.onclick = function() {
     son('click');
 
-    // Prendre le cumulé OU ce qui est dans le textarea
     var texte = '';
     if (jsonCumule !== '') {
         texte = '[' + jsonCumule + ']';
@@ -1367,82 +1475,24 @@ if (btnCharger50) btnCharger50.onclick = function() {
     }
 
     if (!texte || texte === '[]') {
-        toast('Colle les questions JSON d\'abord', 'error'); return;
+        toast('Importe un fichier ou colle les questions', 'error');
+        return;
     }
 
-    // Réinitialiser après lecture
     jsonCumule = '';
     var infoEl2 = document.getElementById('infoCumul');
     if (infoEl2) infoEl2.style.display = 'none';
 
-    // ============================================
-    // FONCTION NORMALISER UNE QUESTION
-    // ============================================
-    function normaliserQuestion(q, i) {
-        var reps;
-        if (q.reponses && Array.isArray(q.reponses)) {
-            reps = q.reponses.map(function(r, ri) {
-                if (typeof r === 'string') {
-                    return {
-                        texte:   r,
-                        correct: q.correct === ri
-                              || q.correct === 'ABCD'[ri]
-                    };
-                }
-                return {
-                    texte:   r.texte   || r.reponse
-                          || r.text    || r.label || '',
-                    correct: r.correct || r.bonne
-                          || r.isCorrect || false
-                };
-            });
-        } else {
-            reps = ['A','B','C','D'].map(function(l, ri) {
-                return {
-                    texte:   q[l] || '',
-                    correct: q.correct === l
-                          || q.correct === ri
-                          || q.reponse === l
-                };
-            });
-        }
-        while (reps.length < 4) reps.push({ texte: '', correct: false });
-        return {
-            texte:       q.texte       || q.question
-                      || q.enonce      || ('Question ' + (i+1)),
-            reponses:    reps.slice(0, 4),
-            explication: q.explication || q.explanation
-                      || q.correction  || ''
-        };
-    }
-
-    // ============================================
-    // TENTATIVE 1 : Parse direct
-    // ============================================
     try {
-        var textePropre = texte
-            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
-            .replace(/,\s*\]/g, ']')
-            .replace(/,\s*\}/g, '}')
-            .trim();
-
-        if (!textePropre.startsWith('[')) {
-            textePropre = '[' + textePropre;
-        }
-        if (!textePropre.endsWith(']')) {
-            var dernierAcc = textePropre.lastIndexOf('}');
-            if (dernierAcc !== -1) {
-                textePropre = textePropre.substring(0, dernierAcc + 1) + ']';
-                toast('JSON repare automatiquement !', 'warning');
-            } else {
-                throw new Error('JSON invalide');
-            }
-        }
-
-        var data = JSON.parse(textePropre);
+        var data = parserJSON(texte);
 
         if (!Array.isArray(data) || data.length === 0) {
             toast('Format invalide.', 'error'); return;
+        }
+
+        if (data.length !== 50) {
+            toast('Attention : ' + data.length
+                + ' questions (attendu 50)', 'warning');
         }
 
         sujetActuel = data.map(normaliserQuestion);
@@ -1454,38 +1504,13 @@ if (btnCharger50) btnCharger50.onclick = function() {
         son('success');
 
     } catch(e) {
-        console.error('Tentative 1 echouee:', e);
-
-        // ============================================
-        // TENTATIVE 2 : Extraire objet par objet
-        // ============================================
+        // Fallback : extraire objet par objet
         try {
             var texte2 = texte
                 .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
                 .trim();
 
-            var objets = [];
-            var depth  = 0;
-            var debut2 = -1;
-
-            for (var ci = 0; ci < texte2.length; ci++) {
-                var ch = texte2[ci];
-                if (ch === '{') {
-                    if (depth === 0) debut2 = ci;
-                    depth++;
-                } else if (ch === '}') {
-                    depth--;
-                    if (depth === 0 && debut2 !== -1) {
-                        try {
-                            var obj = JSON.parse(
-                                texte2.substring(debut2, ci + 1)
-                            );
-                            objets.push(obj);
-                        } catch(e2) {}
-                        debut2 = -1;
-                    }
-                }
-            }
+            var objets = extraireObjets(texte2);
 
             if (objets.length === 0) {
                 toast('Erreur JSON : ' + e.message, 'error');
@@ -1498,7 +1523,8 @@ if (btnCharger50) btnCharger50.onclick = function() {
             afficherQuestionsAdmin();
             if (collerJSONEl) collerJSONEl.value = '';
             if (btnEnvoyer50) btnEnvoyer50.style.display = 'block';
-            toast(sujetActuel.length + ' questions recuperees !', 'warning');
+            toast(sujetActuel.length
+                + ' questions recuperees !', 'warning');
             son('success');
 
         } catch(e3) {
@@ -1523,7 +1549,9 @@ if (btnEnvoyer50) btnEnvoyer50.onclick = function() {
         toast(sujetActuel.length + ' questions envoyees !', 'success');
         son('success');
     };
-    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
+    btnAnnuler.onclick = function() {
+        modalEl.style.display = 'none';
+    };
 };
 
 // ============================================
@@ -1582,7 +1610,6 @@ function afficherQuestionsAdmin() {
         listeQuestionsEl.appendChild(div);
     });
 
-    // Listeners textarea
     listeQuestionsEl.querySelectorAll('textarea').forEach(
         function(ta) {
         ta.oninput = function() {
@@ -1591,7 +1618,6 @@ function afficherQuestionsAdmin() {
         };
     });
 
-    // Listeners explication
     listeQuestionsEl.querySelectorAll('input[data-expl]').forEach(
         function(inp) {
         inp.oninput = function() {
@@ -1600,7 +1626,6 @@ function afficherQuestionsAdmin() {
         };
     });
 
-    // Listeners texte réponse
     listeQuestionsEl.querySelectorAll(
         '.reponse-edit input[type="text"]').forEach(function(inp) {
         inp.oninput = function() {
@@ -1613,7 +1638,6 @@ function afficherQuestionsAdmin() {
         };
     });
 
-    // Listeners checkbox
     listeQuestionsEl.querySelectorAll(
         '.reponse-edit input[type="checkbox"]').forEach(function(cb) {
         cb.onchange = function() {
@@ -1693,7 +1717,7 @@ if (btnSaveSujet) btnSaveSujet.onclick = async function() {
     son('success');
 };
 
-// === NOUVEAU CONCOURS AVEC GESTION PAIEMENTS ===
+// === NOUVEAU CONCOURS ===
 if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
     son('click');
     modalTitreEl.textContent = 'Nouveau Concours';
@@ -1733,10 +1757,8 @@ if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
             await db.ref('resultats').remove();
             await db.ref('sessions').remove();
             copieSubmise = false;
-            toast(
-                'Nouveau concours pret ! Paiements conserves.',
-                'success'
-            );
+            toast('Nouveau concours pret ! Paiements conserves.',
+                'success');
             son('success');
         };
 
@@ -1753,10 +1775,8 @@ if (btnNouveauConcours) btnNouveauConcours.onclick = function() {
             });
             await db.ref('users').update(updates);
             copieSubmise = false;
-            toast(
-                'Nouveau concours pret ! Paiements reinitialises.',
-                'success'
-            );
+            toast('Nouveau concours pret ! Paiements reinitialises.',
+                'success');
             son('success');
         };
     }, 100);
@@ -2077,8 +2097,7 @@ db.ref('resultats').on('child_removed', function(snap) {
 
 // ============================================
 // FIN PARTIE 6/10 COMPLETE ✅
-// ============================================
-// ============================================
+// ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 7/10 — SECTION A — PARTIE 1/2
 // ============================================
@@ -2691,8 +2710,7 @@ function demarrerTimer() {
 }
 
 // ============================================
-// FIN 7A SECTION 2/2
-// ============================================// ============================================
+// FIN 7A SECTION 2/2// ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 7/10 — SECTION B — PARTIE 1/2
 // ============================================
@@ -2961,8 +2979,7 @@ function demarrerTimerSecurite() {
 }
 
 // ============================================
-// FIN PARTIE 7 COMPLETE ✅
-// ============================================// ============================================
+// FIN PARTIE 7 COMPLETE ✅// ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 8/10 — SECTION A — FINALE
 // ============================================
@@ -3396,8 +3413,7 @@ async function verifierTop10(score) {
 }
 
 // ============================================
-// FIN PARTIE 8A COMPLETE ✅
-// ============================================// ============================================
+// FIN PARTIE 8A COMPLETE ✅// ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
 // PARTIE 8/10 — SECTION B — FINALE
 // ============================================
@@ -3598,12 +3614,24 @@ db.ref('resultats').on('child_removed', function(snap) {
 });
 
 // ============================================
-// FIN PARTIE 8B COMPLETE ✅
-// ============================================// ============================================
-// CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 9/10 — SECTION A
+// FIN PARTIE 8B COMPLETE ✅// ============================================// ============================================
+// ============================================
+// CONCOURS BLANC BONOGO - SCRIPT
+// PARTIE 9A/10 — RÉSULTAT + COURBE + RANG + WHATSAPP
 // ============================================
 
+// === SYSTÈME DE RANG AVEC TITRES ===
+function getTitreRang(xp) {
+    if (xp >= 2000) return { titre: 'Général',    emoji: '⭐⭐⭐', couleur: '#facc15' };
+    if (xp >= 1500) return { titre: 'Colonel',    emoji: '⭐⭐',   couleur: '#f97316' };
+    if (xp >= 1000) return { titre: 'Capitaine',  emoji: '🎖️',   couleur: '#8b5cf6' };
+    if (xp >=  600) return { titre: 'Lieutenant', emoji: '🏅',    couleur: '#3b82f6' };
+    if (xp >=  300) return { titre: 'Sergent',    emoji: '💪',    couleur: '#22c55e' };
+    if (xp >=  100) return { titre: 'Caporal',    emoji: '🎯',    couleur: '#94a3b8' };
+    return             { titre: 'Recrue',      emoji: '🪖',    couleur: '#64748b' };
+}
+
+// === AFFICHER ATTENTE ===
 function afficherAttente(score, bonnes, partielles, fausses, xpG) {
     questionsEl.style.display                          = 'none';
     document.querySelector('.footer').style.display    = 'none';
@@ -3621,10 +3649,12 @@ function afficherAttente(score, bonnes, partielles, fausses, xpG) {
         }
         var min = Math.floor(reste / 60000);
         var sec = Math.floor((reste % 60000) / 1000);
-        if (timerAttenteEl) timerAttenteEl.textContent = min + ':' + pad(sec);
+        if (timerAttenteEl)
+            timerAttenteEl.textContent = min + ':' + pad(sec);
     }, 1000);
 }
 
+// === AFFICHER RÉSULTAT ===
 async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
     if (attenteEl)  attenteEl.style.display  = 'none';
     questionsEl.style.display                           = 'none';
@@ -3646,7 +3676,8 @@ async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
     if (sortiesInfoEl) {
         if (nbSorties > 0) {
             sortiesInfoEl.style.display = 'block';
-            sortiesInfoEl.textContent   = nbSorties + ' sortie(s) detectee(s)';
+            sortiesInfoEl.textContent   =
+                '⚠️ ' + nbSorties + ' sortie(s) détectée(s)';
         } else {
             sortiesInfoEl.style.display = 'none';
         }
@@ -3655,13 +3686,15 @@ async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
     if (timerEl) {
         timerEl.textContent      = pct + '%';
         timerEl.style.background = pct >= 60 ? 'var(--green)'
-                                 : pct >= 40 ? 'var(--orange)' : 'var(--red)';
+                                 : pct >= 40 ? 'var(--orange)'
+                                 : 'var(--red)';
         timerEl.classList.remove('warning');
     }
-    if (nomConcoursEl) nomConcoursEl.textContent = 'Resultats';
+    if (nomConcoursEl) nomConcoursEl.textContent = 'Résultats';
 
     notifResultatDisponible(score, total);
 
+    // === RANG FIREBASE ===
     if (monRangResEl) {
         monRangResEl.textContent = '';
         try {
@@ -3669,7 +3702,9 @@ async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
                 .orderByChild('score').once('value');
             var results = [];
             snap.forEach(function(child) {
-                results.push(Object.assign({ key: child.key }, child.val()));
+                results.push(
+                    Object.assign({ key: child.key }, child.val())
+                );
             });
             results.sort(function(a, b) {
                 return b.score - a.score || a.timestamp - b.timestamp;
@@ -3678,10 +3713,15 @@ async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
                 return r.key === user;
             });
             if (monRang >= 0) {
-                monRangResEl.textContent = 'Rang : #'
-                    + (monRang+1) + ' / ' + results.length;
+                var rangEmoji = monRang === 0 ? '🥇'
+                    : monRang === 1 ? '🥈'
+                    : monRang === 2 ? '🥉' : '#' + (monRang+1);
+                monRangResEl.textContent =
+                    'Rang : ' + rangEmoji
+                    + ' / ' + results.length + ' candidats';
                 if (monRang < 3) {
-                    await db.ref('users/' + user + '/badges/top3').set(true);
+                    await db.ref('users/' + user + '/badges/top3')
+                        .set(true);
                     userData.badges      = userData.badges || {};
                     userData.badges.top3 = true;
                 }
@@ -3690,18 +3730,201 @@ async function afficherResultat(score, bonnes, partiel, fausses, xpG) {
         } catch(e) {}
     }
 
+    // === TITRE / RANG XP ===
+    var xpTotal  = userData.xp || 0;
+    var rangInfo = getTitreRang(xpTotal);
+    var titreEl2 = document.getElementById('titreRangRes');
+    if (titreEl2) {
+        titreEl2.textContent = rangInfo.emoji
+            + ' ' + rangInfo.titre;
+        titreEl2.style.color = rangInfo.couleur;
+    }
+
+    // === COURBE D'ÉVOLUTION ===
+    afficherCourbeEvolution();
+
+    // === BOUTON PARTAGE WHATSAPP ===
+    var btnWA = document.getElementById('btnPartageWA');
+    if (btnWA) {
+        btnWA.onclick = function() {
+            var msg = '🇧🇫 *Concours Blanc Bonogo*\n'
+                + 'J\'ai obtenu *' + score + '/' + total
+                + '* (' + pct + '%) !\n'
+                + '✅ ' + bonnes + ' bonnes '
+                + '⚠️ ' + partiel + ' partielles '
+                + '❌ ' + fausses + ' fausses\n'
+                + getMention(score) + '\n'
+                + 'Rang : ' + (monRangResEl
+                    ? monRangResEl.textContent : '') + '\n'
+                + '📱 Télécharge l\'app Concours Blanc Bonogo !';
+            var url = 'https://wa.me/?text='
+                + encodeURIComponent(msg);
+            window.open(url, '_blank');
+            son('click');
+        };
+    }
+
     son('success');
 }
 
+// === COURBE D'ÉVOLUTION ===
+async function afficherCourbeEvolution() {
+    var conteneur = document.getElementById('courbeEvolution');
+    if (!conteneur) return;
+
+    conteneur.innerHTML =
+        '<div style="text-align:center;padding:20px;">'
+        + '<div class="loader" style="width:30px;height:30px;'
+        + 'border-width:3px;"></div>'
+        + '<p style="color:var(--muted);font-size:12px;'
+        + 'margin-top:8px;">Chargement courbe...</p>'
+        + '</div>';
+
+    try {
+        var snap  = await db.ref('users/' + user).once('value');
+        var d     = snap.val() || {};
+        var histo = d.historique || [];
+        if (!Array.isArray(histo)) histo = Object.values(histo);
+
+        if (histo.length < 2) {
+            conteneur.innerHTML =
+                '<div style="text-align:center;padding:16px;'
+                + 'color:var(--muted);font-size:12px;">'
+                + '📈 La courbe apparaîtra après 2 concours.</div>';
+            return;
+        }
+
+        // Garder les 8 derniers
+        var derniers = histo.slice(-8);
+        var maxScore = Math.max.apply(null,
+            derniers.map(function(h) {
+                return h.total || 50;
+            }));
+        var W = Math.min(conteneur.offsetWidth - 32, 340);
+        var H = 140;
+        var padG = 30, padD = 10, padH = 15, padB = 30;
+        var largeur = W - padG - padD;
+        var hauteur = H - padH - padB;
+        var nb      = derniers.length;
+
+        // Points SVG
+        var points = derniers.map(function(h, i) {
+            var sc  = typeof h.score === 'number' ? h.score : 0;
+            var tot = typeof h.total === 'number' && h.total > 0
+                ? h.total : 50;
+            var x = padG + (i / (nb - 1)) * largeur;
+            var y = padH + hauteur - (sc / tot) * hauteur;
+            return { x: x, y: y, score: sc, total: tot,
+                pct: getPct(sc, tot) };
+        });
+
+        // Ligne SVG
+        var polyline = points.map(function(p) {
+            return p.x + ',' + p.y;
+        }).join(' ');
+
+        // Zone remplie
+        var airePoints = polyline
+            + ' ' + points[points.length-1].x
+            + ',' + (padH + hauteur)
+            + ' ' + padG + ',' + (padH + hauteur);
+
+        // Lignes horizontales grille
+        var grille = '';
+        [0, 25, 50, 75, 100].forEach(function(pct) {
+            var yG = padH + hauteur - (pct / 100) * hauteur;
+            grille += '<line x1="' + padG + '" y1="' + yG
+                + '" x2="' + (W - padD) + '" y2="' + yG
+                + '" stroke="rgba(100,116,139,0.15)"'
+                + ' stroke-width="1"/>'
+                + '<text x="' + (padG - 4) + '" y="' + (yG + 4)
+                + '" text-anchor="end" font-size="8"'
+                + ' fill="rgba(100,116,139,0.6)">'
+                + pct + '%</text>';
+        });
+
+        // Cercles et labels
+        var cercles = '';
+        points.forEach(function(p, i) {
+            var couleur = p.pct >= 70 ? '#22c55e'
+                : p.pct >= 40 ? '#f97316' : '#ef4444';
+            cercles += '<circle cx="' + p.x + '" cy="' + p.y
+                + '" r="5" fill="' + couleur
+                + '" stroke="white" stroke-width="2"/>'
+                + '<text x="' + p.x + '" y="' + (p.y - 9)
+                + '" text-anchor="middle" font-size="9"'
+                + ' font-weight="700" fill="' + couleur + '">'
+                + p.score + '/' + p.total + '</text>';
+        });
+
+        // Labels X (numéro concours)
+        var labelsX = '';
+        points.forEach(function(p, i) {
+            labelsX += '<text x="' + p.x
+                + '" y="' + (H - 6)
+                + '" text-anchor="middle" font-size="8"'
+                + ' fill="rgba(100,116,139,0.7)">C'
+                + (histo.length - nb + i + 1) + '</text>';
+        });
+
+        // Tendance (amélioration ou baisse)
+        var premier = points[0].pct;
+        var dernier = points[points.length-1].pct;
+        var diff    = dernier - premier;
+        var tendance = diff > 5
+            ? '📈 +' + Math.round(diff) + '% de progression !'
+            : diff < -5
+            ? '📉 ' + Math.round(diff) + '% de régression'
+            : '➡️ Score stable';
+        var couleurTendance = diff > 5 ? '#22c55e'
+            : diff < -5 ? '#ef4444' : '#94a3b8';
+
+        conteneur.innerHTML =
+            '<div style="font-size:13px;font-weight:800;'
+            + 'color:var(--text);margin-bottom:10px;">'
+            + '📈 Courbe d\'évolution</div>'
+            + '<svg width="' + W + '" height="' + H
+            + '" style="overflow:visible;">'
+            + '<defs>'
+            + '<linearGradient id="gradCourbe" x1="0" y1="0"'
+            + ' x2="0" y2="1">'
+            + '<stop offset="0%" stop-color="#1a6b3c"'
+            + ' stop-opacity="0.3"/>'
+            + '<stop offset="100%" stop-color="#1a6b3c"'
+            + ' stop-opacity="0.02"/>'
+            + '</linearGradient></defs>'
+            + grille
+            + '<polygon points="' + airePoints + '"'
+            + ' fill="url(#gradCourbe)"/>'
+            + '<polyline points="' + polyline + '"'
+            + ' fill="none" stroke="#1a6b3c"'
+            + ' stroke-width="2.5" stroke-linejoin="round"'
+            + ' stroke-linecap="round"/>'
+            + cercles
+            + labelsX
+            + '</svg>'
+            + '<div style="text-align:center;margin-top:8px;'
+            + 'font-size:12px;font-weight:700;color:'
+            + couleurTendance + ';">'
+            + tendance + '</div>';
+
+    } catch(e) {
+        conteneur.innerHTML =
+            '<div style="color:var(--muted);font-size:12px;'
+            + 'padding:12px;text-align:center;">'
+            + 'Courbe indisponible.</div>';
+    }
+}
+
 // ============================================
-// BOUTON CORRECTION + PDF
+// BOUTON CORRECTION
 // ============================================
 if (btnCorrection) btnCorrection.onclick = function() {
     son('click');
 
     if (correctionEl.innerHTML !== '') {
         correctionEl.innerHTML    = '';
-        btnCorrection.textContent = '📖 Correction';
+        btnCorrection.textContent = '📖 Voir la Correction';
         return;
     }
 
@@ -3733,13 +3956,15 @@ if (btnCorrection) btnCorrection.onclick = function() {
             + '<span class="corr-num">Q' + (qi+1) + '</span>'
             + '<span class="corr-ico">' + ico + '</span>'
             + (nbBonnesAttendues > 1
-                ? '<span style="font-size:10px;background:var(--orange);'
-                + 'color:white;padding:2px 8px;border-radius:10px;'
-                + 'margin-left:8px">'
+                ? '<span style="font-size:10px;'
+                + 'background:var(--orange);'
+                + 'color:white;padding:2px 8px;'
+                + 'border-radius:10px;margin-left:8px">'
                 + nbBonnesAttendues + ' rep. attendues</span>'
                 : '')
             + '</div>'
-            + '<div class="corr-question">' + (q.texte || '') + '</div>';
+            + '<div class="corr-question">'
+            + (q.texte || '') + '</div>';
 
         (q.reponses || []).forEach(function(r, ri) {
             var estBonne   = bonnesRep.indexOf(ri) !== -1;
@@ -3755,16 +3980,17 @@ if (btnCorrection) btnCorrection.onclick = function() {
             }
 
             html += '<div class="corr-rep-ligne ' + repCls + '">'
-                + '<div class="corr-bulle-sm">' + 'ABCD'[ri] + '</div>'
+                + '<div class="corr-bulle-sm">'
+                + 'ABCD'[ri] + '</div>'
                 + '<span>' + prefix + (r.texte || '') + '</span>'
                 + '</div>';
         });
 
         if (explication) {
             html += '<div class="corr-explication">'
-                + '<span class="corr-explication-titre">💡 Explication</span>'
-                + explication
-                + '</div>';
+                + '<span class="corr-explication-titre">'
+                + '💡 Explication</span>'
+                + explication + '</div>';
         }
 
         html += '</div>';
@@ -3776,7 +4002,7 @@ if (btnCorrection) btnCorrection.onclick = function() {
     var btnPdf = document.createElement('button');
     btnPdf.className     = 'btn-green';
     btnPdf.style.cssText = 'margin:16px 0 30px;';
-    btnPdf.innerHTML     = '📄 Telecharger la correction en PDF';
+    btnPdf.innerHTML     = '📄 Télécharger la correction PDF';
     btnPdf.onclick = function() { telechargerCorrectionPDF(); };
     correctionEl.appendChild(btnPdf);
 
@@ -3784,10 +4010,9 @@ if (btnCorrection) btnCorrection.onclick = function() {
 };
 
 // ============================================
-// FIN PARTIE 9A
-// ============================================// ============================================
+// FIN PARTIE 9A ✅// ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 9/10 — SECTION B — PDF DIRECT
+// PARTIE 9/10 — SECTION B — PDF CORRIGÉ
 // ============================================
 
 function telechargerCorrectionPDF() {
@@ -3805,63 +4030,70 @@ function telechargerCorrectionPDF() {
     var nbF = faussesEl    ? faussesEl.textContent    : '0';
 
     // ============================================
-    // CONSTRUIRE LE CONTENU HTML DE LA CORRECTION
+    // CONSTRUIRE LE HTML DE LA CORRECTION
     // ============================================
     var contenu = '<!DOCTYPE html><html lang="fr"><head>'
         + '<meta charset="UTF-8">'
+        + '<meta name="viewport" content="width=device-width,initial-scale=1">'
         + '<title>Correction - ' + nomCandidat + '</title>'
         + '<style>'
         + 'body{font-family:Arial,sans-serif;color:#1e293b;'
-        + 'padding:30px;font-size:13px;max-width:800px;margin:0 auto;}'
-        + 'h1{color:#0a0f1e;font-size:22px;text-align:center;'
-        + 'margin-bottom:4px;}'
-        + 'h2{color:#334155;font-size:14px;text-align:center;'
+        + 'padding:20px;font-size:13px;max-width:800px;margin:0 auto;}'
+        + 'h1{color:#0a0f1e;font-size:20px;text-align:center;margin-bottom:4px;}'
+        + 'h2{color:#334155;font-size:13px;text-align:center;'
         + 'margin-bottom:6px;font-weight:normal;}'
-        + '.info{text-align:center;margin-bottom:20px;color:#64748b;'
-        + 'font-size:12px;border-bottom:2px solid #e2e8f0;'
-        + 'padding-bottom:14px;}'
+        + '.info{text-align:center;margin-bottom:16px;color:#64748b;'
+        + 'font-size:12px;border-bottom:2px solid #e2e8f0;padding-bottom:12px;}'
         + '.score-box{text-align:center;background:#f8fafc;'
         + 'border:2px solid #e2e8f0;border-radius:12px;'
-        + 'padding:16px;margin-bottom:24px;}'
-        + '.score-num{font-size:36px;font-weight:900;color:#eab308;}'
-        + '.stats-row{display:flex;justify-content:center;gap:20px;'
-        + 'margin-top:8px;font-size:13px;}'
-        + '.q-block{margin-bottom:16px;border-radius:10px;padding:14px;'
-        + 'border-left:5px solid #94a3b8;background:#f8fafc;'
-        + 'page-break-inside:avoid;}'
+        + 'padding:14px;margin-bottom:20px;}'
+        + '.score-num{font-size:32px;font-weight:900;color:#eab308;}'
+        + '.stats-row{display:flex;justify-content:center;'
+        + 'gap:16px;margin-top:8px;font-size:12px;flex-wrap:wrap;}'
+        + '.q-block{margin-bottom:14px;border-radius:8px;padding:12px;'
+        + 'border-left:4px solid #94a3b8;background:#f8fafc;}'
         + '.q-block.correct  {border-left-color:#22c55e;background:#f0fdf4;}'
         + '.q-block.incorrect{border-left-color:#ef4444;background:#fef2f2;}'
         + '.q-block.partiel  {border-left-color:#f97316;background:#fff7ed;}'
         + '.q-block.vide     {border-left-color:#94a3b8;background:#f8fafc;}'
-        + '.q-num{font-size:11px;font-weight:800;color:#64748b;'
-        + 'text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}'
+        + '.q-num{font-size:10px;font-weight:800;color:#64748b;'
+        + 'text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;}'
         + '.q-texte{font-size:13px;font-weight:700;color:#1e293b;'
-        + 'margin-bottom:10px;line-height:1.5;}'
-        + '.rep{font-size:12px;padding:5px 8px;border-radius:6px;'
-        + 'margin-bottom:4px;display:flex;align-items:flex-start;gap:6px;}'
+        + 'margin-bottom:8px;line-height:1.5;}'
+        + '.rep{font-size:12px;padding:4px 7px;border-radius:5px;'
+        + 'margin-bottom:3px;display:flex;align-items:flex-start;gap:5px;}'
         + '.rep.bon           {background:#dcfce7;color:#166534;font-weight:700;}'
         + '.rep.faux          {background:#fee2e2;color:#991b1b;font-weight:700;}'
         + '.rep.bonne-manquee {background:#dcfce7;color:#166534;}'
         + '.rep.neutre        {color:#64748b;}'
-        + '.rep-bulle{width:20px;min-width:20px;height:20px;'
-        + 'border-radius:50%;background:#e2e8f0;display:inline-flex;'
-        + 'align-items:center;justify-content:center;'
-        + 'font-size:10px;font-weight:800;}'
-        + '.explication{margin-top:10px;padding:10px 12px;'
+        + '.rep-bulle{width:18px;min-width:18px;height:18px;'
+        + 'border-radius:50%;background:#e2e8f0;'
+        + 'display:inline-flex;align-items:center;'
+        + 'justify-content:center;font-size:9px;font-weight:800;}'
+        + '.explication{margin-top:8px;padding:9px 11px;'
         + 'background:#eff6ff;border:1px solid #bfdbfe;'
-        + 'border-radius:8px;font-size:12px;color:#1e40af;line-height:1.6;}'
+        + 'border-radius:7px;font-size:11px;color:#1e40af;line-height:1.6;}'
         + '.expl-titre{font-weight:800;font-size:10px;'
-        + 'text-transform:uppercase;letter-spacing:0.8px;'
-        + 'margin-bottom:4px;display:block;}'
-        + '.footer{text-align:center;margin-top:30px;'
-        + 'padding-top:14px;border-top:1px solid #e2e8f0;'
-        + 'font-size:11px;color:#94a3b8;}'
+        + 'text-transform:uppercase;letter-spacing:0.6px;'
+        + 'margin-bottom:3px;display:block;}'
+        + '.footer-doc{text-align:center;margin-top:24px;'
+        + 'padding-top:12px;border-top:1px solid #e2e8f0;'
+        + 'font-size:10px;color:#94a3b8;}'
+        + '.print-btn{display:block;width:100%;padding:14px;'
+        + 'background:#22c55e;color:white;border:none;'
+        + 'border-radius:10px;font-size:15px;font-weight:700;'
+        + 'cursor:pointer;margin-bottom:20px;'
+        + 'font-family:Arial,sans-serif;}'
         + '@media print{'
-        + 'body{padding:15px;}'
+        + '.print-btn{display:none !important;}'
+        + 'body{padding:10px;}'
         + '.q-block{page-break-inside:avoid;}'
-        + 'button{display:none !important;}'
         + '}'
         + '</style></head><body>';
+
+    // Bouton imprimer en haut
+    contenu += '<button class="print-btn" onclick="window.print()">'
+        + '🖨️ Imprimer / Enregistrer en PDF</button>';
 
     contenu += '<h1>Concours Blanc Bonogo</h1>'
         + '<h2>' + typeConcours + '</h2>'
@@ -3869,7 +4101,7 @@ function telechargerCorrectionPDF() {
         + ' &nbsp;|&nbsp; Date : <b>' + dateAuj + '</b></div>';
 
     contenu += '<div class="score-box">'
-        + '<div style="font-size:13px;color:#64748b;margin-bottom:6px">'
+        + '<div style="font-size:12px;color:#64748b;margin-bottom:5px">'
         + 'Score final</div>'
         + '<div class="score-num">' + scoreFinal + '</div>'
         + '<div class="stats-row">'
@@ -3878,12 +4110,12 @@ function telechargerCorrectionPDF() {
         + '<span style="color:#ef4444">❌ ' + nbF + ' fausse(s)</span>'
         + '</div>'
         + (nbSorties > 0
-            ? '<div style="color:#f97316;font-size:12px;margin-top:8px">'
+            ? '<div style="color:#f97316;font-size:11px;margin-top:6px">'
             + nbSorties + ' sortie(s) detectee(s)</div>' : '')
         + '</div>';
 
-    contenu += '<div style="font-weight:800;font-size:15px;'
-        + 'margin-bottom:14px">Correction detaillee</div>';
+    contenu += '<div style="font-weight:800;font-size:14px;'
+        + 'margin-bottom:12px;">Correction detaillee</div>';
 
     questionsData.forEach(function(q, qi) {
         var info        = reponsesFinales[qi] || {};
@@ -3899,19 +4131,19 @@ function telechargerCorrectionPDF() {
                 : statut === 'partielle' ? 'partiel'
                 : statut === 'fausse'    ? 'incorrect' : 'vide';
 
-        var ico = statut === 'bonne'     ? '✅ Bonne reponse'
-                : statut === 'partielle' ? '⚠️ Reponse partielle'
-                : statut === 'fausse'    ? '❌ Mauvaise reponse'
+        var ico = statut === 'bonne'     ? '✅ Bonne'
+                : statut === 'partielle' ? '⚠️ Partielle'
+                : statut === 'fausse'    ? '❌ Fausse'
                 : '⬜ Non repondu';
 
         var nbBonnesAttendues = bonnesRep.length;
 
         contenu += '<div class="q-block ' + cls + '">'
-            + '<div class="q-num">Question '
-            + (qi+1) + ' / ' + questionsData.length
+            + '<div class="q-num">Q' + (qi+1)
+            + ' / ' + questionsData.length
             + ' — ' + ico
             + (nbBonnesAttendues > 1
-                ? ' (' + nbBonnesAttendues + ' reponses attendues)' : '')
+                ? ' (' + nbBonnesAttendues + ' rep. attendues)' : '')
             + '</div>'
             + '<div class="q-texte">' + (q.texte || '') + '</div>';
 
@@ -3943,71 +4175,65 @@ function telechargerCorrectionPDF() {
         contenu += '</div>';
     });
 
-    contenu += '<div class="footer">Concours Blanc Bonogo &nbsp;|&nbsp; '
-        + 'Document genere le ' + dateAuj + '<br>'
+    contenu += '<div class="footer-doc">'
+        + 'Concours Blanc Bonogo &nbsp;|&nbsp; '
+        + 'Genere le ' + dateAuj + '<br>'
         + 'Contact : 55 24 04 31 / 69 04 19 02'
         + '</div></body></html>';
 
     // ============================================
-    // TÉLÉCHARGEMENT — OUVRE DIRECTEMENT DANS PDF
+    // TÉLÉCHARGEMENT — 3 MÉTHODES EN CASCADE
     // ============================================
-    var nomFichier = 'correction_'
+    var nomFichier = 'Correction_Bonogo_'
         + nomCandidat.replace(/\s+/g, '_')
         + '_' + Date.now() + '.html';
 
+    // Méthode 1 : Blob + data URI (marche dans Median)
     try {
-        // Méthode 1 : Blob URL → déclenche le gestionnaire de fichiers
-        var blob = new Blob([contenu], { type: 'text/html;charset=utf-8' });
-        var url  = URL.createObjectURL(blob);
+        var blob       = new Blob([contenu], { type: 'text/html;charset=utf-8' });
+        var reader     = new FileReader();
+        reader.onload  = function(e) {
+            var dataUri = e.target.result;
+            var a       = document.createElement('a');
+            a.href      = dataUri;
+            a.download  = nomFichier;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function() {
+                document.body.removeChild(a);
+            }, 1000);
+        };
+        reader.readAsDataURL(blob);
 
-        // Sur Android, ce lien s'ouvre dans le navigateur
-        // puis l'utilisateur peut imprimer → Enregistrer en PDF
-        var a           = document.createElement('a');
-        a.href          = url;
-        a.download      = nomFichier;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
+        toast('Fichier en cours de telechargement...', 'success');
+        son('success');
 
+        // Instructions après 1.5s
         setTimeout(function() {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 2000);
-
-        // Afficher instructions claires
-        toast('Fichier telecharge ! Voir etapes ci-dessous.', 'success');
-
-        // Message d'instruction détaillé
-        setTimeout(function() {
-            modalTitreEl.textContent = 'Comment obtenir le PDF';
+            modalTitreEl.textContent = 'Correction telechargee !';
             modalTexteEl.innerHTML =
-                '<div style="text-align:left;font-size:14px;line-height:1.8">'
-                + '<p style="font-weight:700;margin-bottom:12px;'
-                + 'color:var(--green)">Fichier telecharge ✅</p>'
-                + '<p style="font-weight:700;margin-bottom:8px">'
-                + 'Pour avoir le PDF :</p>'
-                + '<ol style="padding-left:20px;color:var(--muted);'
-                + 'font-size:13px;">'
-                + '<li style="margin-bottom:8px">Ouvre tes '
-                + '<b>Telechargements</b> dans ton telephone</li>'
-                + '<li style="margin-bottom:8px">Appuie sur le fichier '
-                + '<b>' + nomFichier + '</b></li>'
-                + '<li style="margin-bottom:8px">Il s\'ouvre dans Chrome</li>'
-                + '<li style="margin-bottom:8px">Appuie sur les <b>3 points</b>'
-                + ' en haut a droite</li>'
-                + '<li style="margin-bottom:8px">Choisis <b>Partager</b> ou '
-                + '<b>Imprimer</b></li>'
-                + '<li style="margin-bottom:8px">Dans Imprimer : selectionne '
-                + '<b>Enregistrer en PDF</b></li>'
+                '<div style="text-align:left;font-size:14px;line-height:1.9">'
+                + '<p style="font-weight:700;color:var(--green);'
+                + 'margin-bottom:12px;">Fichier .html telecharge ✅</p>'
+                + '<p style="font-weight:700;margin-bottom:8px;">'
+                + 'Pour obtenir le PDF :</p>'
+                + '<ol style="padding-left:18px;color:var(--muted);'
+                + 'font-size:13px;line-height:2;">'
+                + '<li>Ouvre <b>Mes fichiers</b> → <b>Telechargements</b></li>'
+                + '<li>Appuie sur <b>' + nomFichier + '</b></li>'
+                + '<li>Le fichier s\'ouvre dans Chrome</li>'
+                + '<li>Appuie sur le bouton vert <b>Imprimer</b></li>'
+                + '<li>Selectionne <b>Enregistrer en PDF</b></li>'
+                + '<li>Ton PDF est pret ✅</li>'
                 + '</ol>'
                 + '<div style="background:rgba(34,197,94,0.1);'
                 + 'border:1px solid rgba(34,197,94,0.3);'
-                + 'border-radius:10px;padding:12px;margin-top:12px;'
-                + 'font-size:12px;color:var(--muted)">'
-                + '💡 Si tu as déjà une app PDF installée (Adobe, WPS, '
-                + 'Xodo...), le fichier peut s\'ouvrir directement dedans !'
-                + '</div>'
-                + '</div>';
+                + 'border-radius:10px;padding:10px;margin-top:12px;'
+                + 'font-size:12px;color:var(--muted);">'
+                + '💡 Si tu as Adobe PDF ou WPS, le fichier '
+                + 's\'ouvrira directement dedans !'
+                + '</div></div>';
             modalEl.style.display      = 'flex';
             btnConfirmer.style.display = 'none';
             btnAnnuler.textContent     = 'OK compris !';
@@ -4016,24 +4242,34 @@ function telechargerCorrectionPDF() {
                 btnConfirmer.style.display = '';
                 btnAnnuler.textContent     = 'Annuler';
             };
-        }, 500);
-
-        son('success');
+        }, 1500);
 
     } catch(e) {
-        // Fallback : ouvrir dans nouvelle fenêtre
+        // Méthode 2 : window.open + print
         try {
             var fenetre = window.open('', '_blank');
             if (fenetre) {
                 fenetre.document.write(contenu);
                 fenetre.document.close();
                 setTimeout(function() { fenetre.print(); }, 800);
-                toast('Choisis Enregistrer en PDF', 'success');
+                toast('Appuie sur Imprimer puis Enregistrer en PDF', 'success');
             } else {
-                toast('Autorise les popups dans Chrome', 'error');
+                // Méthode 3 : Ouvrir dans la même page
+                var newTab = document.createElement('iframe');
+                newTab.style.display = 'none';
+                document.body.appendChild(newTab);
+                newTab.contentDocument.write(contenu);
+                newTab.contentDocument.close();
+                setTimeout(function() {
+                    newTab.contentWindow.print();
+                    setTimeout(function() {
+                        document.body.removeChild(newTab);
+                    }, 3000);
+                }, 800);
+                toast('Impression lancee, choisis PDF', 'success');
             }
         } catch(e2) {
-            toast('Erreur telechargement : ' + e2.message, 'error');
+            toast('Erreur : ' + e2.message, 'error');
         }
     }
 }
@@ -4062,57 +4298,109 @@ if (btnRetourMenu) btnRetourMenu.onclick = function() {
 };
 
 // ============================================
-// FIN PARTIE 9 COMPLETE ✅
-// ============================================// ============================================
+// FIN PARTIE 9B COMPLETE ✅// ============================================// ============================================
 // CONCOURS BLANC BONOGO - SCRIPT ORIGINAL
-// PARTIE 10/10 CORRIGÉE
+// PARTIE 10/10 — NOTIFICATIONS CORRIGÉES
+// ============================================
+
+// ============================================
+// NOTIFICATIONS — SYSTÈME COMPLET
+// Fonctionne sur Android Chrome et Median
 // ============================================
 
 function demanderPermissionNotif() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'default') {
+    if (!('Notification' in window)) {
+        console.log('Notifications non supportees');
+        return;
+    }
+
+    if (Notification.permission === 'granted') {
+        console.log('Notifications deja autorisees');
+        return;
+    }
+
+    if (Notification.permission === 'denied') {
+        console.log('Notifications refusees par utilisateur');
+        return;
+    }
+
+    // Demander la permission avec interaction utilisateur
+    setTimeout(function() {
         Notification.requestPermission().then(function(permission) {
+            console.log('Permission notif:', permission);
             if (permission === 'granted') {
                 toast('Notifications activees !', 'success');
+                // Envoyer une notif de test
+                setTimeout(function() {
+                    envoyerNotif(
+                        'Concours Blanc Bonogo',
+                        'Notifications activees ! Tu seras averti avant chaque concours.'
+                    );
+                }, 500);
             }
+        }).catch(function(e) {
+            console.log('Erreur permission notif:', e);
         });
-    }
+    }, 2000);
 }
 
 function envoyerNotif(titre, message) {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
+
     try {
-        new Notification(titre, {
-            body:    message,
-            icon:    'https://em-content.zobj.net/source/microsoft-teams/363/flag-burkina-faso_1f1e7-1f1eb.png',
-            vibrate: [200, 100, 200],
-            tag:     'bonogo-notif'
-        });
-    } catch(e) {}
+        // Méthode 1 : Service Worker (recommandée sur mobile)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(function(reg) {
+                reg.showNotification(titre, {
+                    body:    message,
+                    icon:    './icone.svg',
+                    badge:   './icone.svg',
+                    vibrate: [200, 100, 200],
+                    tag:     'bonogo-' + Date.now(),
+                    requireInteraction: false
+                });
+            }).catch(function(e) {
+                // Fallback Méthode 2
+                new Notification(titre, {
+                    body: message,
+                    icon: './icone.svg',
+                    tag:  'bonogo'
+                });
+            });
+        } else {
+            // Méthode 2 : Notification directe
+            new Notification(titre, {
+                body: message,
+                icon: './icone.svg',
+                tag:  'bonogo'
+            });
+        }
+    } catch(e) {
+        console.log('Erreur notif:', e);
+    }
 }
 
 function notifResultatDisponible(score, total) {
     var pct = Math.round((score / total) * 100);
     envoyerNotif(
         'Ton resultat est disponible !',
-        'Tu as obtenu ' + score + '/' + total + ' (' + pct + '%)'
+        'Score : ' + score + '/' + total + ' (' + pct + '%)'
     );
 }
 
 function notifBadge(emoji, nomBadge) {
     envoyerNotif(
-        emoji + ' Badge obtenu !',
-        'Felicitations ! Tu as debloque : ' + nomBadge
+        emoji + ' Badge debloque !',
+        'Felicitations ! Tu as obtenu : ' + nomBadge
     );
 }
 
-// Timeouts notifications (pour les annuler si nécessaire)
+// Timeouts notifications
 var timeoutNotif5min  = null;
 var timeoutNotifDebut = null;
 
 function surveillerDebutConcours() {
-    // Annuler anciens timeouts
     if (timeoutNotif5min)  clearTimeout(timeoutNotif5min);
     if (timeoutNotifDebut) clearTimeout(timeoutNotifDebut);
 
@@ -4124,11 +4412,11 @@ function surveillerDebutConcours() {
         var debut   = config.debutTimestamp;
         var resteMs = debut - now;
 
-        if (resteMs <= 0) return; // Concours déjà commencé
+        if (resteMs <= 0) return;
 
         // Notif 5 minutes avant
-        var resteAvant5min = resteMs - 300000;
-        if (resteAvant5min > 0) {
+        var avant5min = resteMs - 300000;
+        if (avant5min > 0) {
             timeoutNotif5min = setTimeout(function() {
                 envoyerNotif(
                     'Concours dans 5 minutes !',
@@ -4136,27 +4424,28 @@ function surveillerDebutConcours() {
                 );
                 toast('Concours dans 5 minutes !', 'warning');
                 son('alerte');
-            }, resteAvant5min);
-        } else if (resteMs > 0) {
-            // Moins de 5 min restantes → notif immédiate
-            envoyerNotif(
-                'Concours bientot !',
-                'Le concours commence dans moins de 5 minutes !'
-            );
+            }, avant5min);
         }
 
         // Notif au démarrage exact
-        timeoutNotifDebut = setTimeout(function() {
-            envoyerNotif(
-                'Le concours commence !',
-                'Ouvre l\'application maintenant pour commencer.'
-            );
-            toast('Le concours a commence !', 'success');
-            son('alerte');
-        }, resteMs);
+        if (resteMs > 0) {
+            timeoutNotifDebut = setTimeout(function() {
+                envoyerNotif(
+                    'Le concours commence maintenant !',
+                    'Ouvre Concours Blanc Bonogo et bonne chance !'
+                );
+                toast('Le concours a commence !', 'success');
+                son('alerte');
+            }, resteMs);
+        }
+    }).catch(function(e) {
+        console.log('Erreur surveillance debut:', e);
     });
 }
 
+// ============================================
+// CHARGER MENU
+// ============================================
 function chargerMenu(d) {
     var p = d.prenom || '';
     var n = d.nom    || '';
@@ -4170,6 +4459,9 @@ function chargerMenu(d) {
     surveillerDebutConcours();
 }
 
+// ============================================
+// PRÉSENCE EN LIGNE
+// ============================================
 function startPresence() {
     if (presenceRef) presenceRef.remove();
     presenceRef = db.ref('online/' + user);
@@ -4178,10 +4470,11 @@ function startPresence() {
         ts:  firebase.database.ServerValue.TIMESTAMP
     });
     presenceRef.onDisconnect().remove();
-    demanderPermissionNotif();
 }
 
-// Auto-save
+// ============================================
+// AUTO-SAVE TOUTES LES 30 SECONDES
+// ============================================
 setInterval(async function() {
     if (enExamen && !copieSubmise && user
         && Object.keys(reponsesUser).length > 0) {
@@ -4189,11 +4482,15 @@ setInterval(async function() {
     }
 }, 30000);
 
+// ============================================
+// ÉCOUTE FIREBASE EN TEMPS RÉEL
+// ============================================
 db.ref('configConcours').on('value', function(snap) {
     var config = snap.val();
     if (!config) return;
     if (nomConcoursEl && enExamen) {
-        nomConcoursEl.textContent = config.type || 'Concours Blanc Bonogo';
+        nomConcoursEl.textContent =
+            config.type || 'Concours Blanc Bonogo';
     }
 });
 
@@ -4204,6 +4501,16 @@ db.ref('sujetActuel').on('value', function(snap) {
     }
 });
 
+// ============================================
+// ÉCOUTE RÉSULTATS — NOUVEAU CONCOURS
+// ============================================
+db.ref('resultats').on('child_removed', function() {
+    copieSubmise = false;
+});
+
+// ============================================
+// ÉVÉNEMENTS NAVIGATEUR
+// ============================================
 window.addEventListener('beforeunload', function(e) {
     if (enExamen && !copieSubmise) {
         e.preventDefault();
@@ -4222,17 +4529,1012 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// ============================================
+// SYNCHRONISATION HORS CONNEXION
+// ============================================
+window.addEventListener('online', async function() {
+    toast('Connexion retablie !', 'success');
+
+    // Soumettre résultat en attente
+    var pendingKey = 'bb_pending_result_' + user;
+    var pending    = localStorage.getItem(pendingKey);
+    if (pending) {
+        try {
+            var data = JSON.parse(pending);
+            await db.ref('resultats/' + user).set(data);
+            localStorage.removeItem(pendingKey);
+            toast('Resultat synchronise !', 'success');
+        } catch(e) {
+            console.log('Erreur sync:', e);
+        }
+    }
+});
+
+// ============================================
+// RAFRAÎCHIR DONNÉES UTILISATEUR
+// ============================================
 async function rafraichirUser() {
     if (!user) return;
-    var snap = await db.ref('users/' + user).once('value');
-    if (snap.exists()) {
-        userData = snap.val();
-        chargerMenu(userData);
+    try {
+        var snap = await db.ref('users/' + user).once('value');
+        if (snap.exists()) {
+            userData = snap.val();
+            chargerMenu(userData);
+        }
+    } catch(e) {
+        console.log('Erreur rafraichir user:', e);
     }
 }
 
-console.log('Concours Blanc Bonogo — Script charge');
+// ============================================
+// VÉRIFIER ÉTAT AU DÉMARRAGE
+// ============================================
+async function verifierEtatAuDemarrage() {
+    if (!user) return;
+    try {
+        var pending = localStorage.getItem('bb_pending_result_' + user);
+        if (pending && navigator.onLine) {
+            var data = JSON.parse(pending);
+            await db.ref('resultats/' + user).set(data);
+            localStorage.removeItem('bb_pending_result_' + user);
+        }
+    } catch(e) {}
+}
+
+console.log('Concours Blanc Bonogo — Script charge v2');
 
 // ============================================
-// FIN PARTIE 10 COMPLETE ✅
+// FIN PARTIE 10 COMPLETE ✅// ============================================// ============================================
+// CONCOURS BLANC BONOGO
+// PARTIE 11 — MODE ENTRAÎNEMENT COMPLET
+// SECTION 1/2
 // ============================================
+
+// === CONFIGURATION MATIÈRES ===
+var MATIERES_ENTR = {
+    bepc: [
+        { id:'bepc_maths',    label:'Mathématiques',   emoji:'📐', css:'mat-maths'    },
+        { id:'bepc_francais', label:'Français',         emoji:'✍️', css:'mat-francais' },
+        { id:'bepc_histgeo',  label:'Histoire-Géo',     emoji:'📜', css:'mat-histoire' },
+        { id:'bepc_svt',      label:'SVT',              emoji:'🌿', css:'mat-svt'      },
+        { id:'bepc_pc',       label:'Physique-Chimie',  emoji:'⚡', css:'mat-pc'       },
+        { id:'bepc_cg',       label:'Culture Générale', emoji:'🌐', css:'mat-cg'       },
+        { id:'bepc_actu',     label:'Actualités',       emoji:'📰', css:'mat-actu'     }
+    ],
+    bac: [
+        { id:'bac_maths',    label:'Mathématiques',   emoji:'📐', css:'mat-maths'    },
+        { id:'bac_francais', label:'Français',         emoji:'✍️', css:'mat-francais' },
+        { id:'bac_histoire', label:'Histoire',          emoji:'📜', css:'mat-histoire' },
+        { id:'bac_geo',      label:'Géographie',        emoji:'🌍', css:'mat-geo'      },
+        { id:'bac_svt',      label:'SVT',               emoji:'🌿', css:'mat-svt'      },
+        { id:'bac_pc',       label:'Physique-Chimie',   emoji:'⚡', css:'mat-pc'       },
+        { id:'bac_cg',       label:'Culture Générale',  emoji:'🌐', css:'mat-cg'       },
+        { id:'bac_info',     label:'Schycotech',         emoji:'💻', css:'mat-info'     },
+        { id:'bac_philo',    label:'Philosophie',        emoji:'💭', css:'mat-philo'    },
+        { id:'bac_actu',     label:'Actualités',         emoji:'📰', css:'mat-actu'     }
+    ]
+};
+
+// === VARIABLES ENTRAÎNEMENT ===
+var matiereActuelle   = '';
+var questionsEntr     = [];
+var indexQuestionEntr = 0;
+var scoreEntr         = 0;
+var statsEntrainement = {};
+var sujetsEntrAdmin   = {};
+var ongletActif       = 'bepc';
+
+// ============================================
+// SWITCH ONGLET BEPC / BAC
+// ============================================
+window.switchOngletEntr = function(niveau) {
+    ongletActif = niveau;
+    var ob  = document.getElementById('ongletBepc');
+    var ob2 = document.getElementById('ongletBac');
+    var sb  = document.getElementById('sectBepc');
+    var sb2 = document.getElementById('sectBac');
+
+    if (niveau === 'bepc') {
+        if (ob)  ob.classList.add('active');
+        if (ob2) ob2.classList.remove('active');
+        if (sb)  sb.style.display  = 'block';
+        if (sb2) sb2.style.display = 'none';
+    } else {
+        if (ob2) ob2.classList.add('active');
+        if (ob)  ob.classList.remove('active');
+        if (sb2) sb2.style.display = 'block';
+        if (sb)  sb.style.display  = 'none';
+    }
+};
+
+// ============================================
+// ADMIN — GÉNÉRER QUESTIONS AVEC CLAUDE
+// ============================================
+window.genererQuestionsIA = function(matiere, label, textareaId) {
+    son('click');
+
+    modalTitreEl.textContent = '✨ Générer avec Claude';
+    modalTexteEl.innerHTML =
+        '<p style="margin-bottom:14px;">Combien de questions '
+        + 'pour <b>' + label + '</b> ?</p>'
+        + '<div style="display:flex;flex-direction:column;gap:10px;">'
+        + '<button id="gen10" style="padding:14px;background:'
+        + 'linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:15px;font-weight:700;cursor:pointer;">'
+        + '10 questions</button>'
+        + '<button id="gen20" style="padding:14px;background:'
+        + 'linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:15px;font-weight:700;cursor:pointer;">'
+        + '20 questions</button>'
+        + '<button id="gen30" style="padding:14px;background:'
+        + 'linear-gradient(135deg,#1a6b3c,#22c55e);color:white;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:15px;font-weight:700;cursor:pointer;">'
+        + '30 questions</button>'
+        + '<button id="gen40" style="padding:14px;background:'
+        + 'linear-gradient(135deg,#f97316,#ea580c);color:white;'
+        + 'border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;'
+        + 'font-size:15px;font-weight:700;cursor:pointer;">'
+        + '40 questions</button>'
+        + '</div>';
+
+    modalEl.style.display      = 'flex';
+    btnConfirmer.style.display = 'none';
+    btnAnnuler.textContent     = 'Annuler';
+    btnAnnuler.onclick = function() {
+        modalEl.style.display      = 'none';
+        btnConfirmer.style.display = '';
+        btnAnnuler.textContent     = 'Annuler';
+    };
+
+    setTimeout(function() {
+        [10, 20, 30, 40].forEach(function(nb) {
+            var btn = document.getElementById('gen' + nb);
+            if (btn) btn.onclick = function() {
+                modalEl.style.display      = 'none';
+                btnConfirmer.style.display = '';
+                btnAnnuler.textContent     = 'Annuler';
+                afficherInstructionsGeneration(
+                    matiere, label, nb, textareaId);
+            };
+        });
+    }, 100);
+};
+
+function afficherInstructionsGeneration(
+    matiere, label, nb, textareaId) {
+
+    var prompt =
+        'Génère exactement ' + nb + ' questions QCM '
+        + 'pour les concours et examens burkinabè '
+        + '(ENSOA, IDS, ENAM, ENAREF, BEPC, BAC) '
+        + 'en matière de ' + label + '. '
+        + 'Format JSON strict, tableau de ' + nb + ' objets. '
+        + 'Chaque objet doit avoir EXACTEMENT ces champs:\n'
+        + '{\n'
+        + '  "texte": "La question ici",\n'
+        + '  "reponses": [\n'
+        + '    {"texte": "Réponse A", "correct": true},\n'
+        + '    {"texte": "Réponse B", "correct": false},\n'
+        + '    {"texte": "Réponse C", "correct": false},\n'
+        + '    {"texte": "Réponse D", "correct": false}\n'
+        + '  ],\n'
+        + '  "explication": "Explication courte"\n'
+        + '}\n'
+        + 'IMPORTANT: Exactement 1 seule réponse correcte '
+        + 'par question sauf si plusieurs réponses sont '
+        + 'clairement vraies. '
+        + 'Commence DIRECTEMENT par [ sans aucun texte avant. '
+        + 'Niveau adapté au programme burkinabè.';
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(prompt).catch(function() {});
+    }
+
+    modalTitreEl.textContent = '✨ ' + nb + ' questions — ' + label;
+    modalTexteEl.innerHTML =
+        '<p style="font-size:13px;color:var(--muted);'
+        + 'margin-bottom:14px;line-height:1.7;">'
+        + '1️⃣ Copie ce prompt<br>'
+        + '2️⃣ Colle dans <b>claude.ai</b> et envoie<br>'
+        + '3️⃣ Reviens ici et colle le JSON dans la zone de texte'
+        + '</p>'
+        + '<div style="background:#f8fafc;'
+        + 'border:1.5px solid var(--border);'
+        + 'border-radius:12px;padding:12px;margin-bottom:14px;'
+        + 'font-family:monospace;font-size:10px;'
+        + 'color:var(--text);line-height:1.6;'
+        + 'max-height:110px;overflow-y:auto;">'
+        + prompt.replace(/\n/g, '<br>') + '</div>'
+        + '<button id="btnCopierPrompt"'
+        + ' style="width:100%;padding:14px;'
+        + 'background:linear-gradient(135deg,#8b5cf6,#7c3aed);'
+        + 'color:white;border:none;border-radius:12px;'
+        + 'font-family:Poppins,sans-serif;font-size:14px;'
+        + 'font-weight:700;cursor:pointer;">'
+        + '📋 Copier le prompt</button>';
+
+    modalEl.style.display      = 'flex';
+    btnConfirmer.style.display = 'none';
+    btnAnnuler.textContent     = 'OK, je vais générer';
+
+    btnAnnuler.onclick = function() {
+        modalEl.style.display      = 'none';
+        btnConfirmer.style.display = '';
+        btnAnnuler.textContent     = 'Annuler';
+        var ta   = document.getElementById(textareaId);
+        var btnC = document.getElementById(
+            'btnChargerColle_' + matiere);
+        if (ta) {
+            ta.style.display = 'block';
+            ta.placeholder   = 'Colle ici les '
+                + nb + ' questions JSON générées...';
+            ta.focus();
+        }
+        if (btnC) btnC.style.display = 'block';
+    };
+
+    setTimeout(function() {
+        var btnCp = document.getElementById('btnCopierPrompt');
+        if (btnCp) btnCp.onclick = function() {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(prompt)
+                    .then(function() {
+                        toast('Prompt copié !', 'success');
+                    });
+            }
+        };
+    }, 100);
+}
+
+// ============================================
+// ADMIN — CHARGER DEPUIS TEXTAREA COLLÉ
+// ============================================
+window.chargerDepuisColle = function(
+    matiere, textareaId, infoId) {
+    son('click');
+    var ta     = document.getElementById(textareaId);
+    var infoEl = document.getElementById(infoId);
+    if (!ta || !ta.value.trim()) {
+        toast('Colle le JSON généré d\'abord', 'error');
+        return;
+    }
+
+    try {
+        var texte = ta.value.trim()
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,' ')
+            .replace(/,\s*\]/g,']')
+            .replace(/,\s*\}/g,'}');
+        if (!texte.startsWith('[')) texte = '[' + texte;
+        if (!texte.endsWith(']')) {
+            var last = texte.lastIndexOf('}');
+            if (last !== -1)
+                texte = texte.substring(0, last+1) + ']';
+        }
+        var data = JSON.parse(texte);
+        if (!Array.isArray(data) || data.length === 0) {
+            toast('JSON invalide', 'error'); return;
+        }
+        sujetsEntrAdmin[matiere] = data.map(function(q, i) {
+            var reps = [];
+            if (q.reponses && Array.isArray(q.reponses)) {
+                reps = q.reponses.map(function(r) {
+                    if (typeof r === 'string')
+                        return { texte: r, correct: false };
+                    return {
+                        texte:   r.texte   || '',
+                        correct: r.correct || false
+                    };
+                });
+            }
+            while (reps.length < 4)
+                reps.push({ texte: '', correct: false });
+            return {
+                texte:       q.texte || q.question || ('Q'+(i+1)),
+                reponses:    reps.slice(0, 4),
+                explication: q.explication || ''
+            };
+        });
+        if (infoEl) {
+            infoEl.textContent = '✅ '
+                + sujetsEntrAdmin[matiere].length
+                + ' questions chargées !';
+            infoEl.style.color = 'var(--primary)';
+        }
+        toast(sujetsEntrAdmin[matiere].length
+            + ' questions chargées !', 'success');
+        son('success');
+    } catch(e) {
+        toast('Erreur JSON : ' + e.message, 'error');
+    }
+};
+
+// ============================================
+// ADMIN — CHARGER DEPUIS FICHIER JSON
+// ============================================
+window.chargerSujetEntr = function(
+    matiere, fileInputId, infoId) {
+    var fileInput = document.getElementById(fileInputId);
+    var infoEl    = document.getElementById(infoId);
+    if (!fileInput || !fileInput.files[0]) {
+        toast('Choisis un fichier .json d\'abord', 'error');
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var texte = e.target.result
+                .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,' ')
+                .replace(/,\s*\]/g,']')
+                .replace(/,\s*\}/g,'}')
+                .trim();
+            if (!texte.startsWith('[')) texte = '[' + texte;
+            if (!texte.endsWith(']')) {
+                var last = texte.lastIndexOf('}');
+                if (last !== -1)
+                    texte = texte.substring(0, last+1) + ']';
+            }
+            var data = JSON.parse(texte);
+            if (!Array.isArray(data) || data.length === 0) {
+                toast('Fichier invalide', 'error'); return;
+            }
+            sujetsEntrAdmin[matiere] = data.map(function(q, i) {
+                var reps = [];
+                if (q.reponses && Array.isArray(q.reponses)) {
+                    reps = q.reponses.map(function(r) {
+                        if (typeof r === 'string')
+                            return { texte: r, correct: false };
+                        return {
+                            texte:   r.texte   || '',
+                            correct: r.correct || false
+                        };
+                    });
+                }
+                while (reps.length < 4)
+                    reps.push({ texte: '', correct: false });
+                return {
+                    texte:       q.texte || q.question || ('Q'+(i+1)),
+                    reponses:    reps.slice(0, 4),
+                    explication: q.explication || ''
+                };
+            });
+            if (infoEl) {
+                infoEl.textContent = '✅ '
+                    + data.length + ' questions chargées';
+                infoEl.style.color = 'var(--primary)';
+            }
+            toast(data.length + ' questions chargées !', 'success');
+            son('success');
+        } catch(err) {
+            toast('Erreur : ' + err.message, 'error');
+            if (infoEl) {
+                infoEl.textContent = '❌ Erreur lecture';
+                infoEl.style.color = 'var(--red)';
+            }
+        }
+    };
+    reader.readAsText(fileInput.files[0], 'UTF-8');
+};
+
+// ============================================
+// ADMIN — ENVOYER SUJET FIREBASE
+// ============================================
+window.envoyerSujetEntr = async function(matiere, infoId) {
+    var infoEl = document.getElementById(infoId);
+    if (!sujetsEntrAdmin[matiere]
+        || sujetsEntrAdmin[matiere].length === 0) {
+        toast('Charge les questions d\'abord !', 'error');
+        return;
+    }
+    try {
+        await db.ref('sujetsEntrainement/' + matiere)
+            .set(sujetsEntrAdmin[matiere]);
+        await db.ref('sujetsEntrVersion/' + matiere)
+            .set(Date.now());
+        toast('Envoyé aux élèves !', 'success');
+        son('success');
+        if (infoEl) {
+            infoEl.textContent = '🚀 Envoyé !';
+            infoEl.style.color = 'var(--primary)';
+        }
+    } catch(e) {
+        toast('Erreur envoi : ' + e.message, 'error');
+    }
+};
+
+// ============================================
+// CANDIDAT — AFFICHER PAGE ENTRAÎNEMENT
+// ============================================
+async function afficherPageEntrainement() {
+    showPage(document.getElementById('page-entrainement'));
+
+    // Réinitialiser onglets
+    ongletActif = 'bepc';
+    var ob  = document.getElementById('ongletBepc');
+    var ob2 = document.getElementById('ongletBac');
+    var sb  = document.getElementById('sectBepc');
+    var sb2 = document.getElementById('sectBac');
+    if (ob)  ob.classList.add('active');
+    if (ob2) ob2.classList.remove('active');
+    if (sb)  sb.style.display  = 'block';
+    if (sb2) sb2.style.display = 'none';
+
+    // Charger stats
+    try {
+        var snap = await db.ref('entrainement/' + user)
+            .once('value');
+        statsEntrainement = snap.val() || {};
+    } catch(e) { statsEntrainement = {}; }
+
+    // Score global
+    var totalBon = 0, totalAll = 0;
+    Object.keys(statsEntrainement).forEach(function(k) {
+        var s = statsEntrainement[k];
+        if (s && s.total > 0) {
+            totalBon += s.bon;
+            totalAll += s.total;
+        }
+    });
+    var pctGlobal = totalAll > 0
+        ? Math.round((totalBon/totalAll)*100) : 0;
+    var sGEl = document.getElementById('entrScoreGlobal');
+    var pGEl = document.getElementById('entrProgressGlobal');
+    if (sGEl) sGEl.textContent = pctGlobal + '%';
+    if (pGEl) pGEl.style.width = pctGlobal + '%';
+
+    // Charger matières depuis Firebase
+    try {
+        var snapMat  = await db.ref('sujetsEntrainement')
+            .once('value');
+        var matDispos = snapMat.val() || {};
+        var snapVer  = await db.ref('sujetsEntrVersion')
+            .once('value');
+        var versions  = snapVer.val() || {};
+
+        chargerGrilleNiveau('bepc', matDispos, versions);
+        chargerGrilleNiveau('bac',  matDispos, versions);
+
+    } catch(e) {
+        var gB = document.getElementById('grilleBepc');
+        var gBa = document.getElementById('grilleBac');
+        var msg = '<div style="grid-column:1/-1;'
+            + 'text-align:center;padding:30px;'
+            + 'color:var(--red);">'
+            + 'Erreur. Vérifie ta connexion.</div>';
+        if (gB)  gB.innerHTML  = msg;
+        if (gBa) gBa.innerHTML = msg;
+    }
+}
+
+// ============================================
+// CHARGER GRILLE D'UN NIVEAU
+// ============================================
+function chargerGrilleNiveau(niveau, matDispos, versions) {
+    var grille = document.getElementById(
+        niveau === 'bepc' ? 'grilleBepc' : 'grilleBac');
+    if (!grille) return;
+    grille.innerHTML = '';
+
+    var liste  = MATIERES_ENTR[niveau];
+    var aucune = true;
+
+    liste.forEach(function(mat) {
+        var qRaw = matDispos[mat.id];
+        var nb   = qRaw
+            ? (Array.isArray(qRaw)
+                ? qRaw.length
+                : Object.keys(qRaw).length)
+            : 0;
+        if (nb === 0) return;
+        aucune = false;
+
+        var stats = statsEntrainement[mat.id]
+            || { bon:0, total:0, indexActuel:0 };
+        var pct = stats.total > 0
+            ? Math.round((stats.bon/stats.total)*100) : 0;
+        var pctColor = pct >= 70 ? 'var(--primary)'
+            : pct >= 40 ? 'var(--orange)' : 'var(--red)';
+        var vSrv    = versions[mat.id] || 0;
+        var vLoc    = stats.version    || 0;
+        var nouveau = vSrv > vLoc;
+        var idx     = stats.indexActuel || 0;
+        var termine = idx >= nb && !nouveau;
+
+        var badge = '';
+        if (nouveau) {
+            badge =
+                '<span style="position:absolute;top:10px;'
+                + 'right:10px;background:rgba(249,115,22,0.15);'
+                + 'border:1px solid rgba(249,115,22,0.4);'
+                + 'border-radius:20px;padding:3px 8px;'
+                + 'font-size:10px;font-weight:800;'
+                + 'color:var(--orange);">🆕 Nouveau</span>';
+        } else if (termine) {
+            badge =
+                '<span style="position:absolute;top:10px;'
+                + 'right:10px;background:rgba(26,107,60,0.1);'
+                + 'border:1px solid rgba(26,107,60,0.3);'
+                + 'border-radius:20px;padding:3px 8px;'
+                + 'font-size:10px;font-weight:800;'
+                + 'color:var(--primary);">✅ Terminé</span>';
+        } else if (idx > 0) {
+            badge =
+                '<span style="position:absolute;top:10px;'
+                + 'right:10px;background:rgba(59,130,246,0.1);'
+                + 'border:1px solid rgba(59,130,246,0.3);'
+                + 'border-radius:20px;padding:3px 8px;'
+                + 'font-size:10px;font-weight:800;'
+                + 'color:var(--blue);">▶ Continuer</span>';
+        }
+
+        var card = document.createElement('button');
+        card.className = 'matiere-card ' + mat.css;
+        card.innerHTML = badge
+            + '<span class="matiere-emoji">'
+            + mat.emoji + '</span>'
+            + '<span class="matiere-nom">'
+            + mat.label + '</span>'
+            + '<span class="matiere-nb">'
+            + (termine
+                ? '✅ Toutes faites'
+                : idx > 0
+                    ? (idx + '/' + nb + ' faites')
+                    : (nb + ' question' + (nb>1?'s':'')))
+            + '</span>'
+            + (stats.total > 0
+                ? '<span class="matiere-score-pct" style="color:'
+                + pctColor + ';top:auto;bottom:12px;">'
+        + pct + '%</span>'
+                : '')
+            + '<div class="matiere-score-bar">'
+            + '<div class="matiere-score-fill" style="width:'
+            + (stats.total > 0 ? pct : 0)
+            + '%;background:' + pctColor + '"></div></div>';
+
+        card.onclick = function() {
+            son('click');
+            var questions = Array.isArray(qRaw)
+                ? qRaw : Object.values(qRaw);
+            if (termine) {
+                afficherModalFinMatiere(mat, questions, vSrv);
+            } else {
+                lancerQuizMatiere(mat, questions, idx, vSrv);
+            }
+        };
+        grille.appendChild(card);
+    });
+
+    if (aucune) {
+        grille.innerHTML =
+            '<div style="grid-column:1/-1;text-align:center;'
+            + 'padding:30px 20px;">'
+            + '<div style="font-size:40px;margin-bottom:10px;">'
+            + '📚</div>'
+            + '<p style="font-weight:700;color:var(--text);'
+            + 'margin-bottom:6px;">Aucun sujet disponible</p>'
+            + '<p style="color:var(--muted);font-size:12px;">'
+            + 'L\'admin doit charger les questions.</p>'
+            + '</div>';
+    }
+}
+
+// ============================================
+// MODAL FIN MATIÈRE
+// ============================================
+function afficherModalFinMatiere(mat, questions, versionServeur) {
+    modalTitreEl.textContent = '✅ ' + mat.label + ' terminé !';
+    modalTexteEl.innerHTML =
+        '<div style="text-align:center;">'
+        + '<div style="font-size:48px;margin-bottom:10px;">🎉</div>'
+        + '<p style="font-weight:700;color:var(--text);'
+        + 'margin-bottom:6px;">'
+        + 'Tu as fait toutes les questions !</p>'
+        + '<p style="color:var(--muted);font-size:13px;'
+        + 'line-height:1.6;margin-bottom:14px;">'
+        + 'L\'admin va bientôt charger de nouveaux sujets.<br>'
+        + 'En attendant tu peux recommencer à zéro.</p>'
+        + '<div style="background:rgba(26,107,60,0.06);'
+        + 'border:1px solid rgba(26,107,60,0.2);'
+        + 'border-radius:12px;padding:12px;font-size:12px;'
+        + 'color:var(--primary);font-weight:600;">'
+        + '⏳ De nouvelles questions arrivent bientôt !'
+        + '</div></div>';
+
+    modalEl.style.display      = 'flex';
+    btnAnnuler.textContent     = '← Retour';
+    btnConfirmer.style.display = 'block';
+    btnConfirmer.textContent   = '🔄 Recommencer à zéro';
+    btnConfirmer.style.background =
+        'linear-gradient(135deg,#f97316,#ea580c)';
+
+    btnConfirmer.onclick = async function() {
+        modalEl.style.display           = 'none';
+        btnConfirmer.textContent        = 'Confirmer';
+        btnConfirmer.style.background   = '';
+
+        if (user) {
+            try {
+                await db.ref('entrainement/' + user
+                    + '/' + mat.id).update({
+                    indexActuel: 0,
+                    bon:         0,
+                    total:       0,
+                    version:     versionServeur
+                });
+                statsEntrainement[mat.id] = {
+                    bon: 0, total: 0, indexActuel: 0,
+                    version: versionServeur
+                };
+            } catch(e) {}
+        }
+        lancerQuizMatiere(mat, questions, 0, versionServeur);
+    };
+
+    btnAnnuler.onclick = function() {
+        modalEl.style.display           = 'none';
+        btnConfirmer.textContent        = 'Confirmer';
+        btnConfirmer.style.background   = '';
+        btnAnnuler.textContent          = 'Annuler';
+    };
+}
+
+// ============================================
+// FIN SECTION 1/2
+// ============================================// ============================================
+// CONCOURS BLANC BONOGO
+// PARTIE 11B — QUIZ ENTRAÎNEMENT
+// SONS DIFFÉRENTS + SCHYCOTECH BEPC
+// ============================================
+
+// ============================================
+// LANCER QUIZ PAR MATIÈRE
+// ============================================
+function lancerQuizMatiere(mat, questionsRaw,
+    startIndex, versionServeur) {
+    matiereActuelle   = mat.id;
+
+    var qArray = Array.isArray(questionsRaw)
+        ? questionsRaw
+        : Object.values(questionsRaw);
+
+    questionsEntr     = qArray;
+    indexQuestionEntr = startIndex || 0;
+    scoreEntr         = 0;
+
+    if (user && versionServeur) {
+        db.ref('entrainement/' + user + '/' + mat.id)
+            .update({ version: versionServeur })
+            .catch(function() {});
+    }
+
+    var nomEl = document.getElementById('quizMatiereNom');
+    if (nomEl) nomEl.textContent = mat.emoji + ' ' + mat.label;
+
+    showPage(document.getElementById('page-quiz-entr'));
+    afficherQuestionEntr();
+}
+
+// ============================================
+// AFFICHER UNE QUESTION
+// ============================================
+function afficherQuestionEntr() {
+    var total = questionsEntr.length;
+    var idx   = indexQuestionEntr;
+    var q     = questionsEntr[idx];
+    if (!q) { terminerQuizEntr(); return; }
+
+    var pct = Math.round((idx / total) * 100);
+
+    var fillEl       = document.getElementById('quizProgressFill');
+    var txtEl        = document.getElementById('quizProgressTxt');
+    var numEl        = document.getElementById('quizQNum');
+    var texteEl      = document.getElementById('quizQTexte');
+    var feedbackEl   = document.getElementById('quizFeedback');
+    var reponsesEl   = document.getElementById('quizReponses');
+    var scoreBadgeEl = document.getElementById('quizScoreBadge');
+
+    if (fillEl)       fillEl.style.width        = pct + '%';
+    if (txtEl)        txtEl.textContent          =
+        'Q' + (idx+1) + '/' + total;
+    if (numEl)        numEl.textContent          =
+        'Question ' + (idx+1);
+    if (texteEl)      texteEl.textContent        = q.texte || '';
+    if (feedbackEl)   feedbackEl.style.display   = 'none';
+    if (scoreBadgeEl) scoreBadgeEl.textContent   = scoreEntr + ' ✅';
+
+    if (!reponsesEl) return;
+    reponsesEl.innerHTML = '';
+
+    (q.reponses || []).forEach(function(r, ri) {
+        if (!r.texte) return;
+        var btn = document.createElement('button');
+        btn.className = 'quiz-rep-btn';
+        btn.innerHTML =
+            '<span class="quiz-rep-lettre">'
+            + 'ABCD'[ri] + '</span>'
+            + '<span>' + (r.texte || '') + '</span>';
+        btn.onclick = function() {
+            validerReponseEntr(ri, q);
+        };
+        reponsesEl.appendChild(btn);
+    });
+
+    var card = document.getElementById('quizQuestionCard');
+    if (card) {
+        card.style.animation = 'none';
+        card.offsetHeight;
+        card.style.animation = 'fadeUp 0.3s ease';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================
+// VALIDER UNE RÉPONSE — SONS ENTRAÎNEMENT
+// ============================================
+function validerReponseEntr(riChoisi, q) {
+    son('click');
+
+    var bonnesReponses = [];
+    (q.reponses || []).forEach(function(r, ri) {
+        if (r.correct) bonnesReponses.push(ri);
+    });
+
+    var estBonne = bonnesReponses.indexOf(riChoisi) !== -1;
+
+    var btns = document.querySelectorAll('.quiz-rep-btn');
+    btns.forEach(function(btn, ri) {
+        btn.disabled = true;
+        if (ri === riChoisi && estBonne) {
+            btn.classList.add('correct');
+        } else if (ri === riChoisi && !estBonne) {
+            btn.classList.add('incorrect');
+        } else if (bonnesReponses.indexOf(ri) !== -1) {
+            btn.classList.add('manquee');
+        }
+    });
+
+    // SON DIFFÉRENT POUR ENTRAÎNEMENT
+    if (estBonne) {
+        scoreEntr++;
+        son('entr_success'); // Son doux entraînement
+    } else {
+        son('entr_error');   // Son discret entraînement
+    }
+
+    var feedbackEl   = document.getElementById('quizFeedback');
+    var feedIco      = document.getElementById('quizFeedbackIco');
+    var feedTxt      = document.getElementById('quizFeedbackTxt');
+    var feedExpl     = document.getElementById('quizExplication');
+    var scoreBadgeEl = document.getElementById('quizScoreBadge');
+
+    if (scoreBadgeEl) scoreBadgeEl.textContent = scoreEntr + ' ✅';
+
+    if (feedIco) feedIco.textContent = estBonne ? '✅' : '❌';
+    if (feedTxt) {
+        feedTxt.textContent = estBonne
+            ? 'Bonne réponse !'
+            : 'Mauvaise réponse !';
+        feedTxt.style.color = estBonne
+            ? 'var(--primary)' : 'var(--red)';
+    }
+    if (feedExpl) {
+        feedExpl.textContent = q.explication
+            || 'Consulte ton cours pour cette réponse.';
+    }
+    if (feedbackEl) feedbackEl.style.display = 'block';
+
+    // Sauvegarder progression
+    indexQuestionEntr++;
+    if (user) {
+        var ancien = statsEntrainement[matiereActuelle]
+            || { bon: 0, total: 0 };
+        var update = {
+            bon:         ancien.bon + (estBonne ? 1 : 0),
+            total:       ancien.total + 1,
+            indexActuel: indexQuestionEntr,
+            lastDate:    Date.now()
+        };
+        statsEntrainement[matiereActuelle] = update;
+        db.ref('entrainement/' + user + '/' + matiereActuelle)
+            .update(update)
+            .catch(function() {});
+    }
+
+    setTimeout(function() {
+        if (feedbackEl) {
+            feedbackEl.scrollIntoView({
+                behavior: 'smooth', block: 'nearest'
+            });
+        }
+    }, 100);
+}
+
+// === BOUTON QUESTION SUIVANTE ===
+var btnQuizSuivant = document.getElementById('btnQuizSuivant');
+if (btnQuizSuivant) {
+    btnQuizSuivant.onclick = function() {
+        son('click');
+        if (indexQuestionEntr >= questionsEntr.length) {
+            terminerQuizEntr();
+        } else {
+            afficherQuestionEntr();
+        }
+    };
+}
+// ============================================
+// TERMINER LE QUIZ
+// ============================================
+async function terminerQuizEntr() {
+    var stats = statsEntrainement[matiereActuelle]
+        || { bon: 0, total: 0 };
+    var bon   = stats.bon   || scoreEntr;
+    var total = stats.total || questionsEntr.length;
+    var faux  = total - bon;
+    var pct   = total > 0
+        ? Math.round((bon / total) * 100) : 0;
+    var xpGain = scoreEntr * 2;
+
+    if (xpGain > 0 && user) {
+        try {
+            var xpActuel = userData.xp || 0;
+            var newXp    = xpActuel + xpGain;
+            var newNiv   = Math.floor(newXp / 100) + 1;
+            await db.ref('users/' + user).update({
+                xp: newXp, niveau: newNiv
+            });
+            userData.xp     = newXp;
+            userData.niveau = newNiv;
+        } catch(e) {}
+    }
+
+    var matConfig = null;
+    ['bepc', 'bac'].forEach(function(niv) {
+        MATIERES_ENTR[niv].forEach(function(m) {
+            if (m.id === matiereActuelle) matConfig = m;
+        });
+    });
+    if (!matConfig) matConfig = {
+        label: matiereActuelle, emoji: '📝'
+    };
+
+    var emoji   = pct >= 80 ? '🎉'
+                : pct >= 60 ? '👍'
+                : pct >= 40 ? '💪' : '📚';
+    var mention = pct >= 80 ? 'Excellent !'
+                : pct >= 60 ? 'Bien !'
+                : pct >= 40 ? 'À améliorer'
+                : 'Continue tes efforts !';
+    var mColor  = pct >= 80 ? 'var(--primary)'
+                : pct >= 60 ? '#ca8a04'
+                : pct >= 40 ? 'var(--orange)'
+                : 'var(--red)';
+    var conseil = pct >= 80
+        ? '🌟 Excellent ! Tu maîtrises bien '
+        + matConfig.label + '. Continue !'
+        : pct >= 60
+        ? '👍 Bon niveau ! Revois les questions ratées.'
+        : pct >= 40
+        ? '💪 Tu progresses. Relis tes cours et recommence !'
+        : '📚 Cette matière nécessite du travail. '
+        + 'Lis les explications et recommence !';
+
+    var emojiEl   = document.getElementById('entrResultatEmoji');
+    var titreEl   = document.getElementById('entrResultatTitre');
+    var scoreEl2  = document.getElementById('entrScoreFinal');
+    var pctEl     = document.getElementById('entrPctFinal');
+    var mentionEl = document.getElementById('entrMention');
+    var bonEl     = document.getElementById('entrNbBon');
+    var fauxEl    = document.getElementById('entrNbFaux');
+    var xpEl2     = document.getElementById('entrXpGagne');
+    var conseilEl = document.getElementById('entrConseil');
+
+    if (emojiEl)   emojiEl.textContent   = emoji;
+    if (titreEl)   titreEl.textContent   = matConfig.label;
+    if (scoreEl2)  scoreEl2.textContent  = bon + '/' + total;
+    if (pctEl)     pctEl.textContent     = pct + '%';
+    if (mentionEl) {
+        mentionEl.textContent        = mention;
+        mentionEl.style.background   = mColor + '18';
+        mentionEl.style.color        = mColor;
+    }
+    if (bonEl)     bonEl.textContent     = bon;
+    if (fauxEl)    fauxEl.textContent    = faux;
+    if (xpEl2)     xpEl2.textContent     = '+' + xpGain;
+    if (conseilEl) conseilEl.textContent = conseil;
+
+    showPage(document.getElementById('page-resultat-entr'));
+    son('entr_fin'); // Fanfare douce fin de matière
+}
+
+// ============================================
+// NAVIGATION ENTRAÎNEMENT
+// ============================================
+var btnRetourMenuEntr =
+    document.getElementById('btnRetourMenuEntr');
+if (btnRetourMenuEntr) {
+    btnRetourMenuEntr.onclick = function() {
+        son('click'); chargerMenu(userData);
+    };
+}
+
+var btnQuitterQuiz =
+    document.getElementById('btnQuitterQuiz');
+if (btnQuitterQuiz) {
+    btnQuitterQuiz.onclick = function() {
+        son('click');
+        modalTitreEl.textContent = 'Quitter le quiz ?';
+        modalTexteEl.innerHTML   =
+            '<p style="color:var(--muted);">'
+            + 'Ta progression est sauvegardée.<br>'
+            + 'Tu pourras continuer plus tard.</p>';
+        modalEl.style.display    = 'flex';
+        btnConfirmer.onclick = function() {
+            modalEl.style.display = 'none';
+            afficherPageEntrainement();
+        };
+        btnAnnuler.onclick = function() {
+            modalEl.style.display = 'none';
+        };
+    };
+}
+
+var btnRecommencer =
+    document.getElementById('btnRecommencer');
+if (btnRecommencer) {
+    btnRecommencer.onclick = async function() {
+        son('click');
+        var mat = null;
+        ['bepc', 'bac'].forEach(function(niv) {
+            MATIERES_ENTR[niv].forEach(function(m) {
+                if (m.id === matiereActuelle) mat = m;
+            });
+        });
+        if (!mat) return;
+        if (user) {
+            try {
+                await db.ref('entrainement/' + user
+                    + '/' + matiereActuelle).update({
+                    indexActuel: 0, bon: 0, total: 0
+                });
+                statsEntrainement[matiereActuelle] = {
+                    bon: 0, total: 0, indexActuel: 0
+                };
+            } catch(e) {}
+        }
+        try {
+            var snap = await db.ref('sujetsEntrainement/'
+                + matiereActuelle).once('value');
+            var data = snap.val();
+            if (data) lancerQuizMatiere(mat, data, 0, 0);
+        } catch(e) {
+            toast('Erreur chargement', 'error');
+        }
+    };
+}
+
+var btnAutreMatiere =
+    document.getElementById('btnAutreMatiere');
+if (btnAutreMatiere) {
+    btnAutreMatiere.onclick = function() {
+        son('click'); afficherPageEntrainement();
+    };
+}
+
+var btnRetourMenuEntrRes =
+    document.getElementById('btnRetourMenuEntrRes');
+if (btnRetourMenuEntrRes) {
+    btnRetourMenuEntrRes.onclick = function() {
+        son('click'); chargerMenu(userData);
+    };
+}
+
+// ============================================
+// FIN PARTIE 11B COMPLÈTE ✅
+// ============================================
+    
