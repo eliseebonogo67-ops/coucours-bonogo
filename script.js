@@ -1798,10 +1798,11 @@ function carteStatHTML(emoji, valeur, label) {
 // FIN PARTIE 6 — SECTION 1/2 ✅
 // ============================================// ============================================
 // PARTIE 6/18 — SECTION 2/2
-// STATS + CLASSEMENT + BADGES + TOP10
+// STATS + BADGES + CLASSEMENT + TOP10
 // ============================================
 
 async function afficherStats() {
+    showPage(pageStats);
     var contenu =
         document.getElementById('contenuStats');
     if (!contenu) return;
@@ -1896,6 +1897,7 @@ async function afficherStats() {
         }).length;
 
         var html =
+            // CARTE RANG
             '<div style="background:linear-gradient('
             + '135deg,#1a6b3c,#22c55e);'
             + 'border-radius:20px;padding:24px;'
@@ -1913,6 +1915,7 @@ async function afficherStats() {
             + xpTotal + ' XP au total</div>'
             + '</div>'
 
+            // GRILLE 6 STATS
             + '<div style="display:grid;'
             + 'grid-template-columns:1fr 1fr;'
             + 'gap:12px;margin-bottom:16px;">'
@@ -1932,6 +1935,7 @@ async function afficherStats() {
                 'PLUS BAS SCORE')
             + '</div>'
 
+            // BARRE NIVEAU
             + '<div style="background:white;'
             + 'border-radius:16px;padding:16px;'
             + 'margin-bottom:12px;'
@@ -1956,6 +1960,7 @@ async function afficherStats() {
             + pctNiv + '%;"></div>'
             + '</div></div>'
 
+            // BARRE MOYENNE
             + '<div style="background:white;'
             + 'border-radius:16px;padding:16px;'
             + 'margin-bottom:12px;'
@@ -1989,6 +1994,7 @@ async function afficherStats() {
             + 'width:' + moyPct + '%;"></div>'
             + '</div></div>'
 
+            // BARRE ENTRAÎNEMENT
             + (totalEntrAll > 0
                 ? '<div style="background:white;'
                 + 'border-radius:16px;padding:16px;'
@@ -2026,6 +2032,7 @@ async function afficherStats() {
                 + '</div></div>'
                 : '')
 
+            // STREAK
             + '<div style="background:white;'
             + 'border-radius:16px;padding:20px;'
             + 'text-align:center;'
@@ -2055,65 +2062,134 @@ async function afficherStats() {
     }
 }
 
-// === BADGES HTML ===
-function afficherBadgesHTML(badgesObtenu) {
-    var html =
-        '<div style="display:grid;'
-        + 'grid-template-columns:'
-        + 'repeat(auto-fill,minmax(80px,1fr));'
-        + 'gap:12px;margin-top:8px;">';
-    BADGES_LIST.forEach(function(b) {
-        var obtenu = badgesObtenu[b.id] === true;
-        html +=
-            '<div style="text-align:center;'
-            + 'padding:12px 8px;'
-            + 'border-radius:14px;background:'
-            + (obtenu
-                ? 'rgba(26,107,60,0.1)'
-                : '#f8fafc')
-            + ';border:1.5px solid '
-            + (obtenu
-                ? 'rgba(26,107,60,0.3)'
-                : 'var(--border)')
-            + ';opacity:'
-            + (obtenu ? '1' : '0.4') + ';">'
-            + '<div style="font-size:28px;'
-            + 'margin-bottom:4px;">'
-            + b.emoji + '</div>'
-            + '<div style="font-size:10px;'
-            + 'font-weight:700;'
-            + 'color:var(--text);'
-            + 'line-height:1.3;">'
-            + b.nom + '</div></div>';
-    });
-    html += '</div>';
-    return html;
-}
-
-if (btnBadges) {
-    btnBadges.onclick = function() {
-        son('click');
-        afficherStats();
-        showPage(pageStats);
-    };
-}
-
-if (btnClassement) {
-    btnClassement.onclick = function() {
-        son('click');
-        afficherClassement();
-        showPage(pageStats);
-    };
-}
-
-async function afficherClassement() {
+// === AFFICHER BADGES (PAGE SÉPARÉE) ===
+async function afficherBadgesPage() {
+    showPage(pageStats);
     var contenu =
         document.getElementById('contenuStats');
     if (!contenu) return;
     contenu.innerHTML =
         '<div class="loading-box">'
         + '<div class="loader"></div>'
-        + '<p>Chargement...</p></div>';
+        + '<p>Chargement badges...</p></div>';
+
+    try {
+        var snap = await db.ref(
+            'users/' + user).once('value');
+        var d = snap.val() || {};
+        var badges = d.badges || {};
+
+        var nbObtenu = Object.values(badges)
+            .filter(function(v) {
+            return v === true;
+        }).length;
+
+        var html =
+            // TITRE
+            '<div style="display:flex;'
+            + 'align-items:center;gap:10px;'
+            + 'margin-bottom:20px;">'
+            + '<button id="btnRetourMenuBadges"'
+            + ' class="btn-back">←</button>'
+            + '<h2 style="margin:0;">'
+            + '🏆 Mes Badges</h2></div>'
+
+            // COMPTEUR
+            + '<div style="background:linear-gradient('
+            + '135deg,#1a6b3c,#22c55e);'
+            + 'border-radius:16px;padding:18px;'
+            + 'text-align:center;'
+            + 'margin-bottom:20px;">'
+            + '<div style="font-size:36px;'
+            + 'margin-bottom:6px;">🏆</div>'
+            + '<div style="font-size:28px;'
+            + 'font-weight:900;color:white;">'
+            + nbObtenu + '/'
+            + BADGES_LIST.length + '</div>'
+            + '<div style="font-size:13px;'
+            + 'color:rgba(255,255,255,0.8);">'
+            + 'badges débloqués</div>'
+            + '</div>'
+
+            // GRILLE BADGES
+            + '<div style="display:grid;'
+            + 'grid-template-columns:'
+            + 'repeat(auto-fill,minmax(100px,1fr));'
+            + 'gap:14px;">';
+
+        BADGES_LIST.forEach(function(b) {
+            var obtenu = badges[b.id] === true;
+            html +=
+                '<div style="text-align:center;'
+                + 'padding:16px 10px;'
+                + 'border-radius:16px;'
+                + 'background:'
+                + (obtenu
+                    ? 'rgba(26,107,60,0.08)'
+                    : '#f8fafc')
+                + ';border:2px solid '
+                + (obtenu
+                    ? 'rgba(26,107,60,0.3)'
+                    : '#e2e8f0')
+                + ';opacity:'
+                + (obtenu ? '1' : '0.45')
+                + ';position:relative;">'
+
+                + (obtenu
+                    ? '<div style="position:absolute;'
+                    + 'top:6px;right:6px;'
+                    + 'font-size:10px;">✅</div>'
+                    : '')
+
+                + '<div style="font-size:36px;'
+                + 'margin-bottom:8px;">'
+                + b.emoji + '</div>'
+
+                + '<div style="font-size:11px;'
+                + 'font-weight:800;'
+                + 'color:var(--text);'
+                + 'line-height:1.3;'
+                + 'margin-bottom:4px;">'
+                + b.nom + '</div>'
+
+                + '<div style="font-size:10px;'
+                + 'color:var(--muted);'
+                + 'line-height:1.4;">'
+                + b.desc + '</div>'
+
+                + '</div>';
+        });
+
+        html += '</div>';
+        contenu.innerHTML = html;
+
+        var btnRB = document.getElementById(
+            'btnRetourMenuBadges');
+        if (btnRB) {
+            btnRB.onclick = function() {
+                son('click');
+                showPage(pageMenu);
+            };
+        }
+
+    } catch(e) {
+        contenu.innerHTML =
+            '<div style="text-align:center;'
+            + 'padding:30px;color:var(--red);">'
+            + '⚠️ Erreur chargement badges</div>';
+    }
+}
+
+// === AFFICHER CLASSEMENT ===
+async function afficherClassement() {
+    showPage(pageStats);
+    var contenu =
+        document.getElementById('contenuStats');
+    if (!contenu) return;
+    contenu.innerHTML =
+        '<div class="loading-box">'
+        + '<div class="loader"></div>'
+        + '<p>Chargement classement...</p></div>';
 
     try {
         var snapBepc = await db.ref(
@@ -2152,32 +2228,50 @@ async function afficherClassement() {
             + '<h2 style="margin:0;">'
             + '📊 Classement</h2></div>';
 
-        html += '<div class="card">'
-            + '<h3>📘 Classement BEPC</h3>';
+        // BEPC
+        html +=
+            '<div style="background:white;'
+            + 'border-radius:16px;padding:16px;'
+            + 'margin-bottom:14px;'
+            + 'box-shadow:0 2px 10px '
+            + 'rgba(0,0,0,0.06);">'
+            + '<h3 style="margin:0 0 14px 0;'
+            + 'font-size:15px;'
+            + 'color:var(--blue);">'
+            + '📘 Classement BEPC</h3>';
         if (rBepc.length === 0) {
             html +=
                 '<p style="color:var(--muted);'
-                + 'text-align:center;">'
+                + 'text-align:center;'
+                + 'padding:10px 0;">'
                 + 'Aucun résultat</p>';
         } else {
             rBepc.forEach(function(r, i) {
-                html += ligneClassement(
-                    r, i, false);
+                html += ligneClassement(r, i);
             });
         }
         html += '</div>';
 
-        html += '<div class="card">'
-            + '<h3>📗 Classement BAC</h3>';
+        // BAC
+        html +=
+            '<div style="background:white;'
+            + 'border-radius:16px;padding:16px;'
+            + 'margin-bottom:14px;'
+            + 'box-shadow:0 2px 10px '
+            + 'rgba(0,0,0,0.06);">'
+            + '<h3 style="margin:0 0 14px 0;'
+            + 'font-size:15px;'
+            + 'color:var(--primary);">'
+            + '📗 Classement BAC</h3>';
         if (rBAC.length === 0) {
             html +=
                 '<p style="color:var(--muted);'
-                + 'text-align:center;">'
+                + 'text-align:center;'
+                + 'padding:10px 0;">'
                 + 'Aucun résultat</p>';
         } else {
             rBAC.forEach(function(r, i) {
-                html += ligneClassement(
-                    r, i, false);
+                html += ligneClassement(r, i);
             });
         }
         html += '</div>';
@@ -2201,27 +2295,115 @@ async function afficherClassement() {
     }
 }
 
-function ligneClassement(r, i, permanent) {
+function ligneClassement(r, i) {
     var nom = (
         (r.prenom || '') + ' ' + (r.nom || '')
     ).trim() || 'Candidat';
-    var med = i === 0 ? '🥇'
+    var med =
+        i === 0 ? '🥇'
         : i === 1 ? '🥈'
         : i === 2 ? '🥉'
         : '#' + (i + 1);
     var estMoi = r.key === user;
-    return '<div class="classement-item'
-        + (estMoi ? ' mon-rang' : '') + '">'
-        + '<span class="rang">' + med + '</span>'
-        + '<div class="cl-nom">' + nom
+    return '<div style="display:flex;'
+        + 'align-items:center;gap:12px;'
+        + 'padding:10px 0;border-bottom:1px solid '
+        + '#f1f5f9;'
+        + (estMoi
+            ? 'background:rgba(26,107,60,0.05);'
+            + 'border-radius:10px;padding:10px;'
+            : '')
+        + '">'
+        + '<span style="font-size:20px;'
+        + 'min-width:32px;text-align:center;">'
+        + med + '</span>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-weight:700;'
+        + 'font-size:14px;'
+        + 'color:var(--text);">'
+        + nom
         + (estMoi
             ? ' <span style="font-size:10px;'
             + 'color:var(--primary);'
-            + 'font-weight:800;">(Moi)</span>'
+            + 'font-weight:800;background:'
+            + 'rgba(26,107,60,0.1);'
+            + 'padding:2px 6px;'
+            + 'border-radius:20px;">'
+            + 'Moi</span>'
             : '')
-        + '</div>'
-        + '<span class="cl-score">'
-        + (r.score || 0) + '/50</span></div>';
+        + '</div></div>'
+        + '<span style="font-size:16px;'
+        + 'font-weight:900;'
+        + 'color:var(--primary);">'
+        + (r.score || 0) + '/50</span>'
+        + '</div>';
+}
+
+// === BOUTONS NAVIGATION ===
+if (btnBadges) {
+    btnBadges.onclick = function() {
+        son('click');
+        // Badges = page séparée
+        afficherBadgesPage();
+    };
+}
+
+if (btnClassement) {
+    btnClassement.onclick = function() {
+        son('click');
+        // Classement = page séparée
+        afficherClassement();
+    };
+}
+
+if (btnStats) {
+    btnStats.onclick = function() {
+        son('click');
+        // Stats = page statistiques
+        afficherStats();
+    };
+}
+
+if (btnRetourMenuStats) {
+    btnRetourMenuStats.onclick = function() {
+        son('click');
+        showPage(pageMenu);
+    };
+}
+
+// === BADGES HTML (pour usage interne) ===
+function afficherBadgesHTML(badgesObtenu) {
+    var html =
+        '<div style="display:grid;'
+        + 'grid-template-columns:'
+        + 'repeat(auto-fill,minmax(80px,1fr));'
+        + 'gap:12px;margin-top:8px;">';
+    BADGES_LIST.forEach(function(b) {
+        var obtenu = badgesObtenu[b.id] === true;
+        html +=
+            '<div style="text-align:center;'
+            + 'padding:12px 8px;'
+            + 'border-radius:14px;background:'
+            + (obtenu
+                ? 'rgba(26,107,60,0.1)'
+                : '#f8fafc')
+            + ';border:1.5px solid '
+            + (obtenu
+                ? 'rgba(26,107,60,0.3)'
+                : 'var(--border)')
+            + ';opacity:'
+            + (obtenu ? '1' : '0.4') + ';">'
+            + '<div style="font-size:28px;'
+            + 'margin-bottom:4px;">'
+            + b.emoji + '</div>'
+            + '<div style="font-size:10px;'
+            + 'font-weight:700;'
+            + 'color:var(--text);'
+            + 'line-height:1.3;">'
+            + b.nom + '</div></div>';
+    });
+    html += '</div>';
+    return html;
 }
 
 async function verifierBadges(
@@ -2327,7 +2509,7 @@ async function verifierTop10(
 }
 
 // ============================================
-// FIN PARTIE 6/18 COMPLÈTE ✅
+// FIN PARTIE 6/18 SECTION 2/2 ✅
 // ============================================// ============================================
 // PARTIE 7/18 — ADMIN LOGIN + CONFIG + IMPORT
 // Mot de passe admin caché dans le code source
