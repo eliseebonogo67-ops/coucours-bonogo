@@ -4470,65 +4470,83 @@ function demarrerTimerSecurite(salle,
 // FIN PARTIE 11/18 ✅
 // ============================================// ============================================
 // PARTIE 12/18 — CALCULER SCORE + SOUMETTRE
+// CALCUL CORRIGÉ : max 50/50
 // ============================================
 
 function calculerScore(reponses) {
     var bonnes     = 0;
     var partielles = 0;
     var fausses    = 0;
-    var score      = 0;
+    var scoreReel  = 0; // score sur 50
 
     questionsData.forEach(function(q, qi) {
         var repUser = reponses[qi];
+
+        // Pas de réponse
         if (repUser === undefined
             || repUser === null
             || (Array.isArray(repUser)
                 && repUser.length === 0)) {
             fausses++;
             reponsesFinales[qi] = {
-                statut: 'vide', user: [],
-                bonnes: q.reponses
-                    .map(function(r,ri) {
-                    return r.correct ? ri : -1;
-                }).filter(function(x) {
-                    return x !== -1;
-                })
+                statut:  'vide',
+                user:    [],
+                bonnes:  getBonnesIdx(q)
             };
             return;
         }
 
         var userChoix = Array.isArray(repUser)
             ? repUser : [repUser];
-        var bonnesIdx = q.reponses
-            .map(function(r,ri) {
-            return r.correct ? ri : -1;
-        }).filter(function(x) {
-            return x !== -1;
-        });
+        var bonnesIdx = getBonnesIdx(q);
+
+        // Cas : aucune bonne réponse définie
+        if (bonnesIdx.length === 0) {
+            fausses++;
+            reponsesFinales[qi] = {
+                statut: 'vide',
+                user:   userChoix,
+                bonnes: []
+            };
+            return;
+        }
 
         var bonnesChoisies = userChoix.filter(
             function(r) {
             return bonnesIdx.indexOf(r) !== -1;
         });
-        var mauvaisesChoisies =
-            userChoix.filter(function(r) {
+        var mauvaisesChoisies = userChoix.filter(
+            function(r) {
             return bonnesIdx.indexOf(r) === -1;
         });
 
         var statut;
+
         if (mauvaisesChoisies.length > 0) {
-            statut = 'fausse'; fausses++;
+            // Au moins une mauvaise = fausse
+            statut = 'fausse';
+            fausses++;
+            // Pas de point
+
         } else if (
             bonnesChoisies.length ===
-            bonnesIdx.length
-            && bonnesIdx.length > 0) {
+            bonnesIdx.length) {
+            // Toutes les bonnes cochées
+            // et aucune mauvaise = bonne
             statut = 'bonne';
-            bonnes++; score += 20;
+            bonnes++;
+            scoreReel += 1; // 1 point plein
+
         } else if (bonnesChoisies.length > 0) {
+            // Quelques bonnes sans mauvaises
+            // = partielle
             statut = 'partielle';
-            partielles++; score += 10;
+            partielles++;
+            scoreReel += 0.5; // demi-point
+
         } else {
-            statut = 'vide'; fausses++;
+            statut = 'vide';
+            fausses++;
         }
 
         reponsesFinales[qi] = {
@@ -4538,12 +4556,34 @@ function calculerScore(reponses) {
         };
     });
 
+    // Score arrondi sur 50
+    var scoreFinal = Math.round(scoreReel);
+
     return {
-        score:      Math.round(score/10),
+        score:      scoreFinal,
+        scoreReel:  scoreReel,
         bonnes:     bonnes,
         partielles: partielles,
         fausses:    fausses
     };
+}
+
+// === HELPER : récupérer indices bonnes réponses ===
+function getBonnesIdx(q) {
+    if (!q || !q.reponses) return [];
+    return q.reponses
+        .map(function(r, ri) {
+            return r && r.correct ? ri : -1;
+        })
+        .filter(function(x) {
+            return x !== -1;
+        });
+}
+
+// === CALCUL XP basé sur score/50 ===
+function calcXp(score, total) {
+    // XP proportionnel : max 50 XP par concours
+    return Math.floor((score / (total || 50)) * 50);
 }
 
 if (btnNonRep) {
@@ -4555,12 +4595,12 @@ if (btnNonRep) {
             if (rv === undefined
                 || (Array.isArray(rv)
                     && rv.length === 0))
-                nonRep.push(qi+1);
+                nonRep.push(qi + 1);
         });
 
         if (nonRep.length === 0) {
             toast('✅ Toutes les questions '
-                + 'sont répondues !','success');
+                + 'sont répondues !', 'success');
             return;
         }
 
@@ -4576,7 +4616,7 @@ if (btnNonRep) {
             + 'flex-wrap:wrap;gap:8px;">'
             + nonRep.map(function(n) {
                 return '<button onclick='
-                    + '"allerQuestion('+n+')"'
+                    + '"allerQuestion(' + n + ')"'
                     + ' style="padding:8px 14px;'
                     + 'background:rgba(239,68,68,0.1);'
                     + 'border:1.5px solid var(--red);'
@@ -4606,9 +4646,9 @@ window.allerQuestion = function(num) {
     btnConfirmer.style.display = '';
     btnAnnuler.textContent     = 'Annuler';
     var el = document.getElementById(
-        'q-' + (num-1));
+        'q-' + (num - 1));
     if (el) el.scrollIntoView({
-        behavior:'smooth', block:'center'
+        behavior: 'smooth', block: 'center'
     });
 };
 
@@ -4621,7 +4661,7 @@ if (btnFinir) {
             if (rv === undefined
                 || (Array.isArray(rv)
                     && rv.length === 0))
-                nonRep.push(qi+1);
+                nonRep.push(qi + 1);
         });
 
         var msgNR = nonRep.length > 0
@@ -4691,56 +4731,79 @@ async function soumettreEtAttendre(
     try {
         var xpActuel  = userData.xp || 0;
         var newXp     = xpActuel + xpG;
-        var newNiv    = Math.floor(newXp/100)+1;
+        var newNiv    =
+            Math.floor(newXp / 100) + 1;
         var newNbConc =
-            (userData.concoursFaits||0)+1;
+            (userData.concoursFaits || 0) + 1;
         var newMoy = Math.round(
-            ((userData.moyenne||0)
-            *(newNbConc-1)
-            +resultat.score)/newNbConc);
+            ((userData.moyenne || 0)
+            * (newNbConc - 1)
+            + resultat.score) / newNbConc);
 
-        var dataResult = {
-            prenom:     userData.prenom || '',
-            nom:        userData.nom    || '',
+        // Sauvegarder dans historique Firebase
+        var entreeHisto = {
+            salle:      salle.toUpperCase(),
+            type:       configActuelle.type
+                || ('Concours Blanc '
+                    + salle.toUpperCase()),
             score:      resultat.score,
+            scoreReel:  resultat.scoreReel,
             bonnes:     resultat.bonnes,
             partielles: resultat.partielles,
             fausses:    resultat.fausses,
-            reponses:   reponsesFinales,
             xp:         xpG,
-            timestamp:  Date.now(),
-            nbSorties:  nbSorties
+            nbSorties:  nbSorties,
+            timestamp:  Date.now()
         };
 
         await db.ref(resultNode + '/' + user)
-            .set(dataResult);
+            .set(Object.assign({},
+                entreeHisto, {
+                prenom:  userData.prenom || '',
+                nom:     userData.nom    || '',
+                reponses: reponsesFinales
+            }));
+
         await db.ref(
             sessionNode + '/' + user).update({
-            termine:true
+            termine: true
         });
+
+        // Ajouter dans historique permanent
+        var histoActuel =
+            userData.historique || [];
+        if (!Array.isArray(histoActuel))
+            histoActuel = [];
+        histoActuel.unshift(entreeHisto);
+        // Garder les 50 derniers
+        if (histoActuel.length > 50)
+            histoActuel = histoActuel.slice(0, 50);
+
         await db.ref('users/' + user).update({
             xp:            newXp,
             niveau:        newNiv,
             concoursFaits: newNbConc,
-            moyenne:       newMoy
+            moyenne:       newMoy,
+            historique:    histoActuel
         });
 
         userData.xp            = newXp;
         userData.niveau        = newNiv;
         userData.concoursFaits = newNbConc;
         userData.moyenne       = newMoy;
+        userData.historique    = histoActuel;
 
         await verifierBadges(
             resultat.score, nbSorties);
         await verifierTop10(
             resultat.score,
-            userData.prenom||'',
-            userData.nom||'');
+            userData.prenom || '',
+            userData.nom    || '');
 
     } catch(err) {
         var pending = {
-            prenom:     userData.prenom||'',
-            nom:        userData.nom||'',
+            prenom:     userData.prenom || '',
+            nom:        userData.nom    || '',
             score:      resultat.score,
             bonnes:     resultat.bonnes,
             partielles: resultat.partielles,
@@ -4750,15 +4813,17 @@ async function soumettreEtAttendre(
             timestamp:  Date.now()
         };
         localStorage.setItem(
-            'bb_pending_'+salle+'_'+user,
+            'bb_pending_' + salle + '_' + user,
             JSON.stringify(pending));
         toast('Hors ligne — résultat sauvegardé',
             'error');
     }
 
     afficherAttente(
-        resultat.score, resultat.bonnes,
-        resultat.partielles, resultat.fausses,
+        resultat.score,
+        resultat.bonnes,
+        resultat.partielles,
+        resultat.fausses,
         xpG, salle, resultNode);
 }
 
@@ -4766,6 +4831,7 @@ async function soumettreEtAttendre(
 // FIN PARTIE 12/18 ✅
 // ============================================// ============================================
 // PARTIE 13/18 — RÉSULTAT + CORRECTION
+// COURBE SVG CORRIGÉE + SCORE SUR 50
 // ============================================
 
 async function afficherResultat(
@@ -4776,33 +4842,36 @@ async function afficherResultat(
     if (resultatEl)
         resultatEl.style.display = 'block';
 
-    var pct = getPct(score, 50);
-    var men = getMention(score);
+    // Score toujours sur 50 max
+    var scoreSur50 = Math.min(score, 50);
+    var pct = getPct(scoreSur50, 50);
+    var men = getMention(scoreSur50);
 
     if (scoreEl)
-        scoreEl.textContent = score + '/50';
+        scoreEl.textContent = scoreSur50 + '/50';
     if (xpGagneEl)
-        xpGagneEl.textContent = '+'+(xpG||0);
+        xpGagneEl.textContent = '+' + (xpG || 0);
     if (bonnesEl)
-        bonnesEl.textContent      = bonnes||0;
+        bonnesEl.textContent      = bonnes    || 0;
     if (partiellesEl)
-        partiellesEl.textContent  = partielles||0;
+        partiellesEl.textContent  = partielles || 0;
     if (faussesEl)
-        faussesEl.textContent     = fausses||0;
+        faussesEl.textContent     = fausses   || 0;
 
     if (mentionResultatEl) {
         mentionResultatEl.textContent = men;
         mentionResultatEl.className =
             'mention-tag '
-            + getMentionTagClass(score);
+            + getMentionTagClass(scoreSur50);
     }
 
-    var rangInfo = getTitreRang(userData.xp||0);
-    var trEl =
-        document.getElementById('titreRangRes');
+    var rangInfo =
+        getTitreRang(userData.xp || 0);
+    var trEl = document.getElementById(
+        'titreRangRes');
     if (trEl) {
         trEl.textContent =
-            rangInfo.emoji+' '+rangInfo.titre;
+            rangInfo.emoji + ' ' + rangInfo.titre;
     }
 
     if (sortiesInfoEl) {
@@ -4810,10 +4879,12 @@ async function afficherResultat(
             sortiesInfoEl.style.display = 'block';
             sortiesInfoEl.innerHTML =
                 '<div style="background:'
-                + 'rgba(249,115,22,0.1);border:1.5px '
-                + 'solid rgba(249,115,22,0.3);'
-                + 'border-radius:12px;padding:10px;'
-                + 'margin:8px 0;font-size:13px;'
+                + 'rgba(249,115,22,0.1);'
+                + 'border:1.5px solid '
+                + 'rgba(249,115,22,0.3);'
+                + 'border-radius:12px;'
+                + 'padding:10px;margin:8px 0;'
+                + 'font-size:13px;'
                 + 'color:var(--orange);">⚠️ '
                 + nbSorties
                 + ' sortie(s) détectée(s)</div>';
@@ -4822,18 +4893,19 @@ async function afficherResultat(
         }
     }
 
+    // Classement
     try {
         var snapAll = await db.ref(resultNode)
             .once('value');
         var results = [];
         snapAll.forEach(function(child) {
             results.push(Object.assign(
-                {key:child.key}, child.val()));
+                { key: child.key }, child.val()));
         });
-        results.sort(function(a,b) {
+        results.sort(function(a, b) {
             return b.score - a.score
-                || (a.timestamp||0)
-                - (b.timestamp||0);
+                || (a.timestamp || 0)
+                - (b.timestamp || 0);
         });
         var monRang = results.findIndex(
             function(r) {
@@ -4842,16 +4914,17 @@ async function afficherResultat(
 
         if (monRangResEl) {
             var med =
-                monRang===1?'🥇'
-                :monRang===2?'🥈'
-                :monRang===3?'🥉'
-                :'#'+monRang;
+                monRang === 1 ? '🥇'
+                : monRang === 2 ? '🥈'
+                : monRang === 3 ? '🥉'
+                : '#' + monRang;
             monRangResEl.innerHTML =
                 '<div style="background:'
-                + 'rgba(26,107,60,0.1);border:1.5px '
-                + 'solid rgba(26,107,60,0.3);'
-                + 'border-radius:16px;padding:14px;'
-                + 'margin:12px 0;">'
+                + 'rgba(26,107,60,0.1);'
+                + 'border:1.5px solid '
+                + 'rgba(26,107,60,0.3);'
+                + 'border-radius:16px;'
+                + 'padding:14px;margin:12px 0;">'
                 + '<div style="font-size:28px;'
                 + 'margin-bottom:4px;">'
                 + med + '</div>'
@@ -4861,11 +4934,12 @@ async function afficherResultat(
                 + results.length
                 + ' candidats</div></div>';
         }
-
-        afficherCourbeEvolution(results);
-
     } catch(e) {}
 
+    // Courbe dans historique complet
+    afficherCourbeEvolution();
+
+    // Boutons
     if (btnCorrection) {
         btnCorrection.onclick = function() {
             son('click');
@@ -4877,7 +4951,6 @@ async function afficherResultat(
         btnVoirClass.onclick = function() {
             son('click');
             afficherClassement();
-            showPage(pageStats);
         };
     }
 
@@ -4896,13 +4969,13 @@ async function afficherResultat(
             var msg =
                 '🎓 *Concours Blanc Bonogo*\n'
                 + 'Salle : '
-                + (salle==='bepc'
+                + (salle === 'bepc'
                     ? '📘 BEPC' : '📗 BAC')
-                + '\nScore : *' + score + '/50*\n'
+                + '\nScore : *'
+                + scoreSur50 + '/50*\n'
                 + 'Résultat : *' + pct + '%*\n'
                 + men + '\n\n'
-                + '🔗 '
-                + 'https://eliseebonogo67-ops'
+                + '🔗 https://eliseebonogo67-ops'
                 + '.github.io/coucours-bonogo';
             window.open(
                 'https://wa.me/?text='
@@ -4912,55 +4985,234 @@ async function afficherResultat(
     }
 
     son('success');
-    notifResultatDisponible(score, 50);
+    notifResultatDisponible(scoreSur50, 50);
 }
 
-function afficherCourbeEvolution(results) {
+// === COURBE ÉVOLUTION CORRIGÉE ===
+// Récupère tout l'historique Firebase
+// pour tracer une vraie courbe
+async function afficherCourbeEvolution() {
     var el = document.getElementById(
         'courbeEvolution');
-    if (!el || !results) return;
-    var mesRes = results.filter(function(r) {
-        return r.key === user;
-    });
-    if (mesRes.length < 1) {
-        el.style.display = 'none'; return;
-    }
-    el.style.display = 'block';
-    var scores = mesRes.slice(-6).map(
-        function(r) { return r.score||0; });
-    var max   = Math.max.apply(null, scores);
-    var range = max || 1;
-    var W=280, H=80, n=scores.length;
-    var pts = scores.map(function(s,i) {
-        var x = n>1 ? i*(W/(n-1)) : W/2;
-        var y = H - (s/range)*(H-10) - 5;
-        return x+','+y;
-    });
+    if (!el) return;
 
-    el.innerHTML =
-        '<div style="font-weight:800;'
-        + 'font-size:13px;margin-bottom:10px;">'
-        + '📈 Évolution de tes scores</div>'
-        + '<svg width="'+W+'" height="'+H+'"'
-        + ' viewBox="0 0 '+W+' '+H+'"'
-        + ' style="overflow:visible;'
-        + 'max-width:100%;">'
-        + '<polyline points="'+pts.join(' ')+'"'
-        + ' fill="none" stroke="#1a6b3c"'
-        + ' stroke-width="2.5"'
-        + ' stroke-linecap="round"'
-        + ' stroke-linejoin="round"/>'
-        + scores.map(function(s,i) {
-            var x = n>1 ? i*(W/(n-1)) : W/2;
-            var y = H-(s/range)*(H-10)-5;
-            return '<circle cx="'+x+'" cy="'+y
-                +'" r="4" fill="#1a6b3c"/>'
-                +'<text x="'+x+'" y="'+(y-8)
-                +'" text-anchor="middle"'
-                +' font-size="10" fill="#1a6b3c"'
-                +' font-weight="700">'+s+'</text>';
-        }).join('')
-        + '</svg>';
+    try {
+        // Récupérer historique complet
+        var snap = await db.ref(
+            'users/' + user).once('value');
+        var d = snap.val() || {};
+        var histo = d.historique || [];
+
+        // Récupérer aussi les résultats actuels
+        var snapBepc = await db.ref(
+            'resultatsBepc/' + user)
+            .once('value');
+        var snapBAC = await db.ref(
+            'resultatsBAC/' + user)
+            .once('value');
+
+        var tousResultats = [];
+
+        // Ajouter historique (déjà trié par date)
+        if (Array.isArray(histo)) {
+            histo.forEach(function(h) {
+                if (h && h.score !== undefined
+                    && h.timestamp) {
+                    tousResultats.push({
+                        score: Math.min(
+                            h.score, 50),
+                        ts:    h.timestamp,
+                        salle: h.salle || '?'
+                    });
+                }
+            });
+        }
+
+        // Trier par date croissante
+        tousResultats.sort(function(a, b) {
+            return a.ts - b.ts;
+        });
+
+        // Garder les 10 derniers pour la courbe
+        var derniers = tousResultats.slice(-10);
+
+        if (derniers.length === 0) {
+            el.style.display = 'none';
+            return;
+        }
+
+        el.style.display = 'block';
+
+        var scores = derniers.map(function(r) {
+            return r.score;
+        });
+        var salles = derniers.map(function(r) {
+            return r.salle;
+        });
+
+        var nbPts = scores.length;
+        var W = 300;
+        var H = 120;
+        var padLeft   = 30;
+        var padRight  = 20;
+        var padTop    = 20;
+        var padBottom = 30;
+        var graphW =
+            W - padLeft - padRight;
+        var graphH =
+            H - padTop - padBottom;
+
+        var maxScore = 50;
+        var minScore = 0;
+        var range = maxScore - minScore || 1;
+
+        // Calculer points SVG
+        var pts = scores.map(function(s, i) {
+            var x = nbPts > 1
+                ? padLeft
+                    + (i / (nbPts - 1)) * graphW
+                : padLeft + graphW / 2;
+            var y = padTop + graphH
+                - ((s - minScore) / range)
+                * graphH;
+            return { x: x, y: y, s: s,
+                sal: salles[i] || '' };
+        });
+
+        // Ligne de connexion
+        var polyline = pts.map(function(p) {
+            return p.x + ',' + p.y;
+        }).join(' ');
+
+        // Zone de remplissage sous la courbe
+        var areaPoints =
+            (padLeft + ',' + (padTop + graphH))
+            + ' ' + polyline
+            + ' ' + (pts[pts.length-1].x
+                + ',' + (padTop + graphH));
+
+        // Lignes horizontales de référence
+        var lignesRef = '';
+        [0, 25, 50].forEach(function(val) {
+            var yRef = padTop + graphH
+                - (val / range) * graphH;
+            lignesRef +=
+                '<line x1="' + padLeft
+                + '" y1="' + yRef
+                + '" x2="' + (W - padRight)
+                + '" y2="' + yRef
+                + '" stroke="#e2e8f0"'
+                + ' stroke-width="1"'
+                + ' stroke-dasharray="4,4"/>'
+                + '<text x="'
+                + (padLeft - 4)
+                + '" y="' + (yRef + 4)
+                + '" text-anchor="end"'
+                + ' font-size="9"'
+                + ' fill="#94a3b8">'
+                + val + '</text>';
+        });
+
+        // Construire SVG
+        var svg =
+            '<svg width="' + W + '"'
+            + ' height="' + H + '"'
+            + ' viewBox="0 0 ' + W + ' ' + H + '"'
+            + ' style="width:100%;'
+            + 'max-width:100%;overflow:visible;">'
+
+            // Lignes de référence
+            + lignesRef
+
+            // Zone remplie sous la courbe
+            + '<polygon points="' + areaPoints
+            + '" fill="rgba(26,107,60,0.08)"/>'
+
+            // Ligne de la courbe
+            + '<polyline points="' + polyline
+            + '" fill="none"'
+            + ' stroke="#1a6b3c"'
+            + ' stroke-width="2.5"'
+            + ' stroke-linecap="round"'
+            + ' stroke-linejoin="round"/>'
+
+            // Points et labels
+            + pts.map(function(p, i) {
+                var couleur =
+                    p.s >= 40 ? '#22c55e'
+                    : p.s >= 25 ? '#3b82f6'
+                    : p.s >= 15 ? '#f97316'
+                    : '#ef4444';
+                var estDernier =
+                    i === pts.length - 1;
+                return '<circle cx="' + p.x
+                    + '" cy="' + p.y
+                    + '" r="' + (estDernier ? 6 : 4)
+                    + '" fill="' + couleur
+                    + '" stroke="white"'
+                    + ' stroke-width="2"/>'
+                    + '<text x="' + p.x
+                    + '" y="' + (p.y - 10)
+                    + '" text-anchor="middle"'
+                    + ' font-size="'
+                    + (estDernier ? '11' : '9')
+                    + '" fill="' + couleur
+                    + '" font-weight="'
+                    + (estDernier ? '900' : '700')
+                    + '">' + p.s + '</text>';
+            }).join('')
+
+            + '</svg>';
+
+        // Tendance
+        var tendance = '';
+        if (scores.length >= 2) {
+            var premier = scores[0];
+            var dernier =
+                scores[scores.length - 1];
+            var diff = dernier - premier;
+            if (diff > 0) {
+                tendance =
+                    '<div style="color:var(--primary);'
+                    + 'font-size:12px;font-weight:700;'
+                    + 'margin-top:8px;text-align:center;">'
+                    + '📈 +' + diff
+                    + ' pts depuis le début</div>';
+            } else if (diff < 0) {
+                tendance =
+                    '<div style="color:var(--orange);'
+                    + 'font-size:12px;font-weight:700;'
+                    + 'margin-top:8px;text-align:center;">'
+                    + '📉 ' + diff
+                    + ' pts depuis le début</div>';
+            } else {
+                tendance =
+                    '<div style="color:var(--muted);'
+                    + 'font-size:12px;font-weight:700;'
+                    + 'margin-top:8px;text-align:center;">'
+                    + '➡️ Score stable</div>';
+            }
+        }
+
+        el.innerHTML =
+            '<div style="font-weight:800;'
+            + 'font-size:13px;margin-bottom:12px;'
+            + 'display:flex;align-items:center;'
+            + 'gap:6px;">'
+            + '📈 Évolution de tes scores'
+            + '<span style="font-size:11px;'
+            + 'color:var(--muted);'
+            + 'font-weight:600;">('
+            + nbPts + ' derniers)</span>'
+            + '</div>'
+            + svg
+            + tendance;
+
+    } catch(e) {
+        var el2 = document.getElementById(
+            'courbeEvolution');
+        if (el2) el2.style.display = 'none';
+    }
 }
 
 function afficherCorrection() {
@@ -4972,81 +5224,100 @@ function afficherCorrection() {
         var statut = info.statut  || 'vide';
         var uRep   = info.user    || [];
         var bRep   = info.bonnes  || [];
-        if (!Array.isArray(uRep)) uRep = [uRep];
-        if (!Array.isArray(bRep)) bRep = [bRep];
+
+        if (!Array.isArray(uRep))
+            uRep = [uRep];
+        if (!Array.isArray(bRep))
+            bRep = [bRep];
 
         var ico =
-            statut==='bonne'     ? '✅'
-            :statut==='partielle'? '⚠️'
-            :statut==='fausse'   ? '❌' : '⬜';
-        var cb  =
-            statut==='bonne'
-            ?'var(--green)'
-            :statut==='partielle'
-            ?'var(--orange)'
-            :statut==='fausse'
-            ?'var(--red)':'var(--border)';
+            statut === 'bonne'     ? '✅'
+            : statut === 'partielle' ? '⚠️'
+            : statut === 'fausse'    ? '❌' : '⬜';
+        var cb =
+            statut === 'bonne'
+            ? 'var(--green)'
+            : statut === 'partielle'
+            ? 'var(--orange)'
+            : statut === 'fausse'
+            ? 'var(--red)' : 'var(--border)';
 
         var block =
             document.createElement('div');
         block.className = 'correction-block';
-        block.style.borderLeft = '4px solid '+cb;
+        block.style.borderLeft =
+            '4px solid ' + cb;
 
         var html =
             '<div class="correction-header">'
-            +'<span class="corr-num">Q'
-            +(qi+1)+'</span>'
-            +'<span class="corr-statut">'+ico
-            +' '+(statut==='bonne'?'Bonne'
-            :statut==='partielle'?'Partielle'
-            :statut==='fausse'?'Fausse'
-            :'Non répondu')+'</span></div>'
-            +'<div class="corr-texte">'
-            +(q.texte||'')+'</div>'
-            +'<div class="corr-reps">';
+            + '<span class="corr-num">Q'
+            + (qi + 1) + '</span>'
+            + '<span class="corr-statut">'
+            + ico + ' '
+            + (statut === 'bonne'
+                ? 'Bonne'
+                : statut === 'partielle'
+                ? 'Partielle'
+                : statut === 'fausse'
+                ? 'Fausse'
+                : 'Non répondu')
+            + '</span></div>'
+            + '<div class="corr-texte">'
+            + (q.texte || '') + '</div>'
+            + '<div class="corr-reps">';
 
-        (q.reponses||[]).forEach(function(r,ri) {
-            var estB  = bRep.indexOf(ri) !== -1;
-            var estC  = uRep.indexOf(ri) !== -1;
-            var cls='', pref='';
+        (q.reponses || []).forEach(
+            function(r, ri) {
+            var estB  =
+                bRep.indexOf(ri) !== -1;
+            var estC  =
+                uRep.indexOf(ri) !== -1;
+            var cls = '', pref = '';
+
             if (estB && estC) {
-                cls='rep-bonne-choisie';
-                pref='✅ ';
+                cls  = 'rep-bonne-choisie';
+                pref = '✅ ';
             } else if (estB && !estC) {
-                cls='rep-bonne-manquee';
-                pref='✅ ';
+                cls  = 'rep-bonne-manquee';
+                pref = '✅ ';
             } else if (!estB && estC) {
-                cls='rep-mauvaise-choisie';
-                pref='❌ ';
+                cls  = 'rep-mauvaise-choisie';
+                pref = '❌ ';
             }
+
             html +=
-                '<div class="corr-rep '+cls+'">'
-                +'<span class="corr-lettre">'
-                +'ABCD'[ri]+'</span>'
-                +'<span>'+pref+(r.texte||'')
-                +'</span></div>';
+                '<div class="corr-rep ' + cls + '">'
+                + '<span class="corr-lettre">'
+                + 'ABCD'[ri] + '</span>'
+                + '<span>' + pref
+                + (r.texte || '') + '</span>'
+                + '</div>';
         });
 
         html += '</div>';
+
         if (q.explication) {
             html +=
                 '<div class="corr-explication">'
-                +'💡 '+q.explication+'</div>';
+                + '💡 ' + q.explication
+                + '</div>';
         }
+
         block.innerHTML = html;
         correctionEl.appendChild(block);
     });
 
-    var btnPDF2 = document.createElement('button');
-    btnPDF2.className    = 'btn-primary';
+    var btnPDF2 =
+        document.createElement('button');
+    btnPDF2.className   = 'btn-primary';
     btnPDF2.style.marginTop = '16px';
-    btnPDF2.textContent  =
+    btnPDF2.textContent =
         '📄 Télécharger correction PDF';
     btnPDF2.onclick = telechargerCorrectionPDF;
     correctionEl.appendChild(btnPDF2);
 
     correctionEl.scrollIntoView({
-        behavior:'smooth'
+        behavior: 'smooth'
     });
 }
 
