@@ -4831,7 +4831,6 @@ async function soumettreEtAttendre(
 // FIN PARTIE 12/18 ✅
 // ============================================// ============================================
 // PARTIE 13/18 — RÉSULTAT + CORRECTION
-// COURBE SVG CORRIGÉE + SCORE SUR 50
 // ============================================
 
 async function afficherResultat(
@@ -4842,7 +4841,6 @@ async function afficherResultat(
     if (resultatEl)
         resultatEl.style.display = 'block';
 
-    // Score toujours sur 50 max
     var scoreSur50 = Math.min(score, 50);
     var pct = getPct(scoreSur50, 50);
     var men = getMention(scoreSur50);
@@ -4852,11 +4850,11 @@ async function afficherResultat(
     if (xpGagneEl)
         xpGagneEl.textContent = '+' + (xpG || 0);
     if (bonnesEl)
-        bonnesEl.textContent      = bonnes    || 0;
+        bonnesEl.textContent     = bonnes    || 0;
     if (partiellesEl)
-        partiellesEl.textContent  = partielles || 0;
+        partiellesEl.textContent = partielles || 0;
     if (faussesEl)
-        faussesEl.textContent     = fausses   || 0;
+        faussesEl.textContent    = fausses   || 0;
 
     if (mentionResultatEl) {
         mentionResultatEl.textContent = men;
@@ -4936,7 +4934,7 @@ async function afficherResultat(
         }
     } catch(e) {}
 
-    // Courbe dans historique complet
+    // Courbe évolution
     afficherCourbeEvolution();
 
     // Boutons
@@ -4961,6 +4959,7 @@ async function afficherResultat(
         };
     }
 
+    // === BOUTON WHATSAPP ===
     var btnWA =
         document.getElementById('btnPartageWA');
     if (btnWA) {
@@ -4975,8 +4974,8 @@ async function afficherResultat(
                 + scoreSur50 + '/50*\n'
                 + 'Résultat : *' + pct + '%*\n'
                 + men + '\n\n'
-                + '🔗 https://eliseebonogo67-ops'
-                + '.github.io/coucours-bonogo';
+                + '📲 *Télécharge l\'app :*\n'
+                + 'https://median.co/share/qdlqmbo';
             window.open(
                 'https://wa.me/?text='
                 + encodeURIComponent(msg),
@@ -4988,32 +4987,20 @@ async function afficherResultat(
     notifResultatDisponible(scoreSur50, 50);
 }
 
-// === COURBE ÉVOLUTION CORRIGÉE ===
-// Récupère tout l'historique Firebase
-// pour tracer une vraie courbe
+// === COURBE ÉVOLUTION ===
 async function afficherCourbeEvolution() {
     var el = document.getElementById(
         'courbeEvolution');
     if (!el) return;
 
     try {
-        // Récupérer historique complet
         var snap = await db.ref(
             'users/' + user).once('value');
         var d = snap.val() || {};
         var histo = d.historique || [];
 
-        // Récupérer aussi les résultats actuels
-        var snapBepc = await db.ref(
-            'resultatsBepc/' + user)
-            .once('value');
-        var snapBAC = await db.ref(
-            'resultatsBAC/' + user)
-            .once('value');
-
         var tousResultats = [];
 
-        // Ajouter historique (déjà trié par date)
         if (Array.isArray(histo)) {
             histo.forEach(function(h) {
                 if (h && h.score !== undefined
@@ -5028,12 +5015,10 @@ async function afficherCourbeEvolution() {
             });
         }
 
-        // Trier par date croissante
         tousResultats.sort(function(a, b) {
             return a.ts - b.ts;
         });
 
-        // Garder les 10 derniers pour la courbe
         var derniers = tousResultats.slice(-10);
 
         if (derniers.length === 0) {
@@ -5050,23 +5035,19 @@ async function afficherCourbeEvolution() {
             return r.salle;
         });
 
-        var nbPts = scores.length;
-        var W = 300;
-        var H = 120;
-        var padLeft   = 30;
-        var padRight  = 20;
-        var padTop    = 20;
-        var padBottom = 30;
-        var graphW =
-            W - padLeft - padRight;
-        var graphH =
-            H - padTop - padBottom;
-
+        var nbPts    = scores.length;
+        var W        = 300;
+        var H        = 120;
+        var padLeft  = 30;
+        var padRight = 20;
+        var padTop   = 20;
+        var padBot   = 30;
+        var graphW   = W - padLeft - padRight;
+        var graphH   = H - padTop - padBot;
         var maxScore = 50;
         var minScore = 0;
-        var range = maxScore - minScore || 1;
+        var range    = maxScore - minScore || 1;
 
-        // Calculer points SVG
         var pts = scores.map(function(s, i) {
             var x = nbPts > 1
                 ? padLeft
@@ -5075,23 +5056,23 @@ async function afficherCourbeEvolution() {
             var y = padTop + graphH
                 - ((s - minScore) / range)
                 * graphH;
-            return { x: x, y: y, s: s,
-                sal: salles[i] || '' };
+            return {
+                x: x, y: y,
+                s: s, sal: salles[i] || ''
+            };
         });
 
-        // Ligne de connexion
         var polyline = pts.map(function(p) {
             return p.x + ',' + p.y;
         }).join(' ');
 
-        // Zone de remplissage sous la courbe
         var areaPoints =
             (padLeft + ',' + (padTop + graphH))
             + ' ' + polyline
-            + ' ' + (pts[pts.length-1].x
+            + ' ' + (
+                pts[pts.length - 1].x
                 + ',' + (padTop + graphH));
 
-        // Lignes horizontales de référence
         var lignesRef = '';
         [0, 25, 50].forEach(function(val) {
             var yRef = padTop + graphH
@@ -5113,30 +5094,22 @@ async function afficherCourbeEvolution() {
                 + val + '</text>';
         });
 
-        // Construire SVG
         var svg =
             '<svg width="' + W + '"'
             + ' height="' + H + '"'
             + ' viewBox="0 0 ' + W + ' ' + H + '"'
             + ' style="width:100%;'
-            + 'max-width:100%;overflow:visible;">'
-
-            // Lignes de référence
+            + 'max-width:100%;'
+            + 'overflow:visible;">'
             + lignesRef
-
-            // Zone remplie sous la courbe
             + '<polygon points="' + areaPoints
             + '" fill="rgba(26,107,60,0.08)"/>'
-
-            // Ligne de la courbe
             + '<polyline points="' + polyline
             + '" fill="none"'
             + ' stroke="#1a6b3c"'
             + ' stroke-width="2.5"'
             + ' stroke-linecap="round"'
             + ' stroke-linejoin="round"/>'
-
-            // Points et labels
             + pts.map(function(p, i) {
                 var couleur =
                     p.s >= 40 ? '#22c55e'
@@ -5147,7 +5120,8 @@ async function afficherCourbeEvolution() {
                     i === pts.length - 1;
                 return '<circle cx="' + p.x
                     + '" cy="' + p.y
-                    + '" r="' + (estDernier ? 6 : 4)
+                    + '" r="'
+                    + (estDernier ? 6 : 4)
                     + '" fill="' + couleur
                     + '" stroke="white"'
                     + ' stroke-width="2"/>'
@@ -5158,13 +5132,12 @@ async function afficherCourbeEvolution() {
                     + (estDernier ? '11' : '9')
                     + '" fill="' + couleur
                     + '" font-weight="'
-                    + (estDernier ? '900' : '700')
+                    + (estDernier
+                        ? '900' : '700')
                     + '">' + p.s + '</text>';
             }).join('')
-
             + '</svg>';
 
-        // Tendance
         var tendance = '';
         if (scores.length >= 2) {
             var premier = scores[0];
@@ -5173,32 +5146,45 @@ async function afficherCourbeEvolution() {
             var diff = dernier - premier;
             if (diff > 0) {
                 tendance =
-                    '<div style="color:var(--primary);'
-                    + 'font-size:12px;font-weight:700;'
-                    + 'margin-top:8px;text-align:center;">'
+                    '<div style="color:'
+                    + 'var(--primary);'
+                    + 'font-size:12px;'
+                    + 'font-weight:700;'
+                    + 'margin-top:8px;'
+                    + 'text-align:center;">'
                     + '📈 +' + diff
-                    + ' pts depuis le début</div>';
+                    + ' pts de progression'
+                    + '</div>';
             } else if (diff < 0) {
                 tendance =
-                    '<div style="color:var(--orange);'
-                    + 'font-size:12px;font-weight:700;'
-                    + 'margin-top:8px;text-align:center;">'
+                    '<div style="color:'
+                    + 'var(--orange);'
+                    + 'font-size:12px;'
+                    + 'font-weight:700;'
+                    + 'margin-top:8px;'
+                    + 'text-align:center;">'
                     + '📉 ' + diff
-                    + ' pts depuis le début</div>';
+                    + ' pts depuis le début'
+                    + '</div>';
             } else {
                 tendance =
-                    '<div style="color:var(--muted);'
-                    + 'font-size:12px;font-weight:700;'
-                    + 'margin-top:8px;text-align:center;">'
-                    + '➡️ Score stable</div>';
+                    '<div style="color:'
+                    + 'var(--muted);'
+                    + 'font-size:12px;'
+                    + 'font-weight:700;'
+                    + 'margin-top:8px;'
+                    + 'text-align:center;">'
+                    + '➡️ Score stable'
+                    + '</div>';
             }
         }
 
         el.innerHTML =
             '<div style="font-weight:800;'
-            + 'font-size:13px;margin-bottom:12px;'
-            + 'display:flex;align-items:center;'
-            + 'gap:6px;">'
+            + 'font-size:13px;'
+            + 'margin-bottom:12px;'
+            + 'display:flex;'
+            + 'align-items:center;gap:6px;">'
             + '📈 Évolution de tes scores'
             + '<span style="font-size:11px;'
             + 'color:var(--muted);'
@@ -5215,6 +5201,7 @@ async function afficherCourbeEvolution() {
     }
 }
 
+// === AFFICHER CORRECTION ===
 function afficherCorrection() {
     if (!correctionEl) return;
     correctionEl.innerHTML = '';
@@ -5231,16 +5218,20 @@ function afficherCorrection() {
             bRep = [bRep];
 
         var ico =
-            statut === 'bonne'     ? '✅'
-            : statut === 'partielle' ? '⚠️'
-            : statut === 'fausse'    ? '❌' : '⬜';
+            statut === 'bonne'
+            ? '✅'
+            : statut === 'partielle'
+            ? '⚠️'
+            : statut === 'fausse'
+            ? '❌' : '⬜';
         var cb =
             statut === 'bonne'
             ? 'var(--green)'
             : statut === 'partielle'
             ? 'var(--orange)'
             : statut === 'fausse'
-            ? 'var(--red)' : 'var(--border)';
+            ? 'var(--red)'
+            : 'var(--border)';
 
         var block =
             document.createElement('div');
@@ -5268,11 +5259,12 @@ function afficherCorrection() {
 
         (q.reponses || []).forEach(
             function(r, ri) {
-            var estB  =
+            var estB =
                 bRep.indexOf(ri) !== -1;
-            var estC  =
+            var estC =
                 uRep.indexOf(ri) !== -1;
-            var cls = '', pref = '';
+            var cls  = '';
+            var pref = '';
 
             if (estB && estC) {
                 cls  = 'rep-bonne-choisie';
@@ -5286,12 +5278,13 @@ function afficherCorrection() {
             }
 
             html +=
-                '<div class="corr-rep ' + cls + '">'
+                '<div class="corr-rep '
+                + cls + '">'
                 + '<span class="corr-lettre">'
                 + 'ABCD'[ri] + '</span>'
                 + '<span>' + pref
-                + (r.texte || '') + '</span>'
-                + '</div>';
+                + (r.texte || '')
+                + '</span></div>';
         });
 
         html += '</div>';
@@ -5309,9 +5302,9 @@ function afficherCorrection() {
 
     var btnPDF2 =
         document.createElement('button');
-    btnPDF2.className   = 'btn-primary';
+    btnPDF2.className       = 'btn-primary';
     btnPDF2.style.marginTop = '16px';
-    btnPDF2.textContent =
+    btnPDF2.textContent     =
         '📄 Télécharger correction PDF';
     btnPDF2.onclick = telechargerCorrectionPDF;
     correctionEl.appendChild(btnPDF2);
