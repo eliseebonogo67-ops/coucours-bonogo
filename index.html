@@ -1,1769 +1,1014 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1a6b3c">
-    <title>Concours Blanc Bonogo</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Bonogo">
-    <link rel="apple-touch-icon" href="icone.svg">
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="description" content="Concours blanc préparatoire ENSOA IDS ENAM ENAREF Burkina Faso">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a6b3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Concours Blanc Bonogo</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
+<!-- SPLASH -->
 <div id="splash">
-    <div class="splash-logo">
-        <div class="logo-circle">BB</div>
-        <h1>Concours Blanc</h1>
-        <h2>BONOGO</h2>
-        <div class="loader"></div>
-    </div>
+  <div class="splash-logo">
+    <div class="logo-circle">🇧🇫</div>
+    <h1>Concours Blanc Bonogo</h1>
+    <h2>ENSOA · IDS · ENAM · ENAREF</h2>
+    <div class="splash-loader"></div>
+  </div>
 </div>
-
-<div class="container">
 
 <!-- PAGE ACCUEIL -->
-<div id="page-accueil">
-    <div class="accueil-header">
-        <div class="accueil-logo">🇧🇫</div>
-        <div class="accueil-titre">Concours Blanc Bonogo</div>
-        <div class="accueil-sub">ENSOA · IDS · ENAM · ENAREF</div>
+<div id="page-accueil" class="page">
+  <div class="accueil-header">
+    <div class="accueil-logo">🇧🇫</div>
+    <div class="accueil-title">Concours Blanc Bonogo</div>
+    <div class="accueil-sub">ENSOA · IDS · ENAM · ENAREF</div>
+  </div>
+
+  <div class="accueil-card">
+
+    <!-- CONNEXION -->
+    <div id="formConnexion">
+      <h2 class="form-title">Connexion</h2>
+      <p class="form-sub">Prépare tes concours avec confiance</p>
+      <div class="input-wrap">
+        <span class="input-icon">📧</span>
+        <input type="email" id="email" placeholder="Ton Gmail" autocomplete="email">
+      </div>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="mdp" placeholder="Mot de passe" autocomplete="current-password">
+      </div>
+      <div id="erreur" class="erreur"></div>
+      <button class="btn-primary" id="btnLogin">Se connecter</button>
+      <div class="divider"><span>ou</span></div>
+      <button class="btn-outline" id="btnShowInscription">Créer un compte</button>
+      <div class="lien-form">
+        <span id="btnShowReset">Mot de passe oublié ?</span>
+      </div>
     </div>
-    <div class="accueil-body">
-        <div id="formConnexion">
-            <h2>Connexion</h2>
-            <p class="form-sub">Prépare tes concours avec confiance</p>
-            <div class="input-group">
-                <span class="input-icon">📧</span>
-                <input type="email" id="email"
-                    placeholder="Ton Gmail" autocomplete="email">
-            </div>
-            <div class="input-group">
-                <span class="input-icon">🔒</span>
-                <input type="password" id="mdp"
-                    placeholder="Mot de passe"
-                    autocomplete="current-password">
-            </div>
-            <p id="erreur" class="erreur"></p>
-            <button id="btnLogin" class="btn-primary">
-                Se connecter</button>
-            <div class="divider-ou">OU</div>
-            <button id="btnShowInscription" class="btn-outline">
-                Créer un compte</button>
-            <button id="btnShowReset"
-                class="btn-small btn-outline"
-                style="margin-top:8px;">
-                🔑 Mot de passe oublié ?</button>
-            <button id="btnAdmin"
-                class="btn-small btn-outline"
-                style="margin-top:6px;">
-                👑 Accès Admin</button>
-        </div>
-        <div id="formInscription" style="display:none;">
-            <h2>Créer un compte</h2>
-            <p class="form-sub">Rejoins la communauté Bonogo</p>
-            <div class="input-group">
-                <span class="input-icon">👤</span>
-                <input type="text" id="nom" placeholder="Nom"
-                    autocomplete="family-name" maxlength="20">
-            </div>
-            <div class="input-group">
-                <span class="input-icon">👤</span>
-                <input type="text" id="prenom"
-                    placeholder="Prénom"
-                    autocomplete="given-name" maxlength="20">
-            </div>
-            <div class="input-group">
-                <span class="input-icon">📧</span>
-                <input type="email" id="emailInscription"
-                    placeholder="Ton Gmail" autocomplete="email">
-            </div>
-            <div class="input-group">
-                <span class="input-icon">🔒</span>
-                <input type="password" id="mdpInscription"
-                    placeholder="Mot de passe 4 car. min"
-                    autocomplete="new-password">
-            </div>
-            <p id="erreurInscription" class="erreur"></p>
-            <button id="btnInscription" class="btn-primary">
-                ✅ S'inscrire</button>
-            <button id="btnShowConnexion"
-                class="btn-outline btn-small"
-                style="margin-top:8px;">
-                ← J'ai déjà un compte</button>
-        </div>
-        <div id="formReset" style="display:none;">
-            <h2>Récupérer mon compte</h2>
-            <p class="form-sub">Entre ton Gmail et un nouveau mot de passe</p>
-            <div class="input-group">
-                <span class="input-icon">📧</span>
-                <input type="email" id="emailReset"
-                    placeholder="Ton Gmail" autocomplete="email">
-            </div>
-            <div class="input-group">
-                <span class="input-icon">🔒</span>
-                <input type="password" id="nouveauMdp"
-                    placeholder="Nouveau mot de passe"
-                    autocomplete="new-password">
-            </div>
-            <p id="erreurReset" class="erreur"></p>
-            <button id="btnReset" class="btn-primary">
-                🔄 Changer le mot de passe</button>
-            <button id="btnRetourConnexion"
-                class="btn-outline btn-small"
-                style="margin-top:8px;">
-                ← Retour connexion</button>
-        </div>
-        <div class="online" style="margin-top:20px;">
-            🟢 <span id="onlineCount">0</span> candidats en ligne
-        </div>
-        <p class="contact">
-            📞 <b>55 24 04 31</b> / <b>69 04 19 02</b></p>
+
+    <!-- INSCRIPTION -->
+    <div id="formInscription" style="display:none">
+      <h2 class="form-title">Créer un compte</h2>
+      <p class="form-sub">Rejoins des milliers de candidats</p>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="prenom" placeholder="Ton Prénom">
+      </div>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="nom" placeholder="Ton Nom">
+      </div>
+      <div class="input-wrap">
+        <span class="input-icon">📧</span>
+        <input type="email" id="emailInscription" placeholder="Ton Gmail">
+      </div>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="mdpInscription" placeholder="Mot de passe (4 min)">
+      </div>
+      <div id="erreurInscription" class="erreur"></div>
+      <button class="btn-primary" id="btnInscription">Créer mon compte</button>
+      <div class="divider"><span>ou</span></div>
+      <button class="btn-outline" id="btnShowConnexion">J'ai déjà un compte</button>
     </div>
+
+    <!-- RESET -->
+    <div id="formReset" style="display:none">
+      <h2 class="form-title">Nouveau mot de passe</h2>
+      <p class="form-sub">Entre ton Gmail et ton nouveau mot de passe</p>
+      <div class="input-wrap">
+        <span class="input-icon">📧</span>
+        <input type="email" id="emailReset" placeholder="Ton Gmail">
+      </div>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="nouveauMdp" placeholder="Nouveau mot de passe">
+      </div>
+      <div id="erreurReset" class="erreur"></div>
+      <button class="btn-primary" id="btnReset">Changer le mot de passe</button>
+      <div class="lien-form">
+        <span id="btnRetourConnexion">← Retour à la connexion</span>
+      </div>
+    </div>
+
+    <div class="admin-link">
+      <span id="btnAdmin">Administration</span>
+    </div>
+
+  </div>
+</div>
+<!-- FIN PAGE ACCUEIL --><!-- PAGE MENU -->
+<div id="page-menu" class="page">
+  <div class="menu-header">
+    <div class="menu-avatar-row">
+      <div class="menu-avatar" id="avatarMenu">EB</div>
+      <div>
+        <div class="menu-hello">Bonjour,</div>
+        <div class="menu-name" id="nomMenu">Chargement...</div>
+        <div class="menu-rang" id="titreMenuRang" style="color:#facc15;">⭐ Recrue</div>
+      </div>
+      <button class="menu-notif-btn" id="btnNotifMenu">🔔</button>
+    </div>
+    <div class="menu-stats">
+      <div class="menu-stat">
+        <div class="menu-stat-val">⭐ <span id="niv">1</span></div>
+        <div class="menu-stat-label">Niveau</div>
+      </div>
+      <div class="menu-stat">
+        <div class="menu-stat-val">⚡ <span id="xp">0</span></div>
+        <div class="menu-stat-label">XP</div>
+      </div>
+      <div class="menu-stat">
+        <div class="menu-stat-val">🔥 <span id="streak">0</span>j</div>
+        <div class="menu-stat-label">Série</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-body">
+
+    <div style="text-align:center;margin:12px 0 8px;">
+      <div class="online-pill">
+        <div class="online-dot"></div>
+        <span id="onlineCountMenu">0</span> en ligne
+      </div>
+    </div>
+
+    <div id="compteRebours"></div>
+
+    <button class="btn-concours" id="btnExam">
+      <span class="bc-icon">🚀</span>
+      <span class="bc-text">
+        <span class="bc-title">Commencer le Concours</span>
+        <span class="bc-sub">BEPC · ENSOA · IDS · ENAM · ENAREF</span>
+      </span>
+      <span>›</span>
+    </button>
+
+    <div class="menu-section-title">📚 Fonctionnalités</div>
+    <div class="menu-grid">
+      <button class="menu-card" id="btnEntrainement">
+        <span class="menu-card-icon">🎯</span>
+        <div>
+          <span class="menu-card-title">Entraînement</span>
+          <span class="menu-card-sub">BEPC · BAC · Concours→</span>
+        </div>
+      </button>
+      <button class="menu-card" id="btnHistorique">
+        <span class="menu-card-icon">📋</span>
+        <div>
+          <span class="menu-card-title">Historique</span>
+          <span class="menu-card-sub">Mes anciens résultats→</span>
+        </div>
+      </button>
+      <button class="menu-card" id="btnClassement">
+        <span class="menu-card-icon">📊</span>
+        <div>
+          <span class="menu-card-title">Classement</span>
+          <span class="menu-card-sub">Top candidats live →</span>
+        </div>
+      </button>
+      <button class="menu-card" id="btnStats">
+        <span class="menu-card-icon">📈</span>
+        <div>
+          <span class="menu-card-title">Mes Stats</span>
+          <span class="menu-card-sub">Ma progression →</span>
+        </div>
+      </button>
+      <button class="menu-card" id="btnBadges">
+        <span class="menu-card-icon">🏆</span>
+        <div>
+          <span class="menu-card-title">Mes Badges</span>
+          <span class="menu-card-sub">Récompenses →</span>
+        </div>
+      </button>
+      <button class="menu-card" id="btnPartagerApp">
+        <span class="menu-card-icon">📲</span>
+        <div>
+          <span class="menu-card-title">Partager l'app</span>
+          <span class="menu-card-sub">WhatsApp · Facebook →</span>
+        </div>
+      </button>
+    </div>
+
+    <button class="btn-logout" id="btnLogout">🚪 Déconnexion</button>
+
+  </div>
+</div>
+<!-- FIN PAGE MENU --><!-- PAGE ADMIN LOGIN -->
+<div id="page-admin-login" class="page">
+  <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:50px 24px 40px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+    <div style="font-size:22px;font-weight:900;color:white;margin-bottom:6px;">Administration</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.7);">Accès réservé</div>
+  </div>
+  <div style="padding:24px;">
+    <div class="card">
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="adminPass" placeholder="Mot de passe admin">
+      </div>
+      <div id="erreurAdmin" class="erreur"></div>
+      <button class="btn-primary" id="btnLoginAdmin">Accéder</button>
+      <button class="btn-outline" id="btnRetour" style="margin-top:10px;">← Retour</button>
+    </div>
+  </div>
 </div>
 
-<!-- PAGE MENU -->
-<div id="page-menu" style="display:none;">
-    <div class="menu-top-header">
-        <div class="menu-profil-row">
-            <div class="menu-avatar" id="avatarMenu">AB</div>
-            <div class="menu-profil-info">
-                <div class="menu-profil-bonjour">Bonjour</div>
-                <div class="menu-nom" id="nomMenu">Bienvenue !</div>
-                <span id="titreMenuRang"></span>
-            </div>
-            <button class="menu-notif-btn">🔔</button>
-        </div>
-        <div class="menu-badges-row">
-            <div class="menu-badge-pill">
-                ⭐ Niv. <b id="niv">1</b></div>
-            <div class="menu-badge-pill">
-                ⚡ <b id="xp">0</b> XP</div>
-            <div class="menu-badge-pill">
-                🔥 <b id="streak">0</b>j</div>
-            <div class="menu-online-pill">
-                🟢 <span id="onlineCountMenu">0</span> en ligne
-            </div>
-        </div>
-    </div>
-    <button id="btnExam" class="btn-exam-principal">
-        <div class="btn-exam-icon">🚀</div>
-        <div>
-            <div class="btn-exam-titre">Commencer le Concours</div>
-            <div class="btn-exam-sub">
-                BEPC · ENSOA · IDS · ENAM · ENAREF</div>
-        </div>
-    </button>
-    <div id="compteRebours" style="margin-bottom:16px;"></div>
-    <div class="section-header">
-        <div class="section-titre">
-            <div class="section-titre-icon">📚</div>
-            <div class="section-titre-txt">Fonctionnalités</div>
-        </div>
-    </div>
-    <div class="menu-grid">
-        <button id="btnEntrainement" class="menu-tile tile-green">
-            <div class="tile-icon-wrap">🎯</div>
-            <div class="tile-label">Entraînement</div>
-            <div class="tile-sub">BEPC · BAC · Concours</div>
-            <span class="tile-arrow">→</span>
-        </button>
-        <button id="btnHistorique" class="menu-tile tile-purple">
-            <div class="tile-icon-wrap">📋</div>
-            <div class="tile-label">Historique</div>
-            <div class="tile-sub">Mes anciens résultats</div>
-            <span class="tile-arrow">→</span>
-        </button>
-        <button id="btnClassement" class="menu-tile tile-blue">
-            <div class="tile-icon-wrap">📊</div>
-            <div class="tile-label">Classement</div>
-            <div class="tile-sub">Top candidats live</div>
-            <span class="tile-arrow">→</span>
-        </button>
-        <button id="btnStats" class="menu-tile tile-yellow">
-            <div class="tile-icon-wrap">📈</div>
-            <div class="tile-label">Mes Stats</div>
-            <div class="tile-sub">Ma progression</div>
-            <span class="tile-arrow">→</span>
-        </button>
-        <button id="btnBadges" class="menu-tile tile-orange"
-            style="grid-column:1/-1;">
-            <div class="tile-icon-wrap">🏆</div>
-            <div class="tile-label">Mes Badges</div>
-            <div class="tile-sub">Mes récompenses débloquées</div>
-            <span class="tile-arrow">→</span>
-        </button>
-    </div>
-    <button id="btnLogout" class="btn-logout-menu">
-        ← Déconnexion</button>
-                    </div><!-- PAGE HISTORIQUE -->
-<div id="page-historique" style="display:none;">
-    <div class="page-header">
-        <button id="btnRetourMenuHist" class="btn-back">←</button>
-        <h1>Mon Historique</h1>
-    </div>
+<!-- PAGE HISTORIQUE -->
+<div id="page-historique" class="page">
+  <div class="page-header">
+    <button class="btn-back" id="btnRetourMenuHist">←</button>
+    <h1>Mon Historique</h1>
+  </div>
+  <div class="page-content">
     <div id="contenuHistorique">
-        <div class="loading-box">
-            <div class="loader"></div>
-            <p>Chargement...</p>
-        </div>
+      <div class="loading-box">
+        <div class="loader"></div>
+        <p>Chargement...</p>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- PAGE STATS -->
-<div id="page-stats" style="display:none;">
-    <div class="page-header">
-        <button id="btnRetourMenuStats" class="btn-back">←</button>
-        <h1>Mes Statistiques</h1>
-    </div>
+<div id="page-stats" class="page">
+  <div class="page-header">
+    <button class="btn-back" id="btnRetourMenuStats">←</button>
+    <h1>Mes Statistiques</h1>
+  </div>
+  <div class="page-content">
     <div id="contenuStats">
-        <div class="loading-box">
-            <div class="loader"></div>
-            <p>Chargement...</p>
-        </div>
+      <div class="loading-box">
+        <div class="loader"></div>
+        <p>Chargement...</p>
+      </div>
     </div>
+  </div>
+</div><!-- PAGE EXAMEN -->
+<div id="page-exam" class="page">
+
+  <!-- SALLE ATTENTE BEPC -->
+  <div id="salle-attente-bepc"
+    style="display:none;">
+    <div class="salle-box">
+      <div style="font-size:64px;
+        margin-bottom:16px;">📘</div>
+      <h2 style="font-size:22px;
+        font-weight:900;margin-bottom:8px;">
+        Salle BEPC
+      </h2>
+      <p style="color:var(--muted);
+        margin-bottom:16px;">
+        Le concours commence à
+      </p>
+      <div style="font-size:36px;
+        font-weight:900;color:var(--primary);
+        margin-bottom:8px;">
+        <span id="heureDebutAffichBepc">
+          --:--
+        </span>
+      </div>
+      <div class="timer-big"
+        id="timerDebutBepc">--:--:--</div>
+      <p style="color:var(--muted);
+        font-size:13px;margin-bottom:20px;">
+        Prépare-toi et reste sur cette page
+      </p>
+      <button class="btn-outline btn-small"
+        id="btnRetourSalleAttenteBepc">
+        ← Retour au menu
+      </button>
+    </div>
+  </div>
+
+  <!-- SALLE ATTENTE BAC -->
+  <div id="salle-attente-bac"
+    style="display:none;">
+    <div class="salle-box">
+      <div style="font-size:64px;
+        margin-bottom:16px;">📗</div>
+      <h2 style="font-size:22px;
+        font-weight:900;margin-bottom:8px;">
+        Salle BAC
+      </h2>
+      <p style="color:var(--muted);
+        margin-bottom:16px;">
+        Le concours commence à
+      </p>
+      <div style="font-size:36px;
+        font-weight:900;color:var(--primary);
+        margin-bottom:8px;">
+        <span id="heureDebutAffichBac">
+          --:--
+        </span>
+      </div>
+      <div class="timer-big"
+        id="timerDebutBac">--:--:--</div>
+      <p style="color:var(--muted);
+        font-size:13px;margin-bottom:20px;">
+        Prépare-toi et reste sur cette page
+      </p>
+      <button class="btn-outline btn-small"
+        id="btnRetourSalleAttenteBac">
+        ← Retour au menu
+      </button>
+    </div>
+  </div>
+
+  <!-- SALLE RETARD -->
+  <div id="salle-retard" style="display:none;">
+    <div class="salle-box">
+      <div style="font-size:64px;
+        margin-bottom:16px;">⏰</div>
+      <h2 style="font-size:22px;
+        font-weight:900;margin-bottom:8px;">
+        Tu arrives en retard
+      </h2>
+      <p style="color:var(--muted);
+        margin-bottom:16px;font-size:14px;">
+        Le concours a déjà commencé.<br>
+        Temps restant :
+      </p>
+      <div class="timer-big"
+        id="timerRetard">--:--</div>
+      <p style="color:var(--red);
+        font-size:13px;font-weight:700;
+        margin-bottom:20px;">
+        ⚠️ Tu peux encore composer mais<br>
+        le temps est compté !
+      </p>
+      <button class="btn-primary"
+        id="btnCommencerRetard"
+        style="max-width:300px;
+        margin:0 auto;">
+        Commencer quand même
+      </button>
+      <br>
+      <button class="btn-outline btn-small"
+        id="btnRetourSalleRetard"
+        style="margin-top:12px;">
+        ← Retour au menu
+      </button>
+    </div>
+  </div>
+
+  <!-- HEADER EXAMEN FIXE -->
+  <div class="header" style="display:none;">
+    <div style="flex:1;min-width:0;">
+      <div id="nomConcours">
+        Concours Blanc Bonogo
+      </div>
+      <div id="heureConcours">
+        Durée : -- min
+      </div>
+    </div>
+    <div id="timer">--:--</div>
+  </div>
+
+  <!-- SUBHEADER FIXE -->
+  <div class="subheader" style="display:none;">
+    <span id="enLigne">🟢 0</span>
+    <span id="restant">0/50</span>
+  </div>
+
+  <!-- ZONE QUESTIONS -->
+  <div id="questions" style="display:none;">
+  </div>
+
+  <!-- FOOTER FIXE -->
+  <div class="footer" style="display:none;">
+    <button id="btnNonRep">
+      📋 Non répondus
+    </button>
+    <button id="btnFinir">
+      ✅ Terminer
+    </button>
+  </div>
+
+  <!-- ATTENTE RÉSULTATS -->
+  <div id="attente"
+    style="display:none;padding:16px;">
+  </div>
+
+  <!-- RÉSULTAT -->
+  <div id="resultat" style="display:none;">
+    <div style="padding:16px;">
+
+      <div class="score-display">
+        <div id="salleBadgeResultat"
+          style="margin-bottom:12px;">
+        </div>
+        <div class="score-titre">
+          🎉 Résultat
+        </div>
+        <div id="score" class="score-number">
+          --/50
+        </div>
+        <div id="xpGagne" class="score-xp">
+          +0 XP
+        </div>
+        <div class="score-details">
+          <div class="score-det-item">
+            <span class="score-det-icon">
+              ✅
+            </span>
+            <span class="score-det-num"
+              id="bonnes">0</span>
+            <span class="score-det-label">
+              Bonnes
+            </span>
+          </div>
+          <div class="score-det-item">
+            <span class="score-det-icon">
+              ⚠️
+            </span>
+            <span class="score-det-num"
+              id="partielles">0</span>
+            <span class="score-det-label">
+              Partielles
+            </span>
+          </div>
+          <div class="score-det-item">
+            <span class="score-det-icon">
+              ❌
+            </span>
+            <span class="score-det-num"
+              id="fausses">0</span>
+            <span class="score-det-label">
+              Fausses
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div id="monRangRes"
+        style="margin-bottom:12px;">
+      </div>
+
+      <div id="mentionResultat"
+        class="mention-tag m-bien"
+        style="display:block;
+        text-align:center;
+        font-size:14px;
+        padding:10px 20px;
+        margin-bottom:12px;">
+        Passable
+      </div>
+
+      <div id="titreRangRes"
+        style="text-align:center;
+        font-size:16px;font-weight:800;
+        color:var(--orange);
+        margin-bottom:12px;">
+        ⭐ Recrue
+      </div>
+
+      <div id="sortiesInfo"></div>
+
+      <div id="courbeEvolution"
+        style="display:none;"></div>
+
+      <button class="btn-primary"
+        id="btnCorrection"
+        style="margin-bottom:10px;">
+        📖 Voir la Correction
+      </button>
+
+      <button id="btnPartageWA"
+        style="width:100%;padding:14px;
+        background:linear-gradient(
+          135deg,#25d366,#128c7e);
+        color:white;border:none;
+        border-radius:14px;font-size:15px;
+        font-weight:700;
+        font-family:'Poppins',Arial,sans-serif;
+        cursor:pointer;margin-bottom:10px;">
+        📱 Partager sur WhatsApp
+      </button>
+
+      <button class="btn-outline"
+        id="btnVoirClass"
+        style="margin-bottom:10px;">
+        🏆 Classement
+      </button>
+
+      <button class="btn-outline"
+        id="btnRetourMenu">
+        ← Menu
+      </button>
+
+      <div id="correction"
+        style="margin-top:16px;">
+      </div>
+
+    </div>
+  </div>
+
 </div>
+<!-- FIN PAGE EXAMEN --><!-- PAGE ENTRAÎNEMENT -->
+<div id="page-entrainement" class="page">
+  <div class="entr-header">
+    <div class="entr-titre">🎯 Entraînement</div>
+    <div class="entr-progress-bar">
+      <div class="entr-progress-fill" id="entrProgressGlobal"></div>
+    </div>
+    <div class="entr-pct">Score global : <span id="entrScoreGlobal">0%</span></div>
+  </div>
 
-<!-- PAGE ADMIN LOGIN -->
-<div id="page-admin-login" style="display:none;">
-    <div class="page-top-header">
-        <div class="pth-icon">👑</div>
-        <div class="pth-titre">Admin</div>
-        <div class="pth-sub">Accès réservé à l'administrateur</div>
-    </div>
-    <div style="padding-top:20px;">
-        <div class="card">
-            <div class="input-group">
-                <span class="input-icon">🔒</span>
-                <input type="password" id="adminPass"
-                    placeholder="Mot de passe admin">
-            </div>
-            <button id="btnLoginAdmin" class="btn-primary">
-                Entrer</button>
-            <button id="btnRetour"
-                class="btn-outline btn-small"
-                style="margin-top:8px;">← Retour</button>
-            <p id="erreurAdmin" class="erreur"></p>
-        </div>
-    </div>
-</div>
+  <div class="entr-tabs">
+    <button class="entr-tab active" id="ongletBepc" onclick="switchOngletEntr('bepc')">📘 BEPC</button>
+    <button class="entr-tab" id="ongletBac" onclick="switchOngletEntr('bac')">📗 BAC</button>
+  </div>
 
-<!-- PAGE EXAMEN -->
-<div id="page-exam" style="display:none;">
+  <div id="sectBepc">
+    <div class="grille-matieres" id="grilleBepc">
+      <div class="loading-box" style="grid-column:1/-1;">
+        <div class="loader"></div>
+        <p>Chargement matières...</p>
+      </div>
+    </div>
+  </div>
 
-    <!-- SALLE ATTENTE BEPC -->
-    <div id="salle-attente-bepc" style="display:none;">
-        <div class="card center"
-            style="margin-top:20px;position:relative;">
-            <button id="btnRetourSalleAttenteBepc"
-                class="btn-back"
-                style="position:absolute;top:16px;left:16px;">
-                ←</button>
-            <div class="logo">⏳</div>
-            <div style="display:inline-block;
-                background:rgba(59,130,246,0.1);
-                border:1.5px solid rgba(59,130,246,0.3);
-                border-radius:20px;padding:5px 16px;
-                font-size:13px;font-weight:800;
-                color:var(--blue);margin-bottom:12px;">
-                📘 Salle BEPC</div>
-            <h1>Concours pas encore commencé</h1>
-            <p class="sub">Le concours commence à
-                <b id="heureDebutAffichBepc">--:--</b></p>
-            <div class="timer-big"
-                id="timerDebutBepc">--:--:--</div>
-            <p style="color:var(--muted);margin-top:16px;
-                font-size:13px;">
-                Reste connecté. La page se lancera
-                automatiquement.</p>
-            <div class="online">🟢
-                <span id="onlineAttenteBepc">0</span>
-                candidats en salle BEPC</div>
-        </div>
+  <div id="sectBac" style="display:none;">
+    <div class="grille-matieres" id="grilleBac">
+      <div class="loading-box" style="grid-column:1/-1;">
+        <div class="loader"></div>
+        <p>Chargement matières...</p>
+      </div>
     </div>
+  </div>
 
-    <!-- SALLE ATTENTE BAC -->
-    <div id="salle-attente-bac" style="display:none;">
-        <div class="card center"
-            style="margin-top:20px;position:relative;">
-            <button id="btnRetourSalleAttenteBac"
-                class="btn-back"
-                style="position:absolute;top:16px;left:16px;">
-                ←</button>
-            <div class="logo">⏳</div>
-            <div style="display:inline-block;
-                background:rgba(26,107,60,0.1);
-                border:1.5px solid rgba(26,107,60,0.3);
-                border-radius:20px;padding:5px 16px;
-                font-size:13px;font-weight:800;
-                color:var(--primary);margin-bottom:12px;">
-                📗 Salle BAC / Concours</div>
-            <h1>Concours pas encore commencé</h1>
-            <p class="sub">Le concours commence à
-                <b id="heureDebutAffichBac">--:--</b></p>
-            <div class="timer-big"
-                id="timerDebutBac">--:--:--</div>
-            <p style="color:var(--muted);margin-top:16px;
-                font-size:13px;">
-                Reste connecté. La page se lancera
-                automatiquement.</p>
-            <div class="online">🟢
-                <span id="onlineAttenteBac">0</span>
-                candidats en salle BAC</div>
-        </div>
-    </div>
-
-    <!-- SALLE RETARD -->
-    <div id="salle-retard" style="display:none;">
-        <div class="card center" style="margin-top:20px;">
-            <div style="font-size:50px;margin-bottom:14px">⚡</div>
-            <h1 style="color:var(--orange)">
-                Concours en cours !</h1>
-            <p class="sub">Tu arrives en retard mais
-                tu peux encore participer.</p>
-            <div style="background:rgba(249,115,22,0.08);
-                border:1.5px solid rgba(249,115,22,0.2);
-                border-radius:16px;padding:16px;
-                margin:14px 0;">
-                <div style="font-size:12px;
-                    color:var(--muted);margin-bottom:6px;">
-                    Temps restant</div>
-                <div class="timer-big" id="timerRetard"
-                    style="color:var(--orange);">--:--</div>
-            </div>
-            <p style="color:var(--muted);font-size:13px;
-                line-height:1.6;margin-bottom:18px;">
-                Tu auras moins de temps que les autres.<br>
-                Tes réponses seront calculées à la fin.</p>
-            <button id="btnCommencerRetard"
-                class="btn-primary btn-big">
-                ⚡ Commencer quand même</button>
-            <button id="btnRetourSalleRetard"
-                class="btn-outline btn-small"
-                style="margin-top:8px;">← Retour</button>
-        </div>
-    </div>
-
-    <!-- HEADER FIXE EXAMEN -->
-    <div class="header">
-        <span id="nomConcours">📝 Concours Blanc Bonogo</span>
-        <span id="timer" class="timer">--:--</span>
-    </div>
-    <div class="subheader">
-        <span id="heureConcours">Durée: 1h30</span>
-        <span id="enLigne">🟢 0</span>
-        <span id="restant">0/50</span>
-    </div>
-
-    <!-- QUESTIONS -->
-    <div id="questions"></div>
-
-    <!-- FOOTER -->
-    <div class="footer">
-        <button id="btnNonRep">📋 Non répondu</button>
-        <button id="btnFinir">🏁 Terminer</button>
-    </div>
-
-    <!-- ATTENTE APRÈS SOUMISSION -->
-    <div id="attente" style="display:none;">
-        <div class="card center" style="margin-top:20px;">
-            <div class="loader"></div>
-            <h2>✅ Copie envoyée</h2>
-            <p style="color:var(--muted);font-size:14px;">
-                Attends la fin de l'heure pour voir ta note</p>
-            <div class="timer-big" id="timerAttente">--:--</div>
-            <p style="color:var(--muted);font-size:12px;
-                margin-top:10px;">
-                Tu peux fermer et revenir plus tard.</p>
-            <button id="btnRetourAttenteMenuStatic"
-                class="btn-outline btn-small"
-                style="margin-top:16px;">
-                ← Retour au menu</button>
-        </div>
-    </div>
-
-    <!-- RÉSULTAT -->
-    <div id="resultat" style="display:none;">
-        <div class="card center" style="margin-top:20px;">
-            <div id="salleBadgeResultat"
-                style="margin-bottom:8px;"></div>
-            <h2>🎉 Résultat</h2>
-            <div class="score" id="score">0/50</div>
-            <div class="xp-badge">
-                +<span id="xpGagne">0</span> XP</div>
-            <div class="stats-mini">
-                <span>✅ <b id="bonnes">0</b>
-                    <small>Bonnes</small></span>
-                <span>⚠️ <b id="partielles">0</b>
-                    <small>Partielles</small></span>
-                <span>❌ <b id="fausses">0</b>
-                    <small>Fausses</small></span>
-            </div>
-            <div id="monRangRes"></div>
-            <div id="mentionResultat"></div>
-            <div id="titreRangRes"
-                style="font-size:16px;font-weight:800;
-                margin:8px 0;"></div>
-            <div id="sortiesInfo" style="display:none;"></div>
-            <div id="courbeEvolution"
-                style="background:var(--card);
-                border:1px solid var(--border);
-                border-radius:16px;padding:16px;
-                margin:16px 0;text-align:left;
-                box-shadow:0 2px 10px rgba(0,0,0,0.06);
-                width:100%;"></div>
-            <button id="btnCorrection" class="btn-primary">
-                📖 Voir la Correction</button>
-            <button id="btnPartageWA"
-                style="width:100%;padding:14px;
-                background:linear-gradient(
-                    135deg,#25d366,#128c7e);
-                color:white;border:none;
-                border-radius:14px;
-                font-family:Poppins,sans-serif;
-                font-size:15px;font-weight:700;
-                cursor:pointer;margin:8px 0;
-                box-shadow:0 4px 15px
-                rgba(37,211,102,0.3);">
-                📲 Partager sur WhatsApp</button>
-            <button id="btnVoirClass" class="btn-outline"
-                style="margin-top:8px;">
-                🏆 Classement</button>
-            <button id="btnRetourMenu"
-                class="btn-outline btn-small"
-                style="margin-top:8px;">← Menu</button>
-        </div>
-        <div id="correction"></div>
-    </div>
-                </div><!-- PAGE ENTRAÎNEMENT CANDIDAT -->
-<div id="page-entrainement" style="display:none;">
-    <div class="page-top-header">
-        <button id="btnRetourMenuEntr" class="btn-back"
-            style="background:rgba(255,255,255,0.2);
-            border-color:rgba(255,255,255,0.3);
-            color:white;margin-bottom:12px;">←</button>
-        <div class="pth-icon">🎯</div>
-        <div class="pth-titre">Entraînement</div>
-        <div class="pth-sub">Choisis ton niveau</div>
-    </div>
-    <div style="padding-top:16px;">
-        <div class="entr-header-card">
-            <div class="entr-header-top">
-                <div>
-                    <div class="entr-header-titre">
-                        Ton niveau global</div>
-                    <div class="entr-header-sub">
-                        Continue à progresser !</div>
-                </div>
-                <div class="entr-score-global"
-                    id="entrScoreGlobal">0%</div>
-            </div>
-            <div class="progress-track"
-                style="margin-top:10px;">
-                <div class="progress-fill"
-                    id="entrProgressGlobal"
-                    style="width:0%;
-                    background:rgba(255,255,255,0.9);">
-                </div>
-            </div>
-        </div>
-        <div class="entr-onglets">
-            <button class="entr-onglet active"
-                id="ongletBepc"
-                onclick="switchOngletEntr('bepc')">
-                📘 Niveau BEPC</button>
-            <button class="entr-onglet"
-                id="ongletBac"
-                onclick="switchOngletEntr('bac')">
-                📗 Niveau BAC</button>
-        </div>
-        <div id="sectBepc">
-            <div class="matieres-titre">
-                Matières — Niveau BEPC</div>
-            <div id="grilleBepc"
-                class="matieres-grid"></div>
-        </div>
-        <div id="sectBac" style="display:none;">
-            <div class="matieres-titre">
-                Matières — Niveau BAC / Concours</div>
-            <div id="grilleBac"
-                class="matieres-grid"></div>
-        </div>
-    </div>
+  <div style="padding:0 16px 20px;">
+    <button class="btn-outline" id="btnRetourMenuEntr">← Retour au menu</button>
+  </div>
 </div>
 
 <!-- PAGE QUIZ ENTRAÎNEMENT -->
-<div id="page-quiz-entr" style="display:none;">
-    <div class="quiz-header">
-        <button id="btnQuitterQuiz"
-            class="btn-back">←</button>
-        <div class="quiz-header-info">
-            <div class="quiz-matiere-nom"
-                id="quizMatiereNom">
-                Mathématiques</div>
-            <div class="quiz-progress-txt"
-                id="quizProgressTxt">Q1/10</div>
-        </div>
-        <div class="quiz-score-badge"
-            id="quizScoreBadge">0 ✅</div>
+<div id="page-quiz-entr" class="page">
+  <div class="quiz-header">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-back" id="btnQuitterQuiz">←</button>
+      <div>
+        <div class="quiz-matiere" id="quizMatiereNom">📐 Mathématiques</div>
+        <div class="quiz-round-label" id="quizRoundLabel">Round 1/1 · Q1/10</div>
+      </div>
+      <div style="margin-left:auto;">
+        <div class="quiz-score-badge" id="quizScoreBadge">0 ✅</div>
+      </div>
     </div>
-    <div class="quiz-progress-bar">
-        <div class="quiz-progress-fill"
-            id="quizProgressFill"
-            style="width:0%"></div>
+    <div class="quiz-progress">
+      <div class="quiz-prog-bar">
+        <div class="quiz-prog-fill" id="quizProgressFill"></div>
+      </div>
+      <span class="quiz-prog-txt" id="quizProgressTxt">Q1/10</span>
     </div>
-    <div class="quiz-zone">
-        <div class="quiz-question-card"
-            id="quizQuestionCard">
-            <div class="quiz-q-num"
-                id="quizQNum">Question 1</div>
-            <div class="quiz-q-texte"
-                id="quizQTexte">...</div>
-        </div>
-        <div id="quizReponses"
-            class="quiz-reponses"></div>
-        <div id="quizFeedback"
-            class="quiz-feedback"
-            style="display:none;">
-            <div class="quiz-feedback-ico"
-                id="quizFeedbackIco">✅</div>
-            <div class="quiz-feedback-txt"
-                id="quizFeedbackTxt">
-                Bonne réponse !</div>
-            <div class="quiz-explication"
-                id="quizExplication"></div>
-            <button id="btnQuizSuivant"
-                class="quiz-btn-suivant">
-                Question suivante →</button>
-        </div>
+  </div>
+
+  <div class="quiz-body">
+    <div id="quizQuestionCard" class="quiz-question-card">
+      <div class="quiz-q-num" id="quizQNum">Question 1</div>
+      <div class="quiz-q-texte" id="quizQTexte">Chargement...</div>
     </div>
+
+    <div id="quizReponses"></div>
+
+    <div id="quizFeedback" style="display:none;" class="quiz-feedback">
+      <span class="quiz-feedback-ico" id="quizFeedbackIco">✅</span>
+      <span class="quiz-feedback-txt" id="quizFeedbackTxt">Bonne réponse !</span>
+      <div class="quiz-explication" id="quizExplication"></div>
+      <button class="btn-primary" id="btnQuizSuivant" style="margin-top:12px;">Question suivante →</button>
+    </div>
+  </div>
+  <div id="quizNav"></div>
 </div>
 
 <!-- PAGE RÉSULTAT ENTRAÎNEMENT -->
-<div id="page-resultat-entr" style="display:none;">
-    <div class="card center" style="margin-top:20px;">
-        <div id="entrResultatEmoji"
-            style="font-size:60px;
-            margin-bottom:10px;">🎉</div>
-        <h2 id="entrResultatTitre">
-            Entraînement terminé !</h2>
-        <div class="entr-score-final"
-            id="entrScoreFinal">0/0</div>
-        <div class="entr-pct-final"
-            id="entrPctFinal">0%</div>
-        <div class="entr-mention"
-            id="entrMention">Bien</div>
-        <div class="entr-stats-row">
-            <div class="entr-stat-item">
-                <span class="entr-stat-ico">✅</span>
-                <span class="entr-stat-val"
-                    id="entrNbBon">0</span>
-                <span class="entr-stat-lab">
-                    Bonnes</span>
-            </div>
-            <div class="entr-stat-item">
-                <span class="entr-stat-ico">❌</span>
-                <span class="entr-stat-val"
-                    id="entrNbFaux">0</span>
-                <span class="entr-stat-lab">
-                    Fausses</span>
-            </div>
-            <div class="entr-stat-item">
-                <span class="entr-stat-ico">⚡</span>
-                <span class="entr-stat-val"
-                    id="entrXpGagne">0</span>
-                <span class="entr-stat-lab">
-                    XP gagnés</span>
-            </div>
+<div id="page-resultat-entr" class="page">
+  <div class="entr-resultat">
+    <div class="entr-res-card">
+      <div id="entrResultatEmoji" style="font-size:56px;margin-bottom:12px;">🎉</div>
+      <div id="entrResultatTitre" style="font-size:20px;font-weight:900;margin-bottom:4px;">Mathématiques</div>
+      <div id="entrResultatSub" style="font-size:13px;color:var(--muted);margin-bottom:16px;">1 round · 10 questions</div>
+      <div id="entrScoreFinal" style="font-size:48px;font-weight:900;color:var(--primary);line-height:1;">0/10</div>
+      <div id="entrPctFinal" style="font-size:22px;font-weight:800;color:var(--muted);margin-top:4px;">0%</div>
+      <div id="entrMention" class="mention-tag m-bien" style="display:inline-block;margin:12px 0;font-size:14px;padding:8px 20px;">Bien !</div>
+      <div style="display:flex;justify-content:center;gap:20px;margin-top:14px;">
+        <div style="text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:var(--green);"><span id="entrNbBon">0</span></div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;">Bonnes</div>
         </div>
-        <div class="entr-conseil"
-            id="entrConseil"></div>
-        <button id="btnRecommencer"
-            class="btn-primary"
-            style="margin-top:10px;">
-            🔄 Recommencer cette matière</button>
-        <button id="btnAutreMatiere"
-            class="btn-outline"
-            style="margin-top:8px;">
-            🎯 Choisir une autre matière</button>
-        <button id="btnRetourMenuEntrRes"
-            class="btn-outline btn-small"
-            style="margin-top:8px;">
-            ← Menu principal</button>
-    </div>
-                    </div><!-- PAGE ADMIN -->
-<div id="page-admin" style="display:none;">
-    <div class="page-top-header">
-        <div class="pth-icon">👑</div>
-        <div class="pth-titre">Panel Admin</div>
-        <div class="pth-sub">Concours Blanc Bonogo</div>
-    </div>
-    <div style="padding-top:16px;">
-
-    <div class="card">
-        <div class="status" id="status">
-            🔴 Connexion...</div>
-        <div class="stats-grid">
-            <div class="stat-box">
-                <b id="statCandidats">0</b>
-                <span>Candidats</span></div>
-            <div class="stat-box">
-                <b id="statConcours">0</b>
-                <span>Concours</span></div>
-            <div class="stat-box">
-                <b id="statMoy">0</b>
-                <span>Moyenne</span></div>
-            <div class="stat-box">
-                <b id="statOnline">0</b>
-                <span>En ligne</span></div>
+        <div style="text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:var(--red);"><span id="entrNbFaux">0</span></div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;">Fausses</div>
         </div>
-    </div>
-
-    <!-- CONFIG BEPC -->
-    <div class="card">
-        <h2>⚙️ Config — 📘 BEPC</h2>
-        <label>Type :</label>
-        <select id="typeConcoursBepc">
-            <option>Concours Blanc BEPC</option>
-            <option>BEPC Blanc</option>
-            <option>BEPC National</option>
-            <option>Concours Blanc Bonogo BEPC</option>
-        </select>
-        <label>Heure début :</label>
-        <input type="time" id="hDebutBepc"
-            value="08:00">
-        <label>Heure fin :</label>
-        <input type="time" id="hFinBepc"
-            value="09:30">
-        <button id="btnSaveConfigBepc"
-            class="btn-primary">
-            💾 Sauver Config BEPC</button>
-    </div>
-
-    <!-- CONFIG BAC -->
-    <div class="card">
-        <h2>⚙️ Config — 📗 BAC</h2>
-        <label>Type :</label>
-        <select id="typeConcoursBAC">
-            <option>Concours Blanc BAC</option>
-            <option>ENSOA</option>
-            <option>IDS</option>
-            <option>ENAM</option>
-            <option>ENAREF</option>
-            <option>EAMAU</option>
-            <option>DOUANES</option>
-            <option>POLICE</option>
-        </select>
-        <label>Heure début :</label>
-        <input type="time" id="hDebutBAC"
-            value="10:00">
-        <label>Heure fin :</label>
-        <input type="time" id="hFinBAC"
-            value="11:30">
-        <button id="btnSaveConfigBAC"
-            class="btn-primary">
-            💾 Sauver Config BAC</button>
-    </div>
-
-    <!-- IMPORT BEPC -->
-    <div class="card">
-        <h2>⚡ Import Sujet — 📘 BEPC</h2>
-        <input type="file" id="fichierJSONBepc"
-            accept=".json,.txt"
-            style="width:100%;padding:12px;
-            background:#f8fafc;
-            border:1.5px solid var(--border);
-            border-radius:12px;color:var(--text);
-            font-size:13px;box-sizing:border-box;
-            cursor:pointer;margin-bottom:12px;">
-        <textarea id="collerJSONBepc"
-            placeholder="COLLE ICI LES QUESTIONS BEPC"
-            style="width:100%;height:120px;
-            padding:12px;background:#f8fafc;
-            border:1.5px solid var(--border);
-            border-radius:10px;color:var(--text);
-            font-family:monospace;font-size:11px;
-            margin-bottom:10px;
-            box-sizing:border-box;
-            resize:vertical;"></textarea>
-        <div style="display:flex;gap:8px;
-            margin-bottom:12px;">
-            <button id="btnAjouterPartieBepc"
-                style="flex:1;padding:13px;
-                background:linear-gradient(
-                    135deg,#3b82f6,#1d4ed8);
-                color:white;border:none;
-                border-radius:12px;
-                font-family:Poppins,sans-serif;
-                font-size:14px;font-weight:700;
-                cursor:pointer;">
-                ➕ Ajouter</button>
-            <button id="btnViderZoneBepc"
-                style="flex:1;padding:13px;
-                background:linear-gradient(
-                    135deg,#ef4444,#dc2626);
-                color:white;border:none;
-                border-radius:12px;
-                font-family:Poppins,sans-serif;
-                font-size:14px;font-weight:700;
-                cursor:pointer;">
-                🗑️ Vider</button>
+        <div style="text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:var(--purple);">+<span id="entrXpGagne">0</span></div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;">XP gagné</div>
         </div>
-        <div id="infoCumulBepc"
-            style="display:none;
-            background:rgba(59,130,246,0.08);
-            border:1px solid rgba(59,130,246,0.2);
-            border-radius:10px;padding:12px;
-            margin-bottom:12px;font-size:13px;
-            color:var(--text);text-align:center;
-            font-weight:600;">
-            📦 <span id="nbCaracteresBepc">0</span>
-            caractères accumulés
+      </div>
+    </div>
+
+    <div id="entrConseil" style="background:white;border-radius:16px;padding:16px;margin-bottom:14px;font-size:14px;color:var(--text);line-height:1.6;box-shadow:0 2px 10px rgba(0,0,0,0.06);"></div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn-primary" id="btnRecommencer">🔄 Recommencer cette matière</button>
+      <button class="btn-outline" id="btnAutreMatiere">📚 Autre matière</button>
+      <button class="btn-outline" id="btnRetourMenuEntrRes">← Retour au menu</button>
+    </div>
+  </div>
+          </div><!-- PAGE ADMIN -->
+<div id="page-admin" class="page">
+  <div class="page-header" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:24px;">⚙️</span>
+      <h1>Administration</h1>
+    </div>
+    <span id="status" style="font-size:12px;font-weight:700;background:rgba(34,197,94,0.1);color:var(--green);padding:4px 10px;border-radius:20px;">🔄 Chargement</span>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab('tabStats')">📊 Stats</button>
+    <button class="admin-tab" onclick="switchTab('tabBepc')">📘 BEPC</button>
+    <button class="admin-tab" onclick="switchTab('tabBac')">📗 BAC</button>
+    <button class="admin-tab" onclick="switchTab('tabEntrainement')">🎯 Entraîn.</button>
+    <button class="admin-tab" onclick="switchTab('tabCandidats')">👥 Candidats</button>
+    <button class="admin-tab" onclick="switchTab('tabActions')">⚡ Actions</button>
+  </div>
+
+  <!-- TAB STATS -->
+  <div id="tabStats" class="admin-section active">
+    <div class="admin-stat-grid">
+      <div class="admin-stat"><b id="statCandidats">0</b><small>Candidats inscrits</small></div>
+      <div class="admin-stat"><b id="statConcours">0</b><small>Copies soumises</small></div>
+      <div class="admin-stat"><b id="statMoy">0/50</b><small>Moyenne générale</small></div>
+      <div class="admin-stat"><b id="statOnline">0</b><small>En ligne</small></div>
+    </div>
+    <div class="card"><h3>📘 Top 10 BEPC</h3><div id="top10Bepc">Chargement...</div></div>
+    <div class="card"><h3>📗 Top 10 BAC</h3><div id="top10BAC">Chargement...</div></div>
+    <div class="card"><h3>🌟 Hall of Fame</h3><div id="top10Permanent">Chargement...</div></div>
+  </div>
+
+  <!-- TAB BEPC -->
+  <div id="tabBepc" class="admin-section">
+    <div class="card">
+      <h3>⏰ Configuration BEPC</h3>
+      <label>Type de concours</label>
+      <input type="text" id="typeConcoursBepc" value="Concours Blanc BEPC">
+      <div class="config-row">
+        <div style="flex:1"><label>Heure début</label><input type="time" id="hDebutBepc" value="08:00"></div>
+        <div style="flex:1"><label>Heure fin</label><input type="time" id="hFinBepc" value="10:00"></div>
+      </div>
+      <button class="btn-primary" id="btnSaveConfigBepc">💾 Sauvegarder Config BEPC</button>
+    </div>
+    <div class="card">
+      <h3>📝 Importer Sujet BEPC (JSON)</h3>
+      <div id="infoCumulBepc" class="info-cumul">📦 Caractères cumulés : <span id="nbCaracteresBepc">0</span></div>
+      <textarea id="collerJSONBepc" class="json-zone" placeholder="Colle ici une partie JSON..."></textarea>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn-outline btn-small" id="btnAjouterPartieBepc" style="flex:1;">➕ Ajouter partie</button>
+        <button class="btn-outline btn-small" id="btnViderZoneBepc" style="flex:1;color:var(--red);border-color:var(--red);">🗑️ Vider</button>
+      </div>
+      <button class="btn-primary" id="btnCharger50Bepc">📥 Charger les questions</button>
+      <button class="btn-primary" id="btnEnvoyer50Bepc" style="display:none;margin-top:8px;background:linear-gradient(135deg,#f97316,#ea580c);">🚀 Envoyer aux candidats</button>
+    </div>
+    <div class="card">
+      <h3>✏️ Modifier questions BEPC</h3>
+      <div id="listeQuestionsBepc"></div>
+      <button class="btn-outline" id="btnAjouterQBepc" style="margin-top:8px;">➕ Ajouter une question</button>
+      <button class="btn-primary" id="btnSaveSujetBepc" style="margin-top:8px;">💾 Sauvegarder le sujet</button>
+    </div>
+  </div>
+
+  <!-- TAB BAC -->
+  <div id="tabBac" class="admin-section">
+    <div class="card">
+      <h3>⏰ Configuration BAC</h3>
+      <label>Type de concours</label>
+      <input type="text" id="typeConcoursBAC" value="Concours Blanc BAC">
+      <div class="config-row">
+        <div style="flex:1"><label>Heure début</label><input type="time" id="hDebutBAC" value="14:00"></div>
+        <div style="flex:1"><label>Heure fin</label><input type="time" id="hFinBAC" value="16:00"></div>
+      </div>
+      <button class="btn-primary" id="btnSaveConfigBAC">💾 Sauvegarder Config BAC</button>
+    </div>
+    <div class="card">
+      <h3>📝 Importer Sujet BAC (JSON)</h3>
+      <div id="infoCumulBAC" class="info-cumul">📦 Caractères cumulés : <span id="nbCaracteresBAC">0</span></div>
+      <textarea id="collerJSONBAC" class="json-zone" placeholder="Colle ici une partie JSON..."></textarea>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn-outline btn-small" id="btnAjouterPartieBAC" style="flex:1;">➕ Ajouter partie</button>
+        <button class="btn-outline btn-small" id="btnViderZoneBAC" style="flex:1;color:var(--red);border-color:var(--red);">🗑️ Vider</button>
+      </div>
+      <button class="btn-primary" id="btnCharger50BAC">📥 Charger les questions</button>
+      <button class="btn-primary" id="btnEnvoyer50BAC" style="display:none;margin-top:8px;background:linear-gradient(135deg,#f97316,#ea580c);">🚀 Envoyer aux candidats</button>
+    </div>
+    <div class="card">
+      <h3>✏️ Modifier questions BAC</h3>
+      <div id="listeQuestionsBAC"></div>
+      <button class="btn-outline" id="btnAjouterQBAC" style="margin-top:8px;">➕ Ajouter une question</button>
+      <button class="btn-primary" id="btnSaveSujetBAC" style="margin-top:8px;">💾 Sauvegarder le sujet</button>
+    </div>
+        </div><!-- TAB ENTRAÎNEMENT ADMIN -->
+  <div id="tabEntrainement" class="admin-section">
+    <div class="card">
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button id="ongletBepcAdmin" class="admin-tab active" onclick="switchOngletAdmin('bepc')" style="flex:1;">📘 BEPC</button>
+        <button id="ongletBacAdmin" class="admin-tab" onclick="switchOngletAdmin('bac')" style="flex:1;">📗 BAC</button>
+      </div>
+
+      <!-- BEPC ADMIN -->
+      <div id="sectBepcAdmin">
+        <h3 style="margin-bottom:14px;">📘 Matières BEPC</h3>
+
+        <!-- MATHS BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">📐 Mathématiques BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_maths','Mathématiques BEPC','ta_bepc_maths')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_maths" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_maths" style="display:none;" onclick="chargerDepuisColle('bepc_maths','ta_bepc_maths','info_bepc_maths')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_maths" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_maths','info_bepc_maths')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
         </div>
-        <button id="btnCharger50Bepc"
-            class="btn-blue btn-big">
-            📥 CHARGER QUESTIONS BEPC</button>
-        <button id="btnEnvoyer50Bepc"
-            class="btn-green btn-big"
-            style="display:none;margin-top:10px;">
-            🚀 ENVOYER AUX ÉLÈVES BEPC</button>
-    </div>
 
-    <!-- IMPORT BAC -->
-    <div class="card">
-        <h2>⚡ Import Sujet — 📗 BAC</h2>
-        <input type="file" id="fichierJSONBAC"
-            accept=".json,.txt"
-            style="width:100%;padding:12px;
-            background:#f8fafc;
-            border:1.5px solid var(--border);
-            border-radius:12px;color:var(--text);
-            font-size:13px;box-sizing:border-box;
-            cursor:pointer;margin-bottom:12px;">
-        <textarea id="collerJSONBAC"
-            placeholder="COLLE ICI LES QUESTIONS BAC"
-            style="width:100%;height:120px;
-            padding:12px;background:#f8fafc;
-            border:1.5px solid var(--border);
-            border-radius:10px;color:var(--text);
-            font-family:monospace;font-size:11px;
-            margin-bottom:10px;
-            box-sizing:border-box;
-            resize:vertical;"></textarea>
-        <div style="display:flex;gap:8px;
-            margin-bottom:12px;">
-            <button id="btnAjouterPartieBAC"
-                style="flex:1;padding:13px;
-                background:linear-gradient(
-                    135deg,#3b82f6,#1d4ed8);
-                color:white;border:none;
-                border-radius:12px;
-                font-family:Poppins,sans-serif;
-                font-size:14px;font-weight:700;
-                cursor:pointer;">
-                ➕ Ajouter</button>
-            <button id="btnViderZoneBAC"
-                style="flex:1;padding:13px;
-                background:linear-gradient(
-                    135deg,#ef4444,#dc2626);
-                color:white;border:none;
-                border-radius:12px;
-                font-family:Poppins,sans-serif;
-                font-size:14px;font-weight:700;
-                cursor:pointer;">
-                🗑️ Vider</button>
+        <!-- FRANÇAIS BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">✍️ Français BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_francais','Français BEPC','ta_bepc_francais')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_francais" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_francais" style="display:none;" onclick="chargerDepuisColle('bepc_francais','ta_bepc_francais','info_bepc_francais')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_francais" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_francais','info_bepc_francais')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
         </div>
-        <div id="infoCumulBAC"
-            style="display:none;
-            background:rgba(59,130,246,0.08);
-            border:1px solid rgba(59,130,246,0.2);
-            border-radius:10px;padding:12px;
-            margin-bottom:12px;font-size:13px;
-            color:var(--text);text-align:center;
-            font-weight:600;">
-            📦 <span id="nbCaracteresBAC">0</span>
-            caractères accumulés
+
+        <!-- HISTOIRE-GÉO BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">📜 Histoire-Géo BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_histgeo','Histoire-Géo BEPC','ta_bepc_histgeo')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_histgeo" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_histgeo" style="display:none;" onclick="chargerDepuisColle('bepc_histgeo','ta_bepc_histgeo','info_bepc_histgeo')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_histgeo" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_histgeo','info_bepc_histgeo')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
         </div>
-        <button id="btnCharger50BAC"
-            class="btn-blue btn-big">
-            📥 CHARGER QUESTIONS BAC</button>
-        <button id="btnEnvoyer50BAC"
-            class="btn-green btn-big"
-            style="display:none;margin-top:10px;">
-            🚀 ENVOYER AUX ÉLÈVES BAC</button>
-    </div>
 
-    <!-- QUESTIONS BEPC -->
-    <div class="card">
-        <h2>📝 Questions BEPC</h2>
-        <div id="listeQuestionsBepc"></div>
-        <button id="btnAjouterQBepc"
-            class="btn-outline btn-small">
-            + Ajouter Question</button>
-        <button id="btnSaveSujetBepc"
-            class="btn-primary"
-            style="margin-top:8px;">
-            💾 Sauver Sujet BEPC</button>
-    </div>
-
-    <!-- QUESTIONS BAC -->
-    <div class="card">
-        <h2>📝 Questions BAC</h2>
-        <div id="listeQuestionsBAC"></div>
-        <button id="btnAjouterQBAC"
-            class="btn-outline btn-small">
-            + Ajouter Question</button>
-        <button id="btnSaveSujetBAC"
-            class="btn-primary"
-            style="margin-top:8px;">
-            💾 Sauver Sujet BAC</button>
-    </div>
-
-    <!-- ENTRAÎNEMENT BEPC -->
-    <div class="card">
-        <h2>📘 Entraînement — BEPC</h2>
-        <div class="entr-admin-grid">
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    📐 Maths BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_maths','Mathématiques BEPC',
-                    'coller_bepc_maths')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_maths"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bepc_maths"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_maths','coller_bepc_maths',
-                    'infoEntrBepcMaths')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcMaths"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcMaths">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_maths',
-                        'fileEntrBepcMaths',
-                        'infoEntrBepcMaths')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_maths',
-                        'infoEntrBepcMaths')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    ✍️ Français BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_francais','Français BEPC',
-                    'coller_bepc_francais')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_francais"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bepc_francais"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_francais',
-                    'coller_bepc_francais',
-                    'infoEntrBepcFrancais')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcFrancais"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcFrancais">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_francais',
-                        'fileEntrBepcFrancais',
-                        'infoEntrBepcFrancais')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_francais',
-                        'infoEntrBepcFrancais')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    📜 Histoire-Géo BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_histgeo',
-                    'Histoire-Géographie BEPC',
-                    'coller_bepc_histgeo')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_histgeo"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bepc_histgeo"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_histgeo',
-                    'coller_bepc_histgeo',
-                    'infoEntrBepcHistgeo')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcHistgeo"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcHistgeo">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_histgeo',
-                        'fileEntrBepcHistgeo',
-                        'infoEntrBepcHistgeo')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_histgeo',
-                        'infoEntrBepcHistgeo')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    🌿 SVT BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_svt','SVT BEPC',
-                    'coller_bepc_svt')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_svt"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bepc_svt"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_svt','coller_bepc_svt',
-                    'infoEntrBepcSvt')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcSvt"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcSvt">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_svt','fileEntrBepcSvt',
-                        'infoEntrBepcSvt')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_svt','infoEntrBepcSvt')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    ⚡ Physique-Chimie BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_pc',
-                    'Physique-Chimie BEPC',
-                    'coller_bepc_pc')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_pc"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bepc_pc"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_pc','coller_bepc_pc',
-                    'infoEntrBepcPc')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcPc"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcPc">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_pc','fileEntrBepcPc',
-                        'infoEntrBepcPc')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_pc','infoEntrBepcPc')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    🌐 Culture G. BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_cg',
-                    'Culture Générale BEPC',
-                    'coller_bepc_cg')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_cg"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bepc_cg"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_cg','coller_bepc_cg',
-                    'infoEntrBepcCg')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcCg"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcCg">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_cg','fileEntrBepcCg',
-                        'infoEntrBepcCg')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_cg','infoEntrBepcCg')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    📰 Actualités BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_actu',
-                    'Actualités Burkina BEPC',
-                    'coller_bepc_actu')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_actu"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bepc_actu"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_actu','coller_bepc_actu',
-                    'infoEntrBepcActu')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcActu"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcActu">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_actu',
-                        'fileEntrBepcActu',
-                        'infoEntrBepcActu')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_actu',
-                        'infoEntrBepcActu')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    💻 Schycotech BEPC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bepc_info','Schycotech BEPC',
-                    'coller_bepc_info')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bepc_info"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bepc_info"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bepc_info','coller_bepc_info',
-                    'infoEntrBepcInfo')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBepcInfo"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBepcInfo">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bepc_info',
-                        'fileEntrBepcInfo',
-                        'infoEntrBepcInfo')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bepc_info',
-                        'infoEntrBepcInfo')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
+        <!-- SVT BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🌿 SVT BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_svt','SVT BEPC','ta_bepc_svt')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_svt" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_svt" style="display:none;" onclick="chargerDepuisColle('bepc_svt','ta_bepc_svt','info_bepc_svt')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_svt" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_svt','info_bepc_svt')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
         </div>
-                        </div><!-- ENTRAÎNEMENT BAC -->
-    <div class="card">
-        <h2>📗 Entraînement — BAC / Concours</h2>
-        <div class="entr-admin-grid">
 
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    📐 Maths BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_maths',
-                    'Mathématiques BAC/Concours',
-                    'coller_bac_maths')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_maths"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bac_maths"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_maths','coller_bac_maths',
-                    'infoEntrBacMaths')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacMaths"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacMaths">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_maths',
-                        'fileEntrBacMaths',
-                        'infoEntrBacMaths')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_maths',
-                        'infoEntrBacMaths')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    ✍️ Français BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_francais',
-                    'Français BAC/Concours',
-                    'coller_bac_francais')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_francais"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bac_francais"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_francais',
-                    'coller_bac_francais',
-                    'infoEntrBacFrancais')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacFrancais"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacFrancais">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_francais',
-                        'fileEntrBacFrancais',
-                        'infoEntrBacFrancais')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_francais',
-                        'infoEntrBacFrancais')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    📜 Histoire BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_histoire',
-                    'Histoire BAC/Concours',
-                    'coller_bac_histoire')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_histoire"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bac_histoire"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_histoire',
-                    'coller_bac_histoire',
-                    'infoEntrBacHistoire')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacHistoire"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacHistoire">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_histoire',
-                        'fileEntrBacHistoire',
-                        'infoEntrBacHistoire')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_histoire',
-                        'infoEntrBacHistoire')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    🌍 Géographie BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_geo',
-                    'Géographie BAC/Concours',
-                    'coller_bac_geo')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_geo"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bac_geo"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_geo','coller_bac_geo',
-                    'infoEntrBacGeo')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacGeo"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacGeo">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_geo','fileEntrBacGeo',
-                        'infoEntrBacGeo')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_geo','infoEntrBacGeo')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <!-- BUG SVT BAC CORRIGÉ -->
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    🌿 SVT BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_svt',
-                    'SVT BAC/Concours',
-                    'coller_bac_svt')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_svt"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bac_svt"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_svt','coller_bac_svt',
-                    'infoEntrBacSvt')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacSvt"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacSvt">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_svt','fileEntrBacSvt',
-                        'infoEntrBacSvt')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_svt','infoEntrBacSvt')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    ⚡ Physique-Chimie BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_pc',
-                    'Physique-Chimie BAC/Concours',
-                    'coller_bac_pc')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_pc"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bac_pc"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_pc','coller_bac_pc',
-                    'infoEntrBacPc')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacPc"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacPc">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_pc','fileEntrBacPc',
-                        'infoEntrBacPc')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_pc','infoEntrBacPc')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    🌐 Culture G. BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_cg',
-                    'Culture Générale BAC/Concours',
-                    'coller_bac_cg')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_cg"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bac_cg"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_cg','coller_bac_cg',
-                    'infoEntrBacCg')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacCg"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacCg">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_cg','fileEntrBacCg',
-                        'infoEntrBacCg')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_cg','infoEntrBacCg')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    💻 Schycotech BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_info',
-                    'Schycotech BAC/Concours',
-                    'coller_bac_info')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_info"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button id="btnChargerColle_bac_info"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_info','coller_bac_info',
-                    'infoEntrBacInfo')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacInfo"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacInfo">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_info','fileEntrBacInfo',
-                        'infoEntrBacInfo')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_info','infoEntrBacInfo')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    💭 Philosophie BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_philo',
-                    'Philosophie BAC/Concours',
-                    'coller_bac_philo')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_philo"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bac_philo"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_philo','coller_bac_philo',
-                    'infoEntrBacPhilo')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacPhilo"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacPhilo">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_philo',
-                        'fileEntrBacPhilo',
-                        'infoEntrBacPhilo')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_philo',
-                        'infoEntrBacPhilo')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
-            <div class="entr-admin-bloc">
-                <div class="entr-admin-titre">
-                    📰 Actualités BAC</div>
-                <button class="entr-admin-generer"
-                    onclick="genererQuestionsIA(
-                    'bac_actu',
-                    'Actualités Burkina BAC/Concours',
-                    'coller_bac_actu')">
-                    ✨ Générer avec Claude</button>
-                <textarea id="coller_bac_actu"
-                    class="entr-admin-textarea"
-                    placeholder="Colle le JSON ici...">
-                </textarea>
-                <button
-                    id="btnChargerColle_bac_actu"
-                    class="btn-blue btn-small"
-                    style="display:none;margin:0;"
-                    onclick="chargerDepuisColle(
-                    'bac_actu','coller_bac_actu',
-                    'infoEntrBacActu')">
-                    📥 Charger</button>
-                <input type="file"
-                    id="fileEntrBacActu"
-                    accept=".json,.txt"
-                    class="entr-admin-file">
-                <div class="entr-admin-info"
-                    id="infoEntrBacActu">
-                    Non chargé</div>
-                <div class="entr-admin-actions">
-                    <button
-                        class="entr-admin-btn btn-blue"
-                        onclick="chargerSujetEntr(
-                        'bac_actu',
-                        'fileEntrBacActu',
-                        'infoEntrBacActu')">
-                        📥 Fichier</button>
-                    <button
-                        class="entr-admin-btn btn-green"
-                        onclick="envoyerSujetEntr(
-                        'bac_actu','infoEntrBacActu')">
-                        🚀 Envoyer</button>
-                </div>
-            </div>
-
+        <!-- PC BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">⚡ Physique-Chimie BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_pc','Physique-Chimie BEPC','ta_bepc_pc')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_pc" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_pc" style="display:none;" onclick="chargerDepuisColle('bepc_pc','ta_bepc_pc','info_bepc_pc')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_pc" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_pc','info_bepc_pc')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
         </div>
-    </div>
 
-    <!-- CANDIDATS -->
-    <div class="card">
-        <h2>👥 Candidats Inscrits</h2>
-        <button id="btnActiverTous"
-            class="btn-primary btn-small"
-            style="margin-bottom:12px;">
-            ✅ Activer TOUS les candidats</button>
-        <div id="listeCandidats">
-            <div class="loading-box">
-                <div class="loader"></div>
-                <p>Chargement...</p>
-            </div>
+        <!-- CG BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🌐 Culture Générale BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_cg','Culture Générale BEPC','ta_bepc_cg')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_cg" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_cg" style="display:none;" onclick="chargerDepuisColle('bepc_cg','ta_bepc_cg','info_bepc_cg')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_cg" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_cg','info_bepc_cg')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
         </div>
-    </div>
 
-    <!-- TOP 10 -->
-    <div class="card">
-        <h2>🏆 Top 10 Live — BEPC</h2>
-        <div id="top10Bepc"></div>
-    </div>
-    <div class="card">
-        <h2>🏆 Top 10 Live — BAC</h2>
-        <div id="top10BAC"></div>
-    </div>
-    <div class="card">
-        <h2>🌟 Hall of Fame</h2>
-        <div id="top10Permanent"></div>
-        <button id="btnResetTop10"
-            class="btn-red btn-small"
-            style="margin-top:10px;">
-            🗑️ Reset Top 10</button>
-    </div>
+        <!-- ACTU BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">📰 Actualités BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_actu','Actualités BEPC','ta_bepc_actu')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_actu" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_actu" style="display:none;" onclick="chargerDepuisColle('bepc_actu','ta_bepc_actu','info_bepc_actu')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_actu" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_actu','info_bepc_actu')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
 
+        <!-- INFO BEPC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">💻 Schycotech BEPC</div>
+          <button onclick="genererQuestionsIA('bepc_info','Schycotech BEPC','ta_bepc_info')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bepc_info" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bepc_info" style="display:none;" onclick="chargerDepuisColle('bepc_info','ta_bepc_info','info_bepc_info')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bepc_info" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bepc_info','info_bepc_info')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+      </div>
+
+      <!-- BAC ADMIN -->
+      <div id="sectBacAdmin" style="display:none;">
+        <h3 style="margin-bottom:14px;">📗 Matières BAC</h3>
+
+        <!-- MATHS BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">📐 Mathématiques BAC</div>
+          <button onclick="genererQuestionsIA('bac_maths','Mathématiques BAC','ta_bac_maths')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_maths" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_maths" style="display:none;" onclick="chargerDepuisColle('bac_maths','ta_bac_maths','info_bac_maths')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_maths" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_maths','info_bac_maths')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- FRANÇAIS BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">✍️ Français BAC</div>
+          <button onclick="genererQuestionsIA('bac_francais','Français BAC','ta_bac_francais')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_francais" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_francais" style="display:none;" onclick="chargerDepuisColle('bac_francais','ta_bac_francais','info_bac_francais')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_francais" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_francais','info_bac_francais')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- HISTOIRE BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">📜 Histoire BAC</div>
+          <button onclick="genererQuestionsIA('bac_histoire','Histoire BAC','ta_bac_histoire')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_histoire" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_histoire" style="display:none;" onclick="chargerDepuisColle('bac_histoire','ta_bac_histoire','info_bac_histoire')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_histoire" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_histoire','info_bac_histoire')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- GÉO BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🌍 Géographie BAC</div>
+          <button onclick="genererQuestionsIA('bac_geo','Géographie BAC','ta_bac_geo')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_geo" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_geo" style="display:none;" onclick="chargerDepuisColle('bac_geo','ta_bac_geo','info_bac_geo')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_geo" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_geo','info_bac_geo')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- SVT BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🌿 SVT BAC</div>
+          <button onclick="genererQuestionsIA('bac_svt','SVT BAC','ta_bac_svt')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_svt" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_svt" style="display:none;" onclick="chargerDepuisColle('bac_svt','ta_bac_svt','info_bac_svt')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_svt" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_svt','info_bac_svt')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- PC BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">⚡ Physique-Chimie BAC</div>
+          <button onclick="genererQuestionsIA('bac_pc','Physique-Chimie BAC','ta_bac_pc')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_pc" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_pc" style="display:none;" onclick="chargerDepuisColle('bac_pc','ta_bac_pc','info_bac_pc')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_pc" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_pc','info_bac_pc')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- CG BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🌐 Culture Générale BAC</div>
+          <button onclick="genererQuestionsIA('bac_cg','Culture Générale BAC','ta_bac_cg')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_cg" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_cg" style="display:none;" onclick="chargerDepuisColle('bac_cg','ta_bac_cg','info_bac_cg')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_cg" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_cg','info_bac_cg')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- PHILO BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">💭 Philosophie BAC</div>
+          <button onclick="genererQuestionsIA('bac_philo','Philosophie BAC','ta_bac_philo')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_philo" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_philo" style="display:none;" onclick="chargerDepuisColle('bac_philo','ta_bac_philo','info_bac_philo')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_philo" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_philo','info_bac_philo')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- INFO BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">💻 Schycotech BAC</div>
+          <button onclick="genererQuestionsIA('bac_info','Schycotech BAC','ta_bac_info')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_info" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_info" style="display:none;" onclick="chargerDepuisColle('bac_info','ta_bac_info','info_bac_info')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_info" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_info','info_bac_info')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+
+        <!-- ACTU BAC -->
+        <div style="border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:10px;">📰 Actualités BAC</div>
+          <button onclick="genererQuestionsIA('bac_actu','Actualités BAC','ta_bac_actu')" class="btn-outline btn-small" style="margin-bottom:8px;width:100%;">✨ Générer avec Claude</button>
+          <textarea id="ta_bac_actu" class="json-zone" style="display:none" placeholder="Colle JSON ici..."></textarea>
+          <button id="btnChargerColle_bac_actu" style="display:none;" onclick="chargerDepuisColle('bac_actu','ta_bac_actu','info_bac_actu')" class="btn-outline btn-small">📥 Charger</button>
+          <div id="info_bac_actu" style="font-size:12px;color:var(--primary);margin-bottom:6px;"></div>
+          <button onclick="envoyerSujetEntr('bac_actu','info_bac_actu')" class="btn-primary" style="font-size:13px;">🚀 Envoyer aux élèves</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB CANDIDATS -->
+  <div id="tabCandidats" class="admin-section">
     <div class="card">
-        <h2>🔄 Actions</h2>
-        <button id="btnNouveauConcours"
-            class="btn-orange">
-            🔄 Nouveau Concours</button>
+      <h3>👥 Candidats inscrits</h3>
+      <button class="btn-primary" id="btnActiverTous" style="margin-bottom:14px;">✅ Activer tous</button>
+      <div id="listeCandidats">
+        <div class="loading-box"><div class="loader"></div><p>Chargement...</p></div>
+      </div>
     </div>
+  </div>
 
-    <button id="btnLogoutAdmin" class="btn-red"
-        style="margin-bottom:20px;">
-        Déconnexion Admin</button>
-
+  <!-- TAB ACTIONS -->
+  <div id="tabActions" class="admin-section">
+    <div class="card">
+      <h3>⚡ Actions rapides</h3>
+      <button class="btn-primary" id="btnNouveauConcours" style="margin-bottom:10px;">🔄 Nouveau Concours</button>
+      <button class="btn-outline" id="btnResetTop10" style="margin-bottom:10px;color:var(--red);border-color:var(--red);">🗑️ Reset Hall of Fame</button>
+      <button class="btn-outline" id="btnLogoutAdmin">🚪 Quitter l'admin</button>
     </div>
+  </div>
+
 </div>
+<!-- FIN PAGE ADMIN -->
 
-</div><!-- FIN CONTAINER -->
+<!-- MODAL GÉNÉRAL --><div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9990;align-items:flex-end;justify-content:center;">
+  <div style="background:white;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;">
+    <h3 id="modalTitre" style="font-size:18px;font-weight:900;margin-bottom:12px;"></h3>
+    <div id="modalTexte" style="margin-bottom:20px;font-size:14px;color:var(--muted);line-height:1.7;"></div>
+    <div style="display:flex;gap:10px;">
+      <button id="btnAnnuler" class="btn-outline" style="flex:1;">Annuler</button>
+      <button id="btnConfirmer" class="btn-primary" style="flex:1;">Confirmer</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL CHOIX SALLE -->
-<div id="modal-choix-salle"
-    style="display:none;position:fixed;
-    top:0;left:0;right:0;bottom:0;
-    background:rgba(15,23,42,0.7);
-    align-items:center;justify-content:center;
-    z-index:1000;padding:20px;
-    backdrop-filter:blur(4px);">
-    <div style="background:white;
-        border-radius:24px;padding:28px;
-        max-width:420px;width:100%;
-        text-align:center;
-        box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="font-size:48px;
-            margin-bottom:12px;">🎓</div>
-        <h2 style="margin-bottom:6px;
-            font-size:20px;">
-            Choisir ta salle</h2>
-        <p style="color:var(--muted);
-            font-size:13px;margin-bottom:20px;
-            line-height:1.6;">
-            Sélectionne ton niveau.<br>
-            Tu peux faire les deux !</p>
-        <div style="display:flex;
-            flex-direction:column;gap:12px;">
-            <button id="btnChoixBepc"
-                style="padding:20px;
-                background:linear-gradient(
-                    135deg,#3b82f6,#1d4ed8);
-                color:white;border:none;
-                border-radius:16px;
-                font-family:Poppins,sans-serif;
-                font-size:16px;font-weight:700;
-                cursor:pointer;
-                min-height:auto;margin:0;">
-                📘 Salle BEPC</button>
-            <button id="btnChoixBAC"
-                style="padding:20px;
-                background:linear-gradient(
-                    135deg,#1a6b3c,#22c55e);
-                color:white;border:none;
-                border-radius:16px;
-                font-family:Poppins,sans-serif;
-                font-size:16px;font-weight:700;
-                cursor:pointer;
-                min-height:auto;margin:0;">
-                📗 Salle BAC / Concours</button>
-            <button id="btnAnnulerChoixSalle"
-                class="btn-outline btn-small"
-                style="margin:0;">
-                Annuler</button>
-        </div>
+<div id="modal-choix-salle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9990;align-items:flex-end;justify-content:center;">
+  <div style="background:white;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:500px;">
+    <h3 style="font-size:18px;font-weight:900;margin-bottom:6px;text-align:center;">🚀 Choisir une salle</h3>
+    <p style="color:var(--muted);font-size:13px;text-align:center;margin-bottom:20px;">Sélectionne ton niveau de concours</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button id="btnChoixBepc" style="padding:18px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:white;border:none;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Poppins',Arial,sans-serif;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:28px;">📘</span>
+        <div style="text-align:left;"><div>Salle BEPC</div><div style="font-size:12px;opacity:0.85;">Brevet d'Études du 1er Cycle</div></div>
+      </button>
+      <button id="btnChoixBAC" style="padding:18px;background:linear-gradient(135deg,#1a6b3c,#22c55e);color:white;border:none;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Poppins',Arial,sans-serif;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:28px;">📗</span>
+        <div style="text-align:left;"><div>Salle BAC / Concours</div><div style="font-size:12px;opacity:0.85;">BAC · ENSOA · IDS · ENAM · ENAREF</div></div>
+      </button>
+      <button id="btnAnnulerChoixSalle" class="btn-outline">Annuler</button>
     </div>
+  </div>
 </div>
 
-<!-- MODAL GÉNÉRAL -->
-<div id="modal" class="modal" style="display:none;">
-    <div class="modal-box">
-        <h2 id="modalTitre">Confirmation</h2>
-        <div id="modalTexte"></div>
-        <div class="modal-btns">
-            <button id="btnAnnuler"
-                class="btn-outline">Annuler</button>
-            <button id="btnConfirmer"
-                class="btn-red">Confirmer</button>
-        </div>
-    </div>
-</div>
-
+<!-- TOASTS -->
 <div id="toasts"></div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="script.js"></script>
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<!-- SCRIPT PRINCIPAL -->
+<script src="./script.js"></script>
 
 <script>
+function switchTab(tabId) {
+    document.querySelectorAll('.admin-section').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelectorAll('.admin-tab').forEach(function(t){ t.classList.remove('active'); });
+    var tab = document.getElementById(tabId);
+    if (tab) tab.classList.add('active');
+    if (event && event.target) event.target.classList.add('active');
+}
+
+function partagerApp() {
+    if (typeof son === 'function') son('click');
+    var msg = '🇧🇫 *Concours Blanc Bonogo*\nPrépare tes concours BEPC, BAC, ENSOA, IDS, ENAM, ENAREF !\n\n📲 Télécharge l\'app :\nhttps://median.co/share/qdlqmbo\n\n✅ Sujets type concours\n✅ Entraînement par matière\n✅ Classement en temps réel\n✅ Corrections détaillées';
+    if (navigator.share) {
+        navigator.share({ title:'Concours Blanc Bonogo', text:msg, url:'https://median.co/share/qdlqmbo' })
+            .catch(function(){ window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); });
+    } else {
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    }
+}
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register(
-            './service-worker.js')
-            .then(function(reg) {
-                console.log('SW OK:', reg.scope);
-            })
-            .catch(function(e) {
-                console.log('SW erreur:', e);
-            });
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(function(reg){ console.log('SW OK:', reg.scope); })
+            .catch(function(e){ console.log('SW erreur:', e); });
     });
 }
 </script>
+
 </body>
-</html>
+    </html>
