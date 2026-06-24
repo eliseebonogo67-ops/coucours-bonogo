@@ -1,26 +1,41 @@
 {
   "name": "Concours Blanc Bonogo",
-  "short_name": "CB Bonogo",
-  "description": "Concours blanc préparatoire ENSOA IDS ENAM ENAREF",
-  "start_url": "/coucours-bonogo/",
-  "scope": "/coucours-bonogo/",
+  "short_name": "Bonogo",
+  "description": "Prépare tes concours BEPC, BAC, ENSOA, IDS, ENAM, ENAREF au Burkina Faso",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0a0f1e",
-  "theme_color": "#eab308",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
+  "background_color": "#1a6b3c",
+  "theme_color": "#1a6b3c",
   "lang": "fr",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Commencer un concours",
+      "short_name": "Concours",
+      "description": "Accéder directement au concours",
+      "url": "./index.html",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
