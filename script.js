@@ -372,6 +372,9 @@ var btnRetourSalleRetard      = document.getElementById('btnRetourSalleRetard');
 // FIN PARTIE 2/24 ✅
 // ============================================// ============================================
 // PARTIE 3/24 — AUDIO + UTILITAIRES
+// CORRIGÉ : ajout de estAccesActif() — accès basé
+// sur un abonnement à durée (hebdo/mensuel) au
+// lieu d'un simple booléen permanent.
 // ============================================
 
 function son(type) {
@@ -486,7 +489,6 @@ function convertirMath(texte) {
         .replace(/≤/g, '≤').replace(/≥/g, '≥').replace(/≠/g, '≠').replace(/π/g, 'π');
 }
 
-// === ÉCHAPPEMENT HTML (sécurité affichage admin) ===
 function escHTML(str) {
     if (str === undefined || str === null) return '';
     return String(str)
@@ -497,7 +499,21 @@ function escHTML(str) {
         .replace(/'/g, '&#39;');
 }
 
-// === RETOUR ANDROID ===
+// === NOUVEAU : accès basé sur abonnement à durée ===
+// Remplace le simple booléen accesPaye par une vraie expiration.
+// accessExpiration = timestamp jusqu'auquel l'accès est valide.
+function estAccesActif(u) {
+    if (!u) return false;
+    if (u.accessExpiration && u.accessExpiration > Date.now()) return true;
+    return false;
+}
+
+function joursRestants(u) {
+    if (!u || !u.accessExpiration) return 0;
+    var reste = u.accessExpiration - Date.now();
+    return reste > 0 ? Math.ceil(reste / 86400000) : 0;
+}
+
 document.addEventListener('backbutton', function(e) {
     e.preventDefault();
     if (pageExam && pageExam.style.display !== 'none') {
@@ -508,7 +524,7 @@ document.addEventListener('backbutton', function(e) {
 }, false);
 
 // ============================================
-// FIN PARTIE 3/24 ✅
+// FIN PARTIE 3/24 ✅ (CORRIGÉE — estAccesActif)
 // ============================================// ============================================
 // PARTIE 4/24 — AUTH + CONNEXION RAPIDE
 // CORRIGÉ : chaque compte se lie désormais à
@@ -1223,8 +1239,11 @@ async function afficherStats() {
 // FIN PARTIE 6/24 ✅ (CORRIGÉE — stats enrichies)
 // ============================================// ============================================
 // PARTIE 7/24 — BADGES + CLASSEMENT + TOP10
-// CORRIGÉ : badges recentrés/stylés, classement
-// réorganisé en onglets (Direct / BEPC / BAC / Hall)
+// CORRIGÉ : le Hall of Fame (top10All) ne filtrait
+// PAS du tout par revealAt — c'était la vraie
+// cause du score visible immédiatement. Corrigé
+// ici : verifierTop10 enregistre désormais
+// revealAt, et le classement filtre aussi ce tab.
 // ============================================
 
 async function verifierBadges(score, sorties) {
@@ -1248,14 +1267,15 @@ async function verifierBadges(score, sorties) {
     }
 }
 
-async function verifierTop10(score, prenom, nom) {
+// CORRIGÉ : accepte désormais revealAt et l'enregistre sur l'entrée
+async function verifierTop10(score, prenom, nom, revealAt) {
     if (!user) return;
     try {
         var snap = await db.ref('top10All').once('value');
         var top = snap.val() || {};
         var entries = Object.entries(top).map(function(kv) { return {key:kv[0], val:kv[1]}; });
         entries.sort(function(a,b) { return b.val.score - a.val.score; });
-        var monEntry = { prenom: prenom, nom: nom, score: score, ts: Date.now() };
+        var monEntry = { prenom: prenom, nom: nom, score: score, ts: Date.now(), revealAt: revealAt || Date.now() };
         var dejaPresent = entries.findIndex(function(e) { return e.key === user; });
         if (dejaPresent !== -1) {
             if (score > entries[dejaPresent].val.score) {
@@ -1274,7 +1294,6 @@ async function verifierTop10(score, prenom, nom) {
     } catch(e) {}
 }
 
-// === BADGES — VERSION STYLÉE ===
 function afficherBadges() {
     var badges = userData.badges || {};
     modalTitreEl.textContent = '🏆 Mes Badges';
@@ -1303,7 +1322,11 @@ function afficherBadges() {
     };
 }
 
-// === CLASSEMENT — VERSION EN ONGLETS (chaque top a sa page) ===
+function estRevele(v) {
+    if (!v || v.revealAt === undefined || v.revealAt === null) return true;
+    return v.revealAt <= Date.now();
+}
+
 async function afficherClassement() {
     modalTitreEl.textContent = '🏆 Classement';
     modalTexteEl.innerHTML   = '<div class="loading-box"><div class="loader"></div><p>Chargement...</p></div>';
@@ -1325,21 +1348,22 @@ async function afficherClassement() {
         var all = [], arrBepc = [], arrBac = [], arrHall = [];
         results[0].forEach(function(c) {
             var v = c.val();
-            if (v && v.prenom) {
+            if (v && v.prenom && estRevele(v)) {
                 var o = Object.assign({key:c.key}, v, {score: Math.min(v.score||0,50), salle:'BEPC'});
                 all.push(o); arrBepc.push(o);
             }
         });
         results[1].forEach(function(c) {
             var v = c.val();
-            if (v && v.prenom) {
+            if (v && v.prenom && estRevele(v)) {
                 var o = Object.assign({key:c.key}, v, {score: Math.min(v.score||0,50), salle:'BAC'});
                 all.push(o); arrBac.push(o);
             }
         });
+        // CORRIGÉ : filtre désormais aussi le Hall of Fame par revealAt
         results[2].forEach(function(c) {
             var v = c.val();
-            if (v) arrHall.push(Object.assign({key:c.key}, v, {score: Math.min(v.score||0,50)}));
+            if (v && estRevele(v)) arrHall.push(Object.assign({key:c.key}, v, {score: Math.min(v.score||0,50)}));
         });
         all.sort(function(a,b) { return b.score-a.score; });
         arrBepc.sort(function(a,b) { return b.score-a.score; });
@@ -1381,7 +1405,7 @@ async function afficherClassement() {
             if (o.data.length === 0) {
                 var p = document.createElement('p');
                 p.style.cssText = 'text-align:center;color:var(--muted);font-size:13px;padding:20px 0;';
-                p.textContent = 'Aucun résultat pour le moment';
+                p.textContent = 'Aucun résultat pour le moment (les scores s\'affichent à la fin du concours)';
                 contentWrap.appendChild(p);
                 return;
             }
@@ -1408,7 +1432,6 @@ async function afficherClassement() {
 
 function demarrerClassementLive() {}
 
-// Top 10 côté ADMIN (panneau Stats) — inchangé
 function demarrerTop10Live() {
     var el10B    = document.getElementById('top10Bepc');
     var el10BAC  = document.getElementById('top10BAC');
@@ -1455,7 +1478,7 @@ function demarrerTop10Live() {
 }
 
 // ============================================
-// FIN PARTIE 7/24 ✅ (CORRIGÉE)
+// FIN PARTIE 7/24 ✅ (CORRIGÉE — Hall of Fame revealAt)
 // ============================================// ============================================
 // PARTIE 8/24 — ADMIN LOGIN + CONFIG + CHARGEMENT ADMIN
 // FINALISÉ : connexion Firebase Auth réelle avec
@@ -1974,9 +1997,9 @@ if (btnSaveSujetBAC_El) {
 // FIN PARTIE 9/24 ✅ (CORRIGÉE)
 // ============================================// ============================================
 // PARTIE 10/24 — ADMIN CANDIDATS + ACTIONS
-// CORRIGÉ : ajout d'un bouton "Réinitialiser
-// appareil" pour libérer un compte bloqué sur un
-// ancien téléphone (changement d'appareil élève).
+// CORRIGÉ : remplace le simple bouton "Activer/
+// Révoquer" par un choix de durée d'abonnement
+// (1 semaine = 750 FCFA, 1 mois = 2500 FCFA).
 // ============================================
 
 async function chargerListeCandidats() {
@@ -1987,18 +2010,20 @@ async function chargerListeCandidats() {
         var users = snap.val() || {};
         var arr = Object.entries(users).map(function(kv) { return Object.assign({key: kv[0]}, kv[1]); });
         arr.sort(function(a, b) { return (b.dateInscription||0) - (a.dateInscription||0); });
-        var payes = arr.filter(function(u) { return u.accesPaye; }).length;
+        var payes = arr.filter(function(u) { return estAccesActif(u); }).length;
         var nonPaye = arr.length - payes;
         var resumeHtml =
             '<div style="display:flex;gap:8px;margin-bottom:14px;">'
             + '<div style="background:rgba(34,197,94,0.1);border:1.5px solid rgba(34,197,94,0.3);'
             + 'border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--green);">'
-            + '✅ ' + payes + ' payés</div>'
+            + '✅ ' + payes + ' abonnés actifs</div>'
             + '<div style="background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.3);'
             + 'border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--red);">'
-            + '❌ ' + nonPaye + ' non payés</div></div>';
+            + '❌ ' + nonPaye + ' non abonnés</div></div>';
         var html = resumeHtml;
         arr.forEach(function(u) {
+            var actif = estAccesActif(u);
+            var joursR = joursRestants(u);
             html +=
                 '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:8px;'
                 + 'box-shadow:0 2px 8px rgba(0,0,0,0.05);">'
@@ -2013,16 +2038,15 @@ async function chargerListeCandidats() {
                 + '<button class="btn-suppr-candidat" style="color:var(--blue);border-color:var(--blue);background:rgba(59,130,246,0.08);" '
                 + 'onclick="reinitialiserAppareil(' + "'" + u.key + "'" + ')">🔓 Réinitialiser appareil</button>'
                 + '</div></div>'
-                + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
-                + '<div style="font-size:12px;font-weight:700;color:' + (u.accesPaye ? 'var(--green)' : 'var(--red)') + ';">'
-                + (u.accesPaye ? '✅ Payé' : '❌ Non payé') + '</div>'
-                + '<button onclick="toggleAcces(' + "'" + u.key + "'," + !u.accesPaye + ')"'
-                + ' style="font-size:11px;padding:5px 10px;border:1.5px solid '
-                + (u.accesPaye ? 'var(--red)' : 'var(--green)') + ';border-radius:8px;background:'
-                + (u.accesPaye ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)') + ';color:'
-                + (u.accesPaye ? 'var(--red)' : 'var(--green)') + ';cursor:pointer;min-height:auto;width:auto;margin:0;'
-                + 'font-family:Poppins,sans-serif;">'
-                + (u.accesPaye ? 'Révoquer' : 'Activer') + '</button></div></div></div>';
+                + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:130px;">'
+                + '<span class="abo-badge ' + (actif ? 'actif' : 'expire') + '">'
+                + (actif ? '✅ Actif (' + joursR + 'j restants)' : '❌ Non abonné') + '</span>'
+                + '<div class="abo-duree-choix">'
+                + '<button class="abo-duree-btn" onclick="activerAbonnement(' + "'" + u.key + "'" + ',7)">+7j</button>'
+                + '<button class="abo-duree-btn" onclick="activerAbonnement(' + "'" + u.key + "'" + ',30)">+30j</button>'
+                + '</div>'
+                + (actif ? '<button class="btn-suppr-candidat" style="width:100%;" onclick="revoquerAbonnement(' + "'" + u.key + "'" + ')">Révoquer</button>' : '')
+                + '</div></div></div>';
         });
         listeCandidatsEl.innerHTML = html;
     } catch(e) {
@@ -2030,39 +2054,30 @@ async function chargerListeCandidats() {
     }
 }
 
-window.toggleAcces = async function(userKey, activer) {
+// === NOUVEAU : activer un abonnement de X jours (7 = semaine, 30 = mois) ===
+window.activerAbonnement = async function(userKey, jours) {
     son('click');
     try {
-        await db.ref('users/' + userKey).update({accesPaye: activer});
-        toast(activer ? '✅ Accès activé !' : '❌ Accès révoqué !', activer ? 'success' : 'error');
+        var snap = await db.ref('users/' + userKey).once('value');
+        var u = snap.val() || {};
+        var base = estAccesActif(u) ? u.accessExpiration : Date.now();
+        var nouvelleExpiration = base + jours * 86400000;
+        await db.ref('users/' + userKey).update({
+            accessExpiration: nouvelleExpiration,
+            accesPaye: true
+        });
+        toast('✅ Abonnement de ' + jours + ' jours ajouté !', 'success');
         chargerListeCandidats();
     } catch(e) { toast('Erreur','error'); }
 };
 
-// === NOUVEAU : réinitialiser l'appareil lié à un compte ===
-// Permet à un élève qui a changé de téléphone de se reconnecter
-// (le prochain login réclame automatiquement le nouvel appareil).
-window.reinitialiserAppareil = function(userKey) {
+window.revoquerAbonnement = async function(userKey) {
     son('click');
-    modalTitreEl.textContent = '🔓 Réinitialiser l\'appareil ?';
-    modalTexteEl.innerHTML =
-        '<p style="color:var(--muted);font-size:13px;">Ce compte pourra se reconnecter depuis un nouveau téléphone.</p>'
-        + '<p style="color:var(--orange);font-weight:700;font-size:13px;margin-top:8px;">'
-        + 'À utiliser uniquement si l\'élève a changé d\'appareil.</p>';
-    modalEl.style.display = 'flex';
-    btnConfirmer.style.display = 'block';
-    btnConfirmer.textContent = 'Réinitialiser';
-    btnConfirmer.style.background = '';
-    btnConfirmer.onclick = async function() {
-        modalEl.style.display = 'none';
-        btnConfirmer.textContent = 'Confirmer';
-        try {
-            await db.ref('users/' + userKey).update({ firebaseUid: null });
-            toast('✅ Appareil réinitialisé — le compte peut se reconnecter ailleurs', 'success');
-        } catch(e) { toast('Erreur','error'); }
-    };
-    btnAnnuler.textContent = 'Annuler';
-    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
+    try {
+        await db.ref('users/' + userKey).update({ accessExpiration: 0, accesPaye: false });
+        toast('❌ Abonnement révoqué', 'success');
+        chargerListeCandidats();
+    } catch(e) { toast('Erreur','error'); }
 };
 
 window.demanderSuppressionCandidat = function(userKey, nomComplet) {
@@ -2107,11 +2122,34 @@ window.demanderSuppressionCandidat = function(userKey, nomComplet) {
     };
 };
 
+window.reinitialiserAppareil = function(userKey) {
+    son('click');
+    modalTitreEl.textContent = '🔓 Réinitialiser l\'appareil ?';
+    modalTexteEl.innerHTML =
+        '<p style="color:var(--muted);font-size:13px;">Ce compte pourra se reconnecter depuis un nouveau téléphone.</p>'
+        + '<p style="color:var(--orange);font-weight:700;font-size:13px;margin-top:8px;">'
+        + 'À utiliser uniquement si l\'élève a changé d\'appareil.</p>';
+    modalEl.style.display = 'flex';
+    btnConfirmer.style.display = 'block';
+    btnConfirmer.textContent = 'Réinitialiser';
+    btnConfirmer.style.background = '';
+    btnConfirmer.onclick = async function() {
+        modalEl.style.display = 'none';
+        btnConfirmer.textContent = 'Confirmer';
+        try {
+            await db.ref('users/' + userKey).update({ firebaseUid: null });
+            toast('✅ Appareil réinitialisé — le compte peut se reconnecter ailleurs', 'success');
+        } catch(e) { toast('Erreur','error'); }
+    };
+    btnAnnuler.textContent = 'Annuler';
+    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
+};
+
 if (btnActiverTousEl) {
     btnActiverTousEl.onclick = async function() {
         son('click');
-        modalTitreEl.textContent = 'Activer tous les candidats ?';
-        modalTexteEl.textContent = 'Tous les candidats auront accès au concours. Confirmer ?';
+        modalTitreEl.textContent = 'Activer tous (+30 jours) ?';
+        modalTexteEl.textContent = 'Tous les candidats recevront 30 jours d\'accès. Confirmer ?';
         modalEl.style.display = 'flex';
         btnConfirmer.onclick = async function() {
             modalEl.style.display = 'none';
@@ -2119,9 +2157,13 @@ if (btnActiverTousEl) {
                 var snap = await db.ref('users').once('value');
                 var users = snap.val() || {};
                 var updates = {};
-                Object.keys(users).forEach(function(k) { updates[k + '/accesPaye'] = true; });
+                var expir = Date.now() + 30 * 86400000;
+                Object.keys(users).forEach(function(k) {
+                    updates[k + '/accessExpiration'] = expir;
+                    updates[k + '/accesPaye'] = true;
+                });
                 await db.ref('users').update(updates);
-                toast('✅ Tous activés !', 'success');
+                toast('✅ Tous activés pour 30 jours !', 'success');
                 chargerListeCandidats();
             } catch(e) { toast('Erreur','error'); }
         };
@@ -2180,9 +2222,13 @@ if (btnLogoutAdminEl) {
 }
 
 // ============================================
-// FIN PARTIE 10/24 ✅ (CORRIGÉE — réinit. appareil)
+// FIN PARTIE 10/24 ✅ (CORRIGÉE — abonnement durée)
 // ============================================// ============================================
 // PARTIE 11/24 — CHOIX SALLE + QUOTA 20 MIN
+// CORRIGÉ : l'accès au concours vérifie désormais
+// estAccesActif() (abonnement à durée) au lieu du
+// simple booléen accesPaye. Message de paiement
+// mis à jour avec les nouveaux tarifs.
 // ============================================
 
 if (btnExam) {
@@ -2358,14 +2404,23 @@ async function entrerDansSalle(salle) {
 
     var userSnap = await db.ref('users/' + user).once('value');
     var uFresh   = userSnap.val() || {};
-    if (!uFresh.accesPaye) {
-        modalTitreEl.textContent = 'Accès au concours';
+    // CORRIGÉ : vérifie l'abonnement actif au lieu du simple booléen
+    if (!estAccesActif(uFresh)) {
+        modalTitreEl.textContent = 'Abonnement requis';
         modalTexteEl.innerHTML =
             '<div style="text-align:center;padding:10px 0"><div style="font-size:50px;margin-bottom:16px">💳</div>'
-            + '<p style="font-weight:800;font-size:16px;margin-bottom:12px">Accès payant : 100 FCFA</p>'
-            + '<p style="color:var(--muted);font-size:13px;line-height:1.7;">Orange Money au :<br><br>'
-            + '<span style="font-size:22px;font-weight:900;color:var(--green)">55 24 04 31</span><br><br>'
-            + 'Envoie la capture WhatsApp.</p></div>';
+            + '<p style="font-weight:800;font-size:16px;margin-bottom:12px">Choisis ta formule :</p>'
+            + '<div style="display:flex;gap:10px;margin-bottom:14px;">'
+            + '<div style="flex:1;background:#f0fdf4;border:2px solid var(--primary);border-radius:14px;padding:14px;text-align:center;">'
+            + '<div style="font-size:13px;font-weight:700;color:var(--muted);">Semaine</div>'
+            + '<div style="font-size:22px;font-weight:900;color:var(--primary);">750 FCFA</div></div>'
+            + '<div style="flex:1;background:#f0fdf4;border:2px solid var(--primary);border-radius:14px;padding:14px;text-align:center;">'
+            + '<div style="font-size:13px;font-weight:700;color:var(--muted);">Mois</div>'
+            + '<div style="font-size:22px;font-weight:900;color:var(--primary);">2500 FCFA</div></div></div>'
+            + '<p style="color:var(--muted);font-size:13px;line-height:1.7;">Orange Money / Telecel Money au :<br><br>'
+            + '<span style="font-size:20px;font-weight:900;color:var(--green)">55 24 04 31</span><br>'
+            + '<span style="font-size:20px;font-weight:900;color:var(--green)">69 04 19 02</span><br><br>'
+            + 'Envoie la capture WhatsApp en précisant la formule choisie.</p></div>';
         modalEl.style.display = 'flex';
         btnConfirmer.style.display = 'none';
         btnAnnuler.textContent = 'Fermer';
@@ -2531,7 +2586,7 @@ async function entrerDansSalle(salle) {
 }
 
 // ============================================
-// FIN PARTIE 11/24 ✅
+// FIN PARTIE 11/24 ✅ (CORRIGÉE — abonnement)
 // ============================================// ============================================
 // PARTIE 12/24 — LANCER EXAMEN + QUESTIONS
 // CORRIGÉ : en cas de session bloquée (4 sorties),
@@ -2853,10 +2908,10 @@ function verifierFinExamen(salle, resultNode, sessionNode) {
 // FIN PARTIE 13/24 ✅ (CORRIGÉE)
 // ============================================// ============================================
 // PARTIE 14/24 — CALCULER SCORE MULTI-RÉPONSES
-// CORRIGÉ : la soumission ne reste plus bloquée
-// indéfiniment si la connexion est coupée
-// (timeout de 7s -> bascule automatique en mode
-// "sauvegardé localement, sera synchronisé")
+// CORRIGÉ : récupère la config FRAÎCHE depuis
+// Firebase au moment de la soumission (au lieu de
+// se fier à une valeur en mémoire possiblement
+// obsolète) pour calculer revealAt de façon fiable.
 // ============================================
 
 function getBonnesIdx(q) {
@@ -2990,6 +3045,20 @@ async function soumettreEtAttendre(salle, resultNode, sessionNode) {
     var resultat = calculerScore(reponsesUser);
     var xpG = calcXp(resultat.score, 50);
 
+    // CORRIGÉ : récupère la config fraîche depuis Firebase pour un
+    // revealAt fiable, au lieu de faire confiance à configActuelle
+    // en mémoire (qui pourrait être obsolète si l'admin l'a modifiée).
+    var configNode = salle === 'bepc' ? 'configBepc' : 'configBAC';
+    var revealTs = Date.now();
+    try {
+        var freshCfgSnap = await avecTimeout(db.ref(configNode).once('value'), 5000);
+        var freshCfg = freshCfgSnap.val();
+        if (freshCfg && freshCfg.finTimestamp) revealTs = freshCfg.finTimestamp;
+        else if (configActuelle && configActuelle.finTimestamp) revealTs = configActuelle.finTimestamp;
+    } catch(eCfg) {
+        if (configActuelle && configActuelle.finTimestamp) revealTs = configActuelle.finTimestamp;
+    }
+
     try {
         var xpActuel  = userData.xp || 0;
         var newXp     = xpActuel + xpG;
@@ -3002,10 +3071,10 @@ async function soumettreEtAttendre(salle, resultNode, sessionNode) {
             type:  configActuelle.type || ('Concours Blanc ' + salle.toUpperCase()),
             score: resultat.score, scoreReel: resultat.scoreReel,
             bonnes: resultat.bonnes, partielles: resultat.partielles, fausses: resultat.fausses,
-            xp: xpG, nbSorties: nbSorties, timestamp: Date.now()
+            xp: xpG, nbSorties: nbSorties, timestamp: Date.now(),
+            revealAt: revealTs
         };
 
-        // CORRIGÉ : timeout de 7s pour ne jamais bloquer l'UI hors-ligne
         await avecTimeout(
             db.ref(resultNode + '/' + user).set(
                 Object.assign({}, entreeHisto, { prenom: userData.prenom || '', nom: userData.nom || '', reponses: reponsesFinales })
@@ -3031,13 +3100,14 @@ async function soumettreEtAttendre(salle, resultNode, sessionNode) {
         userData.concoursFaits = newNbConc; userData.moyenne = newMoy; userData.historique = histoActuel;
         try { localStorage.setItem('bb_userData', JSON.stringify(userData)); } catch(ex) {}
         await verifierBadges(resultat.score, nbSorties);
-        await verifierTop10(resultat.score, userData.prenom || '', userData.nom || '');
+        // CORRIGÉ : passe revealAt au Hall of Fame
+        await verifierTop10(resultat.score, userData.prenom || '', userData.nom || '', revealTs);
     } catch(err) {
         var pending = {
             prenom: userData.prenom || '', nom: userData.nom || '',
             score: resultat.score, scoreReel: resultat.scoreReel,
             bonnes: resultat.bonnes, partielles: resultat.partielles, fausses: resultat.fausses,
-            reponses: reponsesFinales, xp: xpG, timestamp: Date.now(),
+            reponses: reponsesFinales, xp: xpG, timestamp: Date.now(), revealAt: revealTs,
             type: (configActuelle && configActuelle.type) || ('Concours Blanc ' + salle.toUpperCase())
         };
         localStorage.setItem('bb_pending_' + salle + '_' + user, JSON.stringify(pending));
@@ -3047,7 +3117,7 @@ async function soumettreEtAttendre(salle, resultNode, sessionNode) {
 }
 
 // ============================================
-// FIN PARTIE 14/24 ✅ (CORRIGÉE)
+// FIN PARTIE 14/24 ✅ (CORRIGÉE — config fraîche)
 // ============================================// ============================================
 // PARTIE 15/24 — RÉSULTAT + CORRECTION
 // ============================================
@@ -3374,10 +3444,35 @@ window.addEventListener('offline', function() {
 // FIN PARTIE 17/24 ✅
 // ============================================// ============================================
 // PARTIE 18/24 — ADMIN ENTRAÎNEMENT
-// CORRIGÉ : remise des boutons "➕ Ajouter
-// question" et "👁️ Aperçu / Modifier" à côté
-// de "Charger", "Vider" et "Envoyer".
+// CORRIGÉ + NOUVEAU :
+// - Préchargement automatique du contenu déjà
+//   présent sur Firebase (empêche l'écrasement
+//   accidentel de tout un sujet en ajoutant
+//   simplement du nouveau contenu).
+// - Panneau complet de gestion des rounds :
+//   modifier/supprimer un round précis, opérer
+//   sur un intervalle (supprimer/remplacer),
+//   tout supprimer d'une matière.
 // ============================================
+
+var _entrAdminCharge = {};
+
+async function assurerChargementExistant(matId) {
+    if (_entrAdminCharge[matId]) return;
+    try {
+        var snap = await db.ref('sujetsEntr/' + matId).once('value');
+        var existant = snap.val() || [];
+        if (!sujetsEntrAdmin[matId]) sujetsEntrAdmin[matId] = [];
+        // Fusionne : garde ce qui est déjà en mémoire (édité localement)
+        // + ajoute ce qui existe sur Firebase mais pas encore en mémoire
+        if (sujetsEntrAdmin[matId].length === 0 && existant.length > 0) {
+            sujetsEntrAdmin[matId] = existant;
+        }
+        _entrAdminCharge[matId] = true;
+    } catch(e) {
+        _entrAdminCharge[matId] = true;
+    }
+}
 
 async function genererQuestionsIA(matId, matLabel, taId) {
     son('click');
@@ -3388,7 +3483,6 @@ async function genererQuestionsIA(matId, matLabel, taId) {
     toast('📝 Colle le JSON dans la zone', 'success');
 }
 
-// Injecte compteur + Vider + Aperçu + Ajouter question, une seule fois par matière
 function assurerControlesCumulEntr(matId, taId, infoId) {
     var ta = document.getElementById(taId);
     if (!ta) return;
@@ -3406,12 +3500,12 @@ function assurerControlesCumulEntr(matId, taId, infoId) {
     compteur.id = 'compteurCumul_' + matId;
     compteur.style.cssText = 'font-size:11px;font-weight:700;color:var(--primary);'
         + 'background:rgba(26,107,60,0.08);border-radius:8px;padding:4px 10px;flex:1;';
-    compteur.textContent = '📦 0 question(s) en attente';
+    compteur.textContent = '📦 chargement...';
 
     var btnVider = document.createElement('button');
     btnVider.className = 'btn-outline btn-small';
     btnVider.style.cssText = 'width:auto;min-height:auto;padding:6px 12px;margin:0;color:var(--red);border-color:var(--red);';
-    btnVider.textContent = '🗑️ Vider';
+    btnVider.textContent = '🗑️ Vider (mémoire)';
     btnVider.onclick = function() { viderSujetEntr(matId, infoId); };
 
     ligne1.appendChild(compteur);
@@ -3435,18 +3529,32 @@ function assurerControlesCumulEntr(matId, taId, infoId) {
     ligne2.appendChild(btnAjouter);
     ligne2.appendChild(btnApercu);
 
+    var ligne3 = document.createElement('div');
+    ligne3.style.cssText = 'display:flex;gap:8px;';
+
+    var btnGestionRounds = document.createElement('button');
+    btnGestionRounds.className = 'btn-primary';
+    btnGestionRounds.style.cssText = 'flex:1;min-height:auto;padding:10px;margin:0;font-size:12px;';
+    btnGestionRounds.textContent = '🗓️ Gérer les rounds';
+    btnGestionRounds.onclick = function() { afficherGestionRounds(matId, infoId); };
+    ligne3.appendChild(btnGestionRounds);
+
     wrap.appendChild(ligne1);
     wrap.appendChild(ligne2);
+    wrap.appendChild(ligne3);
     ta.parentNode.insertBefore(wrap, ta.nextSibling);
+
+    // Précharge le contenu existant de Firebase en arrière-plan
+    assurerChargementExistant(matId).then(function() { majCompteurCumul(matId); });
 }
 
 function majCompteurCumul(matId) {
     var el = document.getElementById('compteurCumul_' + matId);
     var nb = (sujetsEntrAdmin[matId] || []).length;
-    if (el) el.textContent = '📦 ' + nb + ' question(s) en attente';
+    var rounds = Math.floor(nb / QUESTIONS_PAR_ROUND);
+    if (el) el.textContent = '📦 ' + nb + ' question(s) — ' + rounds + ' round(s)';
 }
 
-// === NOUVEAU : ajouter une question vide manuellement ===
 function ajouterQuestionManuelle(matId, infoId) {
     son('click');
     if (!sujetsEntrAdmin[matId]) sujetsEntrAdmin[matId] = [];
@@ -3464,9 +3572,10 @@ function ajouterQuestionManuelle(matId, infoId) {
     afficherApercuEntrModal(matId, infoId);
 }
 
-function chargerDepuisColle(matId, taId, infoId) {
+async function chargerDepuisColle(matId, taId, infoId) {
     son('click');
     assurerControlesCumulEntr(matId, taId, infoId);
+    await assurerChargementExistant(matId);
     var ta = document.getElementById(taId);
     if (!ta || !ta.value.trim()) { toast('Zone JSON vide','error'); return; }
     try {
@@ -3486,22 +3595,34 @@ function chargerDepuisColle(matId, taId, infoId) {
         var totalActuel = sujetsEntrAdmin[matId].length;
         var rounds = Math.floor(totalActuel / QUESTIONS_PAR_ROUND);
         var infoEl = document.getElementById(infoId);
-        if (infoEl) infoEl.textContent = '✅ ' + totalActuel + ' questions cumulées (' + rounds + ' round(s) complets) — colle la suite ou clique Aperçu';
+        if (infoEl) infoEl.textContent = '✅ ' + totalActuel + ' questions cumulées (' + rounds + ' round(s) complets) — colle la suite, gère les rounds ou envoie';
         toast('✅ ' + valides.length + ' questions ajoutées ! Total : ' + totalActuel, 'success');
     } catch(e) { toast('Erreur JSON — vérifie la syntaxe','error'); }
 }
 
 function viderSujetEntr(matId, infoId) {
     son('click');
-    sujetsEntrAdmin[matId] = [];
-    majCompteurCumul(matId);
-    var infoEl = document.getElementById(infoId);
-    if (infoEl) infoEl.textContent = '';
-    toast('Zone vidée pour cette matière', 'success');
+    modalTitreEl.textContent = 'Vider la mémoire locale ?';
+    modalTexteEl.innerHTML =
+        '<p style="color:var(--muted);font-size:13px;">Ceci vide uniquement la copie de travail en mémoire (pas ce qui est déjà envoyé à Firebase).</p>';
+    modalEl.style.display = 'flex';
+    btnConfirmer.style.display = 'block';
+    btnConfirmer.textContent = 'Vider';
+    btnConfirmer.onclick = function() {
+        modalEl.style.display = 'none';
+        btnConfirmer.textContent = 'Confirmer';
+        sujetsEntrAdmin[matId] = [];
+        _entrAdminCharge[matId] = true;
+        majCompteurCumul(matId);
+        var infoEl = document.getElementById(infoId);
+        if (infoEl) infoEl.textContent = '';
+        toast('Zone vidée (mémoire locale uniquement)','success');
+    };
+    btnAnnuler.textContent = 'Annuler';
+    btnAnnuler.onclick = function() { modalEl.style.display = 'none'; };
 }
 
 function afficherApercuEntrModal(matId, infoId) {
-    assurerControlesCumulEntr(matId, 'ta_' + matId, infoId);
     var sujet = sujetsEntrAdmin[matId];
     if (!sujet || sujet.length === 0) { toast('Charge d\'abord au moins une partie JSON ou ajoute une question','error'); return; }
 
@@ -3632,6 +3753,287 @@ function afficherApercuEntrModal(matId, infoId) {
     };
 }
 
+// ============================================
+// NOUVEAU : PANNEAU DE GESTION DES ROUNDS
+// ============================================
+async function afficherGestionRounds(matId, infoId) {
+    son('click');
+    await assurerChargementExistant(matId);
+    if (!sujetsEntrAdmin[matId]) sujetsEntrAdmin[matId] = [];
+    var sujet = sujetsEntrAdmin[matId];
+
+    modalTitreEl.textContent = '🗓️ Gestion des rounds';
+    modalTexteEl.innerHTML = '';
+
+    var container = document.createElement('div');
+    container.style.maxHeight = '55vh';
+    container.style.overflowY = 'auto';
+
+    function nbRounds() { return Math.floor(sujet.length / QUESTIONS_PAR_ROUND); }
+
+    function rendre() {
+        container.innerHTML = '';
+
+        var resume = document.createElement('p');
+        resume.style.cssText = 'font-size:13px;color:var(--muted);text-align:center;margin-bottom:12px;';
+        resume.textContent = sujet.length + ' questions au total — ' + nbRounds() + ' round(s) complet(s)'
+            + (sujet.length % QUESTIONS_PAR_ROUND > 0 ? ' + ' + (sujet.length % QUESTIONS_PAR_ROUND) + ' question(s) incomplète(s)' : '');
+        container.appendChild(resume);
+
+        // Liste des rounds
+        for (var r = 1; r <= nbRounds(); r++) {
+            (function(roundNum) {
+                var debut = (roundNum - 1) * QUESTIONS_PAR_ROUND;
+                var premiereQ = sujet[debut];
+                var row = document.createElement('div');
+                row.className = 'round-manage-row';
+                row.innerHTML =
+                    '<div class="round-manage-info">'
+                    + '<div class="round-manage-titre">Round ' + roundNum + ' (Q' + (debut+1) + '-' + (debut+QUESTIONS_PAR_ROUND) + ')</div>'
+                    + '<div class="round-manage-apercu">' + escHTML((premiereQ && premiereQ.texte) || '').substring(0,50) + '...</div>'
+                    + '</div>'
+                    + '<div class="round-manage-actions">'
+                    + '<button class="round-manage-btn edit">✏️</button>'
+                    + '<button class="round-manage-btn del">🗑️</button>'
+                    + '</div>';
+                row.querySelector('.edit').onclick = function() {
+                    afficherEditionRoundUnique(matId, roundNum, function() { rendre(); majCompteurCumul(matId); });
+                };
+                row.querySelector('.del').onclick = function() {
+                    modalTitreEl.textContent = 'Supprimer le round ' + roundNum + ' ?';
+                    var ancienModalTexte = modalTexteEl.innerHTML;
+                    modalTexteEl.innerHTML = '<p style="color:var(--red);font-weight:700;">⚠️ Cette action supprime 6 questions. Les rounds suivants seront renumérotés.</p>';
+                    modalEl.style.display = 'flex';
+                    btnConfirmer.style.display = 'block';
+                    btnConfirmer.textContent = 'Supprimer';
+                    btnConfirmer.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+                    btnConfirmer.onclick = function() {
+                        sujet.splice(debut, QUESTIONS_PAR_ROUND);
+                        modalTitreEl.textContent = '🗓️ Gestion des rounds';
+                        modalTexteEl.innerHTML = '';
+                        modalTexteEl.appendChild(container);
+                        btnConfirmer.style.background = '';
+                        btnConfirmer.textContent = 'Confirmer';
+                        rendre();
+                        majCompteurCumul(matId);
+                        toast('Round supprimé','success');
+                    };
+                    btnAnnuler.onclick = function() {
+                        modalTitreEl.textContent = '🗓️ Gestion des rounds';
+                        modalTexteEl.innerHTML = '';
+                        modalTexteEl.appendChild(container);
+                    };
+                };
+                container.appendChild(row);
+            })(r);
+        }
+
+        // Opérations sur intervalle
+        var rangeBox = document.createElement('div');
+        rangeBox.className = 'range-ops-box';
+        rangeBox.innerHTML =
+            '<div class="range-ops-title">🔁 Opérations sur un intervalle de rounds</div>'
+            + '<div class="range-ops-inputs">'
+            + '<input type="number" id="rangeDebut_' + matId + '" placeholder="De round" min="1">'
+            + '<input type="number" id="rangeFin_' + matId + '" placeholder="À round" min="1">'
+            + '</div>'
+            + '<textarea id="rangeJson_' + matId + '" class="json-zone" style="min-height:80px;" placeholder="Pour REMPLACER : colle ici le JSON exact (nb questions = (fin-debut+1) x ' + QUESTIONS_PAR_ROUND + ')"></textarea>'
+            + '<div class="range-ops-actions" style="margin-top:8px;">'
+            + '<button class="btn-outline" id="btnRangeDel_' + matId + '" style="color:var(--red);border-color:var(--red);">🗑️ Supprimer l\'intervalle</button>'
+            + '<button class="btn-primary" id="btnRangeReplace_' + matId + '">🔁 Remplacer l\'intervalle</button>'
+            + '</div>';
+        container.appendChild(rangeBox);
+
+        document.getElementById('btnRangeDel_' + matId).onclick = function() {
+            var deb = parseInt(document.getElementById('rangeDebut_' + matId).value);
+            var fin = parseInt(document.getElementById('rangeFin_' + matId).value);
+            if (!deb || !fin || fin < deb || fin > nbRounds()) { toast('Intervalle invalide','error'); return; }
+            var startIdx = (deb - 1) * QUESTIONS_PAR_ROUND;
+            var count = (fin - deb + 1) * QUESTIONS_PAR_ROUND;
+            sujet.splice(startIdx, count);
+            toast('✅ Rounds ' + deb + ' à ' + fin + ' supprimés', 'success');
+            rendre();
+            majCompteurCumul(matId);
+        };
+
+        document.getElementById('btnRangeReplace_' + matId).onclick = function() {
+            var deb = parseInt(document.getElementById('rangeDebut_' + matId).value);
+            var fin = parseInt(document.getElementById('rangeFin_' + matId).value);
+            var jsonTxt = document.getElementById('rangeJson_' + matId).value.trim();
+            if (!deb || !fin || fin < deb || fin > nbRounds()) { toast('Intervalle invalide','error'); return; }
+            if (!jsonTxt) { toast('Colle le JSON de remplacement','error'); return; }
+            var attendu = (fin - deb + 1) * QUESTIONS_PAR_ROUND;
+            try {
+                var data = JSON.parse(jsonTxt);
+                if (!Array.isArray(data) || data.length !== attendu) {
+                    toast('Le JSON doit contenir exactement ' + attendu + ' questions (contient ' + (Array.isArray(data)?data.length:0) + ')', 'error');
+                    return;
+                }
+                var valides = data.filter(function(q) {
+                    return q && q.texte && Array.isArray(q.reponses) && q.reponses.length >= 2;
+                });
+                if (valides.length !== attendu) { toast('Certaines questions du JSON sont invalides','error'); return; }
+                var startIdx = (deb - 1) * QUESTIONS_PAR_ROUND;
+                var args = [startIdx, attendu].concat(valides);
+                Array.prototype.splice.apply(sujet, args);
+                toast('✅ Rounds ' + deb + ' à ' + fin + ' remplacés', 'success');
+                rendre();
+                majCompteurCumul(matId);
+            } catch(e) { toast('Erreur JSON — vérifie la syntaxe','error'); }
+        };
+
+        // Zone danger
+        var danger = document.createElement('div');
+        danger.className = 'danger-zone';
+        danger.innerHTML =
+            '<div class="danger-zone-title">⚠️ Zone dangereuse</div>'
+            + '<button class="btn-outline" id="btnSupprTout_' + matId + '" style="color:var(--red);border-color:var(--red);">'
+            + '🗑️🗑️ Supprimer TOUS les rounds de cette matière</button>';
+        container.appendChild(danger);
+
+        document.getElementById('btnSupprTout_' + matId).onclick = function() {
+            modalTitreEl.textContent = 'Supprimer TOUTE la matière ?';
+            modalTexteEl.innerHTML = '<p style="color:var(--red);font-weight:700;">⚠️ Ceci supprime TOUTES les questions de cette matière, de façon irréversible.</p>';
+            modalEl.style.display = 'flex';
+            btnConfirmer.style.display = 'block';
+            btnConfirmer.textContent = 'Tout supprimer';
+            btnConfirmer.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+            btnConfirmer.onclick = async function() {
+                sujetsEntrAdmin[matId] = [];
+                try { await db.ref('sujetsEntr/' + matId).remove(); } catch(e) {}
+                modalTitreEl.textContent = '🗓️ Gestion des rounds';
+                modalTexteEl.innerHTML = '';
+                modalTexteEl.appendChild(container);
+                btnConfirmer.style.background = '';
+                btnConfirmer.textContent = 'Confirmer';
+                rendre();
+                majCompteurCumul(matId);
+                var infoEl = document.getElementById(infoId);
+                if (infoEl) infoEl.textContent = '🗑️ Matière entièrement vidée';
+                toast('✅ Matière entièrement supprimée (Firebase inclus)','success');
+            };
+            btnAnnuler.onclick = function() {
+                modalTitreEl.textContent = '🗓️ Gestion des rounds';
+                modalTexteEl.innerHTML = '';
+                modalTexteEl.appendChild(container);
+            };
+        };
+    }
+
+    rendre();
+    modalTexteEl.appendChild(container);
+    modalEl.style.display = 'flex';
+    btnConfirmer.style.display = 'block';
+    btnConfirmer.textContent = '💾 Enregistrer sur Firebase';
+    btnConfirmer.style.background = '';
+    btnConfirmer.onclick = async function() {
+        try {
+            await db.ref('sujetsEntr/' + matId).set(sujet);
+            modalEl.style.display = 'none';
+            btnConfirmer.textContent = 'Confirmer';
+            var infoEl = document.getElementById(infoId);
+            if (infoEl) infoEl.textContent = '✅ ' + sujet.length + ' questions synchronisées (' + nbRounds() + ' round(s))';
+            toast('🚀 Modifications enregistrées sur Firebase !','success');
+        } catch(e) { toast('Erreur d\'enregistrement','error'); }
+    };
+    btnAnnuler.textContent = 'Fermer sans enregistrer';
+    btnAnnuler.onclick = function() {
+        modalEl.style.display = 'none';
+        btnAnnuler.textContent = 'Annuler';
+    };
+}
+
+// === Édition d'un round unique (6 questions ciblées) ===
+function afficherEditionRoundUnique(matId, roundNum, onFerme) {
+    var sujet = sujetsEntrAdmin[matId];
+    var debut = (roundNum - 1) * QUESTIONS_PAR_ROUND;
+    var questionsRound = sujet.slice(debut, debut + QUESTIONS_PAR_ROUND);
+
+    var ancienTitre = modalTitreEl.textContent;
+    var ancienTexte = modalTexteEl.innerHTML;
+
+    modalTitreEl.textContent = '✏️ Modifier Round ' + roundNum;
+    modalTexteEl.innerHTML = '';
+    var container = document.createElement('div');
+    container.style.maxHeight = '55vh';
+    container.style.overflowY = 'auto';
+
+    questionsRound.forEach(function(q, qi) {
+        var div = document.createElement('div');
+        div.className = 'admin-q-block';
+
+        var header = document.createElement('div');
+        header.className = 'admin-q-header';
+        var numEl = document.createElement('div');
+        numEl.className = 'admin-q-num';
+        numEl.textContent = 'Q' + (debut+qi+1) + ' (round ' + roundNum + ')';
+        header.appendChild(numEl);
+        div.appendChild(header);
+
+        var texteArea = document.createElement('textarea');
+        texteArea.className = 'admin-q-input-texte';
+        texteArea.rows = 2;
+        texteArea.value = q.texte || '';
+        texteArea.oninput = function() { q.texte = texteArea.value; };
+        div.appendChild(texteArea);
+
+        var repListe = document.createElement('div');
+        repListe.className = 'admin-rep-liste';
+        (q.reponses||[]).forEach(function(r, ri) {
+            var row = document.createElement('div');
+            row.className = 'admin-rep-row' + (r && r.correct ? ' est-correcte' : '');
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = !!(r && r.correct);
+            cb.onchange = function() {
+                if (!q.reponses[ri]) return;
+                q.reponses[ri].correct = cb.checked;
+                row.classList.toggle('est-correcte', cb.checked);
+            };
+            var lettre = document.createElement('span');
+            lettre.className = 'admin-rep-lettre';
+            lettre.textContent = 'ABCD'[ri] || (ri+1);
+            var texteInput = document.createElement('input');
+            texteInput.type = 'text';
+            texteInput.className = 'admin-rep-input';
+            texteInput.value = r ? (r.texte||'') : '';
+            texteInput.oninput = function() { if (q.reponses[ri]) q.reponses[ri].texte = texteInput.value; };
+            row.appendChild(cb); row.appendChild(lettre); row.appendChild(texteInput);
+            repListe.appendChild(row);
+        });
+        div.appendChild(repListe);
+
+        var expInput = document.createElement('textarea');
+        expInput.className = 'admin-q-input-texte';
+        expInput.rows = 2;
+        expInput.style.marginTop = '8px';
+        expInput.placeholder = 'Explication';
+        expInput.value = q.explication || '';
+        expInput.oninput = function() { q.explication = expInput.value; };
+        div.appendChild(expInput);
+
+        container.appendChild(div);
+    });
+
+    modalTexteEl.appendChild(container);
+    modalEl.style.display = 'flex';
+    btnConfirmer.style.display = 'block';
+    btnConfirmer.textContent = '✅ Valider ce round';
+    btnConfirmer.onclick = function() {
+        modalTitreEl.textContent = ancienTitre;
+        modalTexteEl.innerHTML = ancienTexte;
+        btnConfirmer.textContent = 'Confirmer';
+        toast('Round ' + roundNum + ' modifié','success');
+        if (onFerme) onFerme();
+    };
+    btnAnnuler.textContent = 'Annuler';
+    btnAnnuler.onclick = function() {
+        modalTitreEl.textContent = ancienTitre;
+        modalTexteEl.innerHTML = ancienTexte;
+        if (onFerme) onFerme();
+    };
+}
+
 async function envoyerSujetEntr(matId, infoId) {
     son('click');
     var sujet = sujetsEntrAdmin[matId];
@@ -3651,16 +4053,14 @@ async function envoyerSujetEntr(matId, infoId) {
 }
 
 // ============================================
-// FIN PARTIE 18/24 ✅ (CORRIGÉE — Ajouter + Aperçu remis)
+// FIN PARTIE 18/24 ✅ (CORRIGÉE — gestion rounds complète)
 // ============================================// ============================================
 // PARTIE 19/24 — PAGE ENTRAÎNEMENT
-// CORRIGÉ : 6 questions par round (au lieu de 5)
-// et suppression de la limite de 40 rounds —
-// le nombre de rounds dépend uniquement du
-// nombre de questions chargées par l'admin.
+// CORRIGÉ : le verrou des rounds 3+ utilise
+// désormais estAccesActif() (abonnement) au lieu
+// du booléen accesPaye. Message mis à jour avec
+// les nouveaux tarifs (750/semaine, 2500/mois).
 // ============================================
-
-var QUESTIONS_PAR_ROUND = 6;
 
 var CACHE_ENTR_PREFIX = 'bb_cache_entr_';
 
@@ -3826,7 +4226,6 @@ function chargerGrilleNiveau(niv) {
     });
 }
 
-// === SÉLECTEUR DE ROUND — CORRIGÉ : plus de limite (Math.min(40,...) supprimé) ===
 function ouvrirSelectionRound(mat, niv) {
     modalTitreEl.textContent = mat.emoji + ' ' + mat.label;
     modalTexteEl.innerHTML = '<div class="loading-box"><div class="loader"></div><p>Chargement...</p></div>';
@@ -3837,7 +4236,6 @@ function ouvrirSelectionRound(mat, niv) {
 
     recupererQuestionsMatiere(mat.id).then(function(res) {
         var questions = res.questions;
-        // CORRIGÉ : aucune limite — dépend uniquement de ce qui est chargé
         var maxRounds = Math.floor(questions.length / QUESTIONS_PAR_ROUND);
         modalTexteEl.innerHTML = '';
 
@@ -3857,7 +4255,8 @@ function ouvrirSelectionRound(mat, niv) {
         if (!userData.statsEntr[mat.id]) userData.statsEntr[mat.id] = {};
         userData.statsEntr[mat.id].maxRoundsConnu = maxRounds;
 
-        var estPaye = !!userData.accesPaye;
+        // CORRIGÉ : basé sur l'abonnement à durée
+        var estPaye = estAccesActif(userData);
         var stats = userData.statsEntr[mat.id] || {};
         var roundsFaits = stats.roundsFaits || [];
 
@@ -3872,8 +4271,8 @@ function ouvrirSelectionRound(mat, niv) {
         var info = document.createElement('p');
         info.style.cssText = 'font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;';
         info.textContent = estPaye
-            ? maxRounds + ' round(s) disponible(s) — accès complet'
-            : maxRounds + ' round(s) disponible(s) — rounds 1 et 2 gratuits, les suivants nécessitent le paiement';
+            ? maxRounds + ' round(s) disponible(s) — abonnement actif'
+            : maxRounds + ' round(s) disponible(s) — rounds 1 et 2 gratuits, les suivants nécessitent un abonnement';
         modalTexteEl.appendChild(info);
 
         var grid = document.createElement('div');
@@ -3889,7 +4288,7 @@ function ouvrirSelectionRound(mat, niv) {
                     son('click');
                     if (locked) {
                         if (navigator.onLine === false) {
-                            toast('📴 Connecte-toi pour débloquer le paiement', 'error');
+                            toast('📴 Connecte-toi pour débloquer l\'abonnement', 'error');
                             return;
                         }
                         afficherPaiementEntr();
@@ -3907,20 +4306,27 @@ function ouvrirSelectionRound(mat, niv) {
 }
 
 function afficherPaiementEntr() {
-    modalTitreEl.textContent = 'Accès entraînement complet';
+    modalTitreEl.textContent = 'Abonnement requis';
     modalTexteEl.innerHTML =
         '<div style="text-align:center;padding:10px 0"><div style="font-size:50px;margin-bottom:16px">💳</div>'
-        + '<p style="font-weight:800;font-size:16px;margin-bottom:12px">Accès payant : 100 FCFA</p>'
-        + '<p style="color:var(--muted);font-size:13px;line-height:1.7;">Orange Money au :<br><br>'
-        + '<span style="font-size:22px;font-weight:900;color:var(--green)">55 24 04 31</span><br><br>'
-        + 'Envoie la capture WhatsApp pour débloquer tous les rounds.</p></div>';
+        + '<p style="font-weight:800;font-size:16px;margin-bottom:12px">Choisis ta formule :</p>'
+        + '<div style="display:flex;gap:10px;margin-bottom:14px;">'
+        + '<div style="flex:1;background:#f0fdf4;border:2px solid var(--primary);border-radius:14px;padding:14px;text-align:center;">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--muted);">Semaine</div>'
+        + '<div style="font-size:22px;font-weight:900;color:var(--primary);">750 FCFA</div></div>'
+        + '<div style="flex:1;background:#f0fdf4;border:2px solid var(--primary);border-radius:14px;padding:14px;text-align:center;">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--muted);">Mois</div>'
+        + '<div style="font-size:22px;font-weight:900;color:var(--primary);">2500 FCFA</div></div></div>'
+        + '<p style="color:var(--muted);font-size:13px;line-height:1.7;">Orange Money / Telecel Money au :<br><br>'
+        + '<span style="font-size:20px;font-weight:900;color:var(--green)">55 24 04 31</span><br>'
+        + '<span style="font-size:20px;font-weight:900;color:var(--green)">69 04 19 02</span><br><br>'
+        + 'Envoie la capture WhatsApp en précisant la formule choisie pour débloquer tous les rounds.</p></div>';
     modalEl.style.display = 'flex';
     btnConfirmer.style.display = 'none';
     btnAnnuler.textContent = 'Fermer';
     btnAnnuler.onclick = function() { modalEl.style.display = 'none'; btnAnnuler.textContent = 'Annuler'; };
 }
 
-// === LANCER UN ROUND — CORRIGÉ : tranches de 6 questions ===
 async function lancerQuizMatiere(mat, niv, roundNum, questionsAll) {
     matiereActuelle = mat.id;
     var questions = questionsAll;
@@ -3964,7 +4370,7 @@ async function lancerQuizMatiere(mat, niv, roundNum, questionsAll) {
 }
 
 // ============================================
-// FIN PARTIE 19/24 ✅ (CORRIGÉE — 6 Q/round, illimité)
+// FIN PARTIE 19/24 ✅ (CORRIGÉE — abonnement)
 // ============================================// ============================================
 // PARTIE 20/24 — QUIZ ENTRAÎNEMENT
 // CORRIGÉ : scroll automatique vers le feedback
@@ -4151,10 +4557,8 @@ async function afficherResultatRound() {
 // FIN PARTIE 21/24 ✅ (CORRIGÉE — scores par round)
 // ============================================// ============================================
 // PARTIE 22/24 — NAVIGATION ENTRAÎNEMENT
-// CORRIGÉ : le bouton "Round suivant" vérifie
-// désormais le statut payé/non-payé avant de
-// lancer le round — il n'était plus possible de
-// contourner le paiement en enchaînant les rounds.
+// CORRIGÉ : vérifie estAccesActif() au lieu du
+// booléen accesPaye pour le bouton round suivant.
 // ============================================
 
 async function terminerQuizEntr() {
@@ -4171,22 +4575,21 @@ async function terminerQuizEntr() {
     var prochainRound = window._roundActuel + 1;
     var aUnRoundSuivant = prochainRound <= window._nbRoundsTotal;
     if (aUnRoundSuivant && btnRec && btnRec.parentNode) {
-        var estPaye = !!userData.accesPaye;
+        var estPaye = estAccesActif(userData);
         var estVerrouille = !estPaye && prochainRound > 2;
 
         var btnSuiv = document.createElement('button');
         btnSuiv.id = btnSuivWrapId;
         btnSuiv.className = estVerrouille ? 'btn-outline' : 'btn-primary';
         btnSuiv.textContent = estVerrouille
-            ? '🔒 Round suivant (' + prochainRound + '/' + window._nbRoundsTotal + ') — accès payant'
+            ? '🔒 Round suivant (' + prochainRound + '/' + window._nbRoundsTotal + ') — abonnement requis'
             : '▶️ Round suivant (' + prochainRound + '/' + window._nbRoundsTotal + ')';
         btnSuiv.style.marginBottom = '0';
         btnSuiv.onclick = function() {
             son('click');
-            // CORRIGÉ : vérification du verrou avant de lancer le round
             if (estVerrouille) {
                 if (navigator.onLine === false) {
-                    toast('📴 Connecte-toi pour débloquer le paiement', 'error');
+                    toast('📴 Connecte-toi pour débloquer l\'abonnement', 'error');
                     return;
                 }
                 afficherPaiementEntr();
@@ -4247,7 +4650,7 @@ if (btnRetourMenuEntr) {
 }
 
 // ============================================
-// FIN PARTIE 22/24 ✅ (CORRIGÉE — verrou respecté)
+// FIN PARTIE 22/24 ✅ (CORRIGÉE — abonnement)
 // ============================================// ============================================
 // PARTIE 23/24 — ONGLETS ADMIN (GLOBAUX)
 // ============================================
