@@ -906,4 +906,59 @@ button:active { transform: scale(0.97); }
 
 /* ============================================
    FIN COMPLÉMENT v6 ✅
+   ============================================ *//* ============================================
+   COMPLÉMENT v7 — GESTION ROUNDS ADMIN + ABONNEMENT
+   ============================================ */
+
+.round-manage-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: white; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px;
+}
+.round-manage-info { flex: 1; min-width: 0; }
+.round-manage-titre { font-size: 13px; font-weight: 800; color: var(--text); }
+.round-manage-apercu { font-size: 11px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.round-manage-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.round-manage-btn {
+    font-size: 11px; padding: 6px 10px; border-radius: 8px; min-height: auto;
+    width: auto; margin: 0; border: 1.5px solid var(--border); background: white;
+    font-family: 'Poppins', sans-serif; font-weight: 700; cursor: pointer;
+}
+.round-manage-btn.edit { color: var(--blue); border-color: var(--blue); background: rgba(59,130,246,0.06); }
+.round-manage-btn.del { color: var(--red); border-color: var(--red); background: rgba(239,68,68,0.06); }
+
+.range-ops-box {
+    background: rgba(249,115,22,0.05); border: 1.5px solid rgba(249,115,22,0.25);
+    border-radius: 14px; padding: 14px; margin: 14px 0;
+}
+.range-ops-title { font-size: 13px; font-weight: 800; color: var(--orange); margin-bottom: 10px; }
+.range-ops-inputs { display: flex; gap: 8px; margin-bottom: 10px; }
+.range-ops-inputs input {
+    flex: 1; margin: 0; padding: 10px; text-align: center; font-size: 14px; font-weight: 700;
+}
+.range-ops-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.range-ops-actions button { flex: 1; min-width: 120px; margin: 0; padding: 10px; font-size: 12px; }
+
+.danger-zone {
+    background: rgba(239,68,68,0.05); border: 1.5px solid rgba(239,68,68,0.3);
+    border-radius: 14px; padding: 14px; margin-top: 14px;
+}
+.danger-zone-title { font-size: 12px; font-weight: 800; color: var(--red); margin-bottom: 8px; }
+
+/* === ABONNEMENT (Candidats) === */
+.abo-badge {
+    font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px;
+    display: inline-block;
+}
+.abo-badge.actif { background: rgba(34,197,94,0.12); color: var(--primary); }
+.abo-badge.expire { background: rgba(239,68,68,0.12); color: var(--red); }
+.abo-duree-choix { display: flex; gap: 6px; margin-top: 6px; }
+.abo-duree-btn {
+    flex: 1; font-size: 11px; padding: 6px; border-radius: 8px; min-height: auto;
+    margin: 0; border: 1.5px solid var(--primary); background: rgba(26,107,60,0.06);
+    color: var(--primary); font-weight: 700; font-family: 'Poppins', sans-serif; cursor: pointer;
+}
+
+/* ============================================
+   FIN COMPLÉMENT v7 ✅
    ============================================ */
