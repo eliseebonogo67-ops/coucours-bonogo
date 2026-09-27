@@ -961,4 +961,16 @@ button:active { transform: scale(0.97); }
 
 /* ============================================
    FIN COMPLÉMENT v7 ✅
-   ============================================ */
+   ============================================ */.question-texte, .quiz-q-texte, .rep-texte, .corr-texte,
+.corr-explication, .quiz-explication, .admin-q-num {
+    overflow-x: auto;
+    max-width: 100%;
+}
+.katex {
+    white-space: normal !important;
+}
+.katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+}
