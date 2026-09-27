@@ -86,8 +86,7 @@
     </div>
     <div class="admin-link"><span id="btnAdmin">Administration</span></div>
   </div>
-</div>
-<!-- FIN PARTIE 1/7 --><!-- PAGE MENU -->
+  </div><!-- PAGE MENU -->
 <div id="page-menu" class="page">
   <div class="menu-header">
     <div class="menu-avatar-row">
@@ -223,8 +222,7 @@
       <div class="loading-box"><div class="loader"></div><p>Chargement...</p></div>
     </div>
   </div>
-</div>
-<!-- FIN PARTIE 2/7 --><!-- PAGE EXAM -->
+        </div><!-- PAGE EXAM -->
 <div id="page-exam" class="page">
   <div id="salle-attente-bepc" style="display:none;">
     <div class="salle-box">
@@ -318,8 +316,7 @@
       <div id="correction" style="margin-top:16px;"></div>
     </div>
   </div>
-</div>
-<!-- FIN PARTIE 3/7 --><!-- PAGE ENTRAÎNEMENT -->
+        </div><!-- PAGE ENTRAÎNEMENT -->
 <div id="page-entrainement" class="page">
   <div class="entr-header">
     <div class="entr-titre">🎯 Entraînement</div>
@@ -411,8 +408,7 @@
       <button class="btn-outline" id="btnRetourMenuEntrRes">← Retour au menu</button>
     </div>
   </div>
-</div>
-<!-- FIN PARTIE 4/7 --><!-- PAGE ADMIN -->
+</div><!-- PAGE ADMIN -->
 <div id="page-admin" class="page">
   <div class="page-header" style="justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -427,6 +423,7 @@
     <button class="admin-tab" onclick="switchTab('tabBepc')">📘 BEPC</button>
     <button class="admin-tab" onclick="switchTab('tabBac')">📗 BAC</button>
     <button class="admin-tab" onclick="switchTab('tabEntrainement')">🎯 Entraîn.</button>
+    <button class="admin-tab" onclick="switchTab('tabApercuEntr')">🗓️ Aperçu Entr.</button>
     <button class="admin-tab" onclick="switchTab('tabCandidats')">👥 Candidats</button>
     <button class="admin-tab" onclick="switchTab('tabActions')">⚡ Actions</button>
   </div>
@@ -440,7 +437,6 @@
       <div class="admin-stat"><b id="statOnline">0</b><small>En ligne</small></div>
     </div>
 
-    <!-- QUOTA GLOBAL — VUE D'ENSEMBLE -->
     <div class="quota-box">
       <div class="quota-box-titre">🚪 Salles en cours</div>
       <div style="display:flex;gap:10px;">
@@ -482,7 +478,6 @@
       <button class="btn-primary" id="btnSaveConfigBepc" style="margin-top:10px;">💾 Sauvegarder Config BEPC</button>
     </div>
 
-    <!-- QUOTA BEPC — BIEN STYLÉ -->
     <div class="quota-box">
       <div class="quota-box-titre">🎟️ Quota de places — Salle BEPC</div>
       <div class="quota-input-row">
@@ -497,7 +492,7 @@
           <span class="quota-badge-restant" id="badgeRestantBepc"><span id="placesRestantesBepc">200</span> libres</span>
         </div>
       </div>
-      <div class="quota-info-note">ℹ️ Place libérée après <b>20 minutes</b> automatiquement. Les candidats en excès seront redirigés vers l'entraînement.</div>
+      <div class="quota-info-note">ℹ️ Place libérée après <b>20 minutes</b> automatiquement.</div>
     </div>
 
     <div class="card">
@@ -539,7 +534,6 @@
       <button class="btn-primary" id="btnSaveConfigBAC" style="margin-top:10px;">💾 Sauvegarder Config BAC</button>
     </div>
 
-    <!-- QUOTA BAC — BIEN STYLÉ -->
     <div class="quota-box">
       <div class="quota-box-titre">🎟️ Quota de places — Salle BAC / Concours</div>
       <div class="quota-input-row">
@@ -554,7 +548,7 @@
           <span class="quota-badge-restant" id="badgeRestantBAC"><span id="placesRestantesBAC">200</span> libres</span>
         </div>
       </div>
-      <div class="quota-info-note">ℹ️ Place libérée après <b>20 minutes</b> automatiquement. Les candidats en excès seront redirigés vers l'entraînement.</div>
+      <div class="quota-info-note">ℹ️ Place libérée après <b>20 minutes</b> automatiquement.</div>
     </div>
 
     <div class="card">
@@ -575,8 +569,7 @@
       <button class="btn-outline" id="btnAjouterQBAC" style="margin-top:8px;">➕ Ajouter une question</button>
       <button class="btn-primary" id="btnSaveSujetBAC" style="margin-top:8px;">💾 Sauvegarder le sujet</button>
     </div>
-  </div>
-<!-- FIN PARTIE 5/7 --><!-- TAB ENTRAÎNEMENT ADMIN -->
+  </div><!-- TAB ENTRAÎNEMENT ADMIN -->
   <div id="tabEntrainement" class="admin-section">
     <div class="card">
       <div style="display:flex;gap:8px;margin-bottom:16px;">
@@ -718,6 +711,25 @@
     </div>
   </div>
 
+  <!-- TAB APERÇU ENTRAÎNEMENT (avec Méthode 2) -->
+  <div id="tabApercuEntr" class="admin-section">
+    <div class="card">
+      <h3>🗓️ Aperçu Entraînement — vue miroir élève</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Clique sur une matière pour gérer ses rounds (corriger, supprimer, ajouter) directement.
+      </p>
+      <button class="btn-primary" onclick="ouvrirMethode2Selection()" style="margin-bottom:14px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);">
+        🎯 Méthode 2 : Composer un sujet examen depuis l'entraînement
+      </button>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="ongletApercuBepc" class="admin-tab active" onclick="switchOngletApercu('bepc')" style="flex:1;">📘 BEPC</button>
+        <button id="ongletApercuBac" class="admin-tab" onclick="switchOngletApercu('bac')" style="flex:1;">📗 BAC</button>
+      </div>
+      <div id="apercuGrilleBepc" class="apercu-entr-grille"></div>
+      <div id="apercuGrilleBac" class="apercu-entr-grille" style="display:none;"></div>
+    </div>
+  </div>
+
   <!-- TAB CANDIDATS -->
   <div id="tabCandidats" class="admin-section">
     <div class="card">
@@ -738,9 +750,7 @@
       <button class="btn-outline" id="btnLogoutAdmin">🚪 Quitter l'admin</button>
     </div>
   </div>
-</div>
-
-<!-- MODAL GÉNÉRAL -->
+            </div><!-- MODAL GÉNÉRAL -->
 <div id="modal" style="display:none;">
   <div style="background:white;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;">
     <h3 id="modalTitre"></h3>
@@ -773,7 +783,8 @@
 
 <!-- TOASTS -->
 <div id="toasts"></div>
-<!-- FIN PARTIE 6/7 --><!-- FIREBASE -->
+
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -825,29 +836,21 @@ function partagerApp() {
             text:  msg,
             url:   'https://median.co/share/qdlqmbo'
         }).catch(function() {
-            window.open(
-                'https://wa.me/?text=' + encodeURIComponent(msg),
-                '_blank');
+            window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
         });
     } else {
-        window.open(
-            'https://wa.me/?text=' + encodeURIComponent(msg),
-            '_blank');
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
     }
 }
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('./service-worker.js')
-        .then(function(reg) {
-            console.log('SW OK:', reg.scope);
-        }).catch(function(e) {
-            console.log('SW erreur:', e);
-        });
+        .then(function(reg) { console.log('SW OK:', reg.scope); })
+        .catch(function(e) { console.log('SW erreur:', e); });
     });
 }
 </script>
 
 </body>
 </html>
-<!-- FIN INDEX.HTML COMPLET — 7/7 ✅ (Firebase Auth ajouté) -->
